@@ -226,13 +226,15 @@
   }
   .animate-scroll-bg {
     display: flex;
-    width: 200%;
+    width: max-content;
+    height: 100%;
     animation: scroll-bg 40s linear infinite;
   }
   .carousel-img {
-    width: 25%;
+    width: 25vw;
     height: 100vh;
     object-fit: cover;
+    flex-shrink: 0;
     filter: grayscale(100%);
   }
   .loading-circle {
@@ -293,4 +295,11 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+
+@media (max-width: 768px) { 
+  .carousel-img { 
+    width: 33.33vw; 
+  } 
 }
