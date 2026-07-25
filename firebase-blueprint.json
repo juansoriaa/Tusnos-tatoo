@@ -1,0 +1,52 @@
+{
+  "version": "1.0",
+  "entities": {
+    "User": {
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique Firebase auth ID." },
+        "email": { "type": "string", "description": "The user's email address." },
+        "role": { "type": "string", "enum": ["superAdmin", "admin"], "description": "User role." },
+        "userTag": { "type": "string", "description": "Unique tag for the user." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "profilePhotoUrl": { "type": "string", "description": "URL of the user's profile photo." },
+        "whatsapp": { "type": "string", "description": "The user's WhatsApp number." },
+        "subscriptionStatus": { "type": "string", "enum": ["trial", "monthly", "partner"], "description": "Subscription status." },
+        "subscriptionEndsAt": { "type": "timestamp", "description": "When the subscription or trial ends." },
+        "views": { "type": "number", "description": "Profile views." },
+        "whatsappClicks": { "type": "number", "description": "WhatsApp button clicks." },
+        "backgroundPhotos": { "type": "array", "items": { "type": "string" }, "description": "Array of photo URLs for the user's profile background." },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["uid", "role", "userTag"]
+    },
+    "Photo": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Photo unique ID." },
+        "url": { "type": "string", "description": "Image URL." },
+        "thumbnailUrl": { "type": "string", "description": "Thumbnail image URL for fast loading." },
+        "title": { "type": "string", "description": "Title of the photo." },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags associated with the photo." },
+        "info": { "type": "string", "description": "Description or info about the photo." },
+        "hours": { "type": "number", "description": "Hours taken." },
+        "sessions": { "type": "number", "description": "Number of sessions." },
+        "size": { "type": "string", "description": "Physical size." },
+        "filters": { "type": "object", "description": "Image filter settings applied." },
+        "createdBy": { "type": "string", "description": "User ID who uploaded the photo." },
+        "createdAt": { "type": "timestamp" }
+      },
+      "required": ["id", "url", "createdBy"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "User profiles"
+    },
+    "photos/{photoId}": {
+      "schema": { "$ref": "Photo" },
+      "description": "Photos with tags and info"
+    }
+  }
+}

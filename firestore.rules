@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Function to check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Function to check if the user is a superAdmin
+    function isSuperAdmin() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superAdmin';
+    }
+
+    // Function to check if the user is an admin
+    function isAdmin() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Function to check if the user is superAdmin or admin
+    function isStaff() {
+      return isSuperAdmin() || isAdmin();
+    }
+
+    // Match rules
+    match /users/{userId} {
+      // Anyone can read user profiles
+      allow read: if true;
+      
+      // Allow write for demo purposes
+      allow write: if true;
+    }
+
+    match /photos/{photoId} {
+      // Anyone can view photos
+      allow read: if true;
+      
+      // Admins and SuperAdmins can manage photos
+      allow write: if true;
+    }
+
+    match /config/{configId} {
+      allow read, write: if true;
+    }
+  }
+}

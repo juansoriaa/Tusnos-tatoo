@@ -1,0 +1,109 @@
+            {/* Renewals Table */}
+            <div className="lg:col-span-2 glass-panel border border-outline-variant/20 rounded-xl p-8 overflow-x-auto">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="font-headline-md text-headline-md text-on-surface">Renewal Management</h2>
+                  <p className="font-caption text-caption text-on-surface-variant">Action required for approaching billing cycles.</p>
+                </div>
+                <select 
+                  value={renewalFilter}
+                  onChange={(e) => setRenewalFilter(e.target.value as any)}
+                  className="bg-deep-black border border-outline-variant/50 rounded text-caption text-secondary p-1 outline-none"
+                >
+                  <option value="all">Todos</option>
+                  <option value="trial">Trials</option>
+                  <option value="monthly">Mensual</option>
+                  <option value="partner">Partners</option>
+                  <option value="expiring">Por Expirar / Expirados</option>
+                </select>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                {/* header row for desktop */}
+                <div className="hidden md:grid grid-cols-4 gap-4 border-b border-outline-variant/20 pb-3 mb-2 font-caption text-caption text-secondary uppercase tracking-widest font-normal">
+                  <div>Artist</div>
+                  <div>Plan Tier</div>
+                  <div>Status</div>
+                  <div>Time Left</div>
+                </div>
+                {users.filter(u => {
+                   if (renewalFilter === 'all') return true;
+                   if (renewalFilter === 'trial') return u.subscriptionStatus === 'trial';
+                   if (renewalFilter === 'monthly') return u.subscriptionStatus === 'monthly';
+                   if (renewalFilter === 'partner') return u.subscriptionStatus === 'partner';
+                   if (renewalFilter === 'expiring') {
+                       if (u.subscriptionStatus === 'partner') return false;
+                       let daysLeft = 0;
+                       if (u.subscriptionEndsAt && u.subscriptionEndsAt.toDate) {
+                           const diffTime = u.subscriptionEndsAt.toDate().getTime() - new Date().getTime();
+                           daysLeft = diffTime < 0 ? -Math.ceil(Math.abs(diffTime) / (1000 * 60 * 60 * 24)) : Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                       }
+                       return daysLeft <= 3;
+                   }
+                   return true;
+                }).slice(0, showAllRenewals ? undefined : 7).map((user) => {
+                  const isPartner = user.subscriptionStatus === 'partner';
+                  let daysLeft = 0;
+                  if (user.subscriptionEndsAt && user.subscriptionEndsAt.toDate) {
+                      const diffTime = user.subscriptionEndsAt.toDate().getTime() - new Date().getTime();
+                      daysLeft = diffTime < 0 ? -Math.ceil(Math.abs(diffTime) / (1000 * 60 * 60 * 24)) : Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  }
+                  const statusColor = isPartner ? 'text-primary bg-primary/10 border-primary/20' : 
+                                      daysLeft <= 0 ? 'text-error bg-error/10 border-error/20' : 
+                                      daysLeft <= 3 ? 'text-secondary bg-surface-variant border-outline-variant/50' : 
+                                      'text-primary bg-primary/10 border-primary/20';
+
+                  return (
+                    <div key={user.uid} onClick={() => setDetailsModalUser(user)} className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4 items-center p-3 -mx-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer border-b border-outline-variant/10 md:border-none group">
+                      <div className="flex items-center gap-3">
+                        <img alt="Artist Avatar" className="w-10 h-10 rounded bg-surface object-cover" src={user.profilePhotoUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuBBMNHOgO0BFPGX5cKluHezzRBDPJueLyUUOSVbMZdAJNASP32jgHA4OlyC47sQI2OSfmnfWWJhsXilZEsOSBqjgJZonLj5pT-FxqVdN9wf0qc9xnw47B_mrLf_EJOGsPCFdm0ezBohArgfCnAGkL4nmXJbY4CXUXnPHC5HN5i25dYpUqlmKCy9E-GOy0FViiulx7v565DyOKMgONwgdsmF5EhQ9sYDmp7SshK7ecWSiMfVG7yXfsm_Dm9BxUhg4h5sZ-clTBdjYBLi"}/>
+                        <div className="flex flex-col">
+                          <span className="text-on-surface font-bold md:font-normal">{user.displayName || user.email}</span>
+                          <div className="flex items-center gap-2 md:hidden">
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-bold tracking-widest ${statusColor}`}>
+                                {isPartner ? 'ACTIVE' : daysLeft <= 0 ? 'EXPIRED' : user.subscriptionStatus === 'trial' ? 'TRIAL' : 'ACTIVE'}
+                            </span>
+                            <span className="text-secondary text-xs capitalize">{user.subscriptionStatus} • {isPartner ? '∞' : daysLeft < 0 ? `Hace ${Math.abs(daysLeft)} días` : `Quedan ${daysLeft} días`}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="hidden md:block text-on-surface-variant capitalize">{user.subscriptionStatus}</div>
+                      <div className="hidden md:block">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full border text-[10px] font-bold tracking-widest ${statusColor}`}>
+                          {isPartner ? 'ACTIVE' : daysLeft <= 0 ? 'EXPIRED' : user.subscriptionStatus === 'trial' ? 'TRIAL' : 'ACTIVE'}
+                        </span>
+                      </div>
+                      <div className={`hidden md:block ${daysLeft <= 3 && !isPartner ? 'text-error' : 'text-on-surface'}`}>
+                        {isPartner ? '∞' : daysLeft < 0 ? `-${Math.abs(daysLeft)} Days` : `${daysLeft} Days`}
+                      </div>
+                    </div>
+                  );
+                })}
+                {users.length === 0 && (
+                    <div className="py-4 text-center text-secondary">No hay usuarios</div>
+                )}
+
+                {users.filter(u => {
+                   if (renewalFilter === 'all') return true;
+                   if (renewalFilter === 'trial') return u.subscriptionStatus === 'trial';
+                   if (renewalFilter === 'monthly') return u.subscriptionStatus === 'monthly';
+                   if (renewalFilter === 'partner') return u.subscriptionStatus === 'partner';
+                   if (renewalFilter === 'expiring') {
+                       if (u.subscriptionStatus === 'partner') return false;
+                       let daysLeft = 0;
+                       if (u.subscriptionEndsAt && u.subscriptionEndsAt.toDate) {
+                           const diffTime = u.subscriptionEndsAt.toDate().getTime() - new Date().getTime();
+                           daysLeft = diffTime < 0 ? -Math.ceil(Math.abs(diffTime) / (1000 * 60 * 60 * 24)) : Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                       }
+                       return daysLeft <= 3;
+                   }
+                   return true;
+                }).length > 7 && (
+                  <button onClick={() => setShowAllRenewals(!showAllRenewals)} className="text-primary hover:text-primary-fixed transition-colors text-sm font-bold text-center mt-2 py-2 w-full">
+                    {showAllRenewals ? 'Ver menos' : 'Ver más'}
+                  </button>
+                )}
+
+              </div>
+            </div>
+
