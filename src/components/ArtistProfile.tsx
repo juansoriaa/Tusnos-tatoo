@@ -764,39 +764,44 @@ export default function Profile() {
               <div className="w-full md:w-1/3 p-4 md:p-6 flex flex-col flex-1 border-l border-outline-variant/10 overflow-y-auto touch-pan-y overscroll-contain">
                 <div className="flex flex-col h-full">
                   <div className="flex-1 flex flex-col justify-start space-y-4 md:mt-4">
-                    <div className="text-center md:text-left">
-                      <div className="flex items-center justify-between md:justify-start w-full gap-2 mb-3">
+                    <div className="text-center md:text-left flex flex-col items-center md:items-start w-full">
+                      <div className="relative flex items-center justify-center md:justify-start w-full min-h-[32px] mb-4">
                         <button 
-                          className="flex md:hidden flex-shrink-0 items-center justify-center w-8 h-8 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-full transition-colors" 
+                          className="absolute left-0 top-1/2 -translate-y-1/2 md:hidden flex-shrink-0 flex items-center justify-center w-8 h-8 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-full transition-colors" 
                           onClick={prevPhoto}
                         >
                           <span className="material-symbols-outlined text-xl">chevron_left</span>
                         </button>
                         
-                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-5 flex-1">
-                          {visibleTattoos[activeTattooIndex].categories.map((cat, idx) => (
-                            <span key={idx} className="px-3 py-1.5 text-[10px] md:text-xs font-bold bg-primary/20 text-primary border border-primary/30 rounded uppercase tracking-widest text-center">
-                              {cat}
-                            </span>
+                        <div className={`w-full px-10 md:px-0 ${visibleTattoos[activeTattooIndex].categories.length === 2 ? 'grid grid-cols-2 gap-6 md:flex md:flex-wrap md:items-center md:justify-start md:gap-4' : 'flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4'}`}>
+                          {visibleTattoos[activeTattooIndex].categories.map((cat, idx, arr) => (
+                            <div key={idx} className={`flex ${arr.length === 2 ? (idx === 0 ? 'justify-end md:justify-start' : 'justify-start') : ''}`}>
+                              <span className="inline-flex items-center justify-center px-4 py-1.5 min-h-[28px] text-[10px] md:text-xs font-bold bg-primary/20 text-primary border border-primary/30 rounded uppercase tracking-widest text-center whitespace-nowrap">
+                                {cat}
+                              </span>
+                            </div>
                           ))}
                         </div>
                         
                         <button 
-                          className="flex md:hidden flex-shrink-0 items-center justify-center w-8 h-8 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-full transition-colors" 
+                          className="absolute right-0 top-1/2 -translate-y-1/2 md:hidden flex-shrink-0 flex items-center justify-center w-8 h-8 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-full transition-colors" 
                           onClick={nextPhoto}
                         >
                           <span className="material-symbols-outlined text-xl">chevron_right</span>
                         </button>
                       </div>
+                      
                       <h2 className="text-lg md:text-xl font-bold uppercase tracking-tight text-on-surface mb-3">{visibleTattoos[activeTattooIndex].title}</h2>
+                      
+                      <div className="w-full flex items-center justify-center md:justify-start mb-6 opacity-90 px-4 md:px-0">
+                        <div className="h-[3px] flex-1 w-full max-w-[200px] md:max-w-none bg-gradient-to-r from-transparent via-primary/60 to-primary md:from-primary/10 md:to-primary rounded-full"></div>
+                        <div className="mx-4 w-2.5 h-2.5 rotate-45 border-[1.5px] border-primary bg-primary/20 flex-shrink-0"></div>
+                        <div className="h-[3px] flex-1 w-full max-w-[200px] md:max-w-none bg-gradient-to-l from-transparent via-primary/60 to-primary md:bg-gradient-to-r md:from-primary md:to-transparent rounded-full"></div>
+                      </div>
                     </div>
                     
                     <div className="overflow-y-auto hide-scrollbar max-h-[15vh] md:max-h-[35vh]">
                       <p className="text-center md:text-left text-on-surface-variant text-xs md:text-sm leading-relaxed">{visibleTattoos[activeTattooIndex].alt}</p>
-                    </div>
-                    
-                    <div className="w-full mt-4 flex items-center justify-center md:justify-start">
-                      <div className="h-[2px] w-1/3 bg-gradient-to-r from-transparent via-primary/60 to-transparent md:from-primary md:to-transparent opacity-100"></div>
                     </div>
                   </div>
 
