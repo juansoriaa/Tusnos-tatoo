@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, initializeFirestore, setLogLevel } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
@@ -13,12 +13,20 @@ const firebaseConfig = {
   measurementId: "",
 };
 
-const app = initializeApp(firebaseConfig);
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 setLogLevel('silent');
 export const auth = getAuth(app);
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true
-}, "ai-studio-e02f872d-9aaa-41a2-8b00-28bd5eb4d807");
+
+let firestoreDb;
+try {
+  firestoreDb = initializeFirestore(app, {
+    experimentalForceLongPolling: true
+  }, "ai-studio-e02f872d-9aaa-41a2-8b00-28bd5eb4d807");
+} catch (e) {
+  firestoreDb = getFirestore(app, "ai-studio-e02f872d-9aaa-41a2-8b00-28bd5eb4d807");
+}
+export const db = firestoreDb;
+
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 

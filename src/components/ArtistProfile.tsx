@@ -61,18 +61,20 @@ export default function Profile() {
 
   const [modalOpen, setModalOpen] = useState(false);
 
-  const trackMetric = (metricKey: 'views' | 'photoClicks' | 'whatsappClicks' | 'agendaClicks') => {
+  const trackMetric = async (metricKey: 'views' | 'photoClicks' | 'whatsappClicks' | 'agendaClicks') => {
       try {
           const metricsStr = localStorage.getItem('demoMetricsData');
-          const metrics = metricsStr ? JSON.parse(metricsStr) : {
-              views: 12400,
-              photoClicks: 1200,
-              whatsappClicks: 856,
-              agendaClicks: 48
-          };
+          const metrics = metricsStr ? JSON.parse(metricsStr) : { views: 12400, photoClicks: 1200, whatsappClicks: 856, agendaClicks: 48 };
           metrics[metricKey] = (metrics[metricKey] || 0) + 1;
           localStorage.setItem('demoMetricsData', JSON.stringify(metrics));
           window.dispatchEvent(new CustomEvent('demoMetricsUpdated'));
+          
+          if (id) {
+              const { doc, updateDoc, increment } = await import('firebase/firestore');
+              await updateDoc(doc(db, 'users', id), {
+                  ['metrics.' + metricKey]: increment(1)
+              });
+          }
       } catch(e) {}
   };
 

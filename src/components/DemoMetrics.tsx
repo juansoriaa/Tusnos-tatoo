@@ -4,7 +4,7 @@ import DemoLayout from './DemoLayout';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/firestore';
 
 
 export default function DemoMetrics() {
@@ -23,11 +23,27 @@ export default function DemoMetrics() {
     const periodLabels = { day: 'Hoy', week: 'Esta sem', month: 'Este mes' };
 
     useEffect(() => {
-        const loadMetrics = () => {
-            try {
-                const stored = localStorage.getItem('demoMetricsData');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
+        const loadMetrics = async () => {
+            let parsed = null;
+            const demoUserId = localStorage.getItem('demoUserId');
+            if (demoUserId) {
+                try {
+                    const docSnap = await getDoc(doc(db, 'users', demoUserId));
+                    if (docSnap.exists() && docSnap.data().metrics) {
+                        parsed = docSnap.data().metrics;
+                    }
+                } catch(e) {}
+            }
+            if (!parsed) {
+                try {
+                    const stored = localStorage.getItem('demoMetricsData');
+                    if (stored) {
+                        parsed = JSON.parse(stored);
+                    }
+                } catch (e) {}
+            }
+            if (parsed) {
+                try {
                     setMetrics(prev => {
                         if (JSON.stringify(prev) !== JSON.stringify(parsed)) {
                             setAnimating(true);
@@ -35,8 +51,8 @@ export default function DemoMetrics() {
                         }
                         return parsed;
                     });
-                }
-            } catch (e) {}
+                } catch (e) {}
+            }
         };
         loadMetrics();
         window.addEventListener('demoMetricsUpdated', loadMetrics);

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
+import { db } from '../firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 
 const defaultAvatar = 'https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo';
@@ -20,13 +22,30 @@ const defaultFaqs = [
     const [isAvailable, setIsAvailable] = useState(true);
     const [modalOpen, setModalOpen] = useState<string | null>(null);
     const [animateHighlight, setAnimateHighlight] = useState(false);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        const saved = localStorage.getItem('demoArtistData_demo');
-        if (saved) {
-            try {
-
-                const data = JSON.parse(saved);
+        const loadData = async () => {
+            const demoUserId = localStorage.getItem('demoUserId');
+            let data = null;
+            if (demoUserId) {
+                try {
+                    const docSnap = await getDoc(doc(db, 'users', demoUserId));
+                    if (docSnap.exists()) {
+                        data = docSnap.data();
+                    }
+                } catch (e) {
+                    console.error("Error loading from Firestore", e);
+                }
+            }
+            if (!data) {
+                const saved = localStorage.getItem('demoArtistData_demo');
+                if (saved) {
+                    try { data = JSON.parse(saved); } catch (e) {}
+                }
+            }
+            if (data) {
+                try {
                 setName(data.displayName || 'Victor Ink');
                 setBio(data.bio || 'Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.');
                 setSpecialty1((data.specialtyTags && data.specialtyTags.length > 0) ? (data.specialtyTags[0] || '') : 'Realismo');
@@ -92,6 +111,8 @@ const defaultFaqs = [
                 faqs: defaultFaqs
             }));
         }
+        };
+        loadData();
     }, []);
 
     const [name, setName] = useState('Victor Ink');
@@ -155,9 +176,14 @@ const defaultFaqs = [
             faqs: faqs
         };
         localStorage.setItem('demoArtistData_demo', JSON.stringify(demoData));
+        const demoUserId = localStorage.getItem('demoUserId');
+        if (demoUserId) {
+            updateDoc(doc(db, 'users', demoUserId), demoData).catch(e => console.error("Error saving to Firestore", e));
+        }
         window.dispatchEvent(new CustomEvent('profileDataChanged'));
         setInitialDataStr(JSON.stringify(currentData));
-        alert("Cambios guardados exitosamente!");
+        setToastMessage("Cambios guardados exitosamente!");
+        setTimeout(() => setToastMessage(null), 3000);
     };
 
     useEffect(() => {
@@ -321,6 +347,10 @@ const defaultFaqs = [
         let data = saved ? JSON.parse(saved) : {};
         data.isAvailable = newIsAvailable;
         localStorage.setItem('demoArtistData_demo', JSON.stringify(data));
+        const demoUserId = localStorage.getItem('demoUserId');
+        if (demoUserId) {
+            updateDoc(doc(db, 'users', demoUserId), { isAvailable: newIsAvailable }).catch(e => console.error(e));
+        }
     } catch(err) {}
 
     window.dispatchEvent(new CustomEvent('agendaStatusChanged', { detail: newIsAvailable }));
@@ -620,6 +650,14 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
             </div>
         )}
 
+        {toastMessage && (
+            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] animate-fade-in pointer-events-none w-[90%] max-w-sm">
+                <div className="bg-[#054d44] text-white px-6 py-4 rounded shadow-2xl flex items-center justify-center gap-3">
+                    <span className="material-symbols-outlined text-white">check_circle</span>
+                    <span className="text-sm font-bold tracking-widest uppercase">{toastMessage}</span>
+                </div>
+            </div>
+        )}
         </DemoLayout>
     );
 }

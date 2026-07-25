@@ -55,6 +55,8 @@ export default function DemoLayout
                     notifs.push({ id: doc.id, ...doc.data() });
                 });
                 setNotifications(notifs);
+            }, (error) => {
+                console.warn("Firestore onSnapshot error (ignoring for demo):", error);
             });
             return () => unsubscribe();
         }
