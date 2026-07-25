@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { globalPreloadCache } from '../lib/cache';
 
 
 const defaultFaqs = [
@@ -26,9 +27,14 @@ export default function Profile() {
 
   const [artistData, setArtistData] = useState<any>(() => {
     try {
-        const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
-        if (saved) {
-            return JSON.parse(saved);
+        let savedData = globalPreloadCache[id || 'demo']?.artistData;
+        if (!savedData) {
+            const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
+            if (saved) savedData = JSON.parse(saved);
+        }
+        if (savedData) {
+            globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], artistData: savedData };
+            return savedData;
         }
     } catch(e) {}
     return null;
@@ -38,9 +44,20 @@ export default function Profile() {
     const fetchArtist = async () => {
       if (id) {
         const docRef = doc(db, 'users', id);
-        const docSnap = await getDoc(docRef);
+        let docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setArtistData(docSnap.data());
+          globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], artistData: docSnap.data() };
+        } else {
+            // Try by userTag
+            let tag = id;
+            if (!tag.startsWith('@')) tag = '@' + tag;
+            const q = query(collection(db, 'users'), where('userTag', '==', tag));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                setArtistData(querySnapshot.docs[0].data());
+                globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], artistData: querySnapshot.docs[0].data() };
+            }
         }
       } else {
         const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
@@ -107,9 +124,21 @@ export default function Profile() {
   useEffect(() => {
     const fetchTattoos = async () => {
         let artistUid = id;
-        if (!artistUid && auth.currentUser) {
-            artistUid = auth.currentUser.uid;
-        } else if (!artistUid) {
+        
+        // Resolve tag to UID if needed
+        if (artistUid && (artistUid.startsWith('@') || artistUid.length < 20)) {
+            let tag = artistUid.startsWith('@') ? artistUid : '@' + artistUid;
+            const q = query(collection(db, 'users'), where('userTag', '==', tag));
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                artistUid = snap.docs[0].id;
+            }
+        }
+        
+        if (!artistUid) {
+            artistUid = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+        }
+        if (!artistUid) {
             artistUid = 'anonymous_demo';
         }
 

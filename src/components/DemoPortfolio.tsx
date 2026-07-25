@@ -440,11 +440,11 @@ const handleSaveObra = async () => {
                     const newPhotoRef = await addDoc(collection(db, 'photos'), {
                         ...updatedData,
                         originalFallbackId: editingPhoto.id,
-                        createdBy: auth.currentUser?.uid || 'anonymous_demo',
+                        createdBy: localStorage.getItem('demoUserId') || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                         createdAt: serverTimestamp()
                     });
                     
-                    const newPhoto = { id: newPhotoRef.id, originalFallbackId: editingPhoto.id, ...updatedData, createdBy: auth.currentUser?.uid || 'anonymous_demo' };
+                    const newPhoto = { id: newPhotoRef.id, originalFallbackId: editingPhoto.id, ...updatedData, createdBy: localStorage.getItem('demoUserId') || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo' };
                     setExistingPhotos(prev => {
                         const newPhotos = prev.map(p => p.id === editingPhoto.id ? newPhoto : p);
                         globalCachedPhotos = newPhotos;
@@ -481,7 +481,7 @@ const handleSaveObra = async () => {
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
                     filters: imageFilters,
-                    createdBy: auth.currentUser?.uid || 'anonymous_demo',
+                    createdBy: localStorage.getItem('demoUserId') || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                     createdAt: serverTimestamp()
                 });
 
@@ -496,7 +496,7 @@ const handleSaveObra = async () => {
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
                     filters: imageFilters,
-                    createdBy: auth.currentUser?.uid || 'anonymous_demo',
+                    createdBy: localStorage.getItem('demoUserId') || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                 };
                 
                 setExistingPhotos(prev => {

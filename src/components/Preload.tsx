@@ -3,11 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { collection, getDocs, query, orderBy, where, doc, getDoc } from 'firebase/firestore';
 
+import { globalPreloadCache } from '../lib/cache';
+
 export default function Preload() {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [artistName, setArtistName] = useState(() => {
+    if (globalPreloadCache[id || 'demo']?.artistName) return globalPreloadCache[id || 'demo'].artistName;
     try {
       const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
       if (saved) {
@@ -18,6 +21,7 @@ export default function Preload() {
     return 'Victor Ink';
   });
   const [specialties, setSpecialties] = useState<string[]>(() => {
+    if (globalPreloadCache[id || 'demo']?.specialties) return globalPreloadCache[id || 'demo'].specialties;
     try {
       const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
       if (saved) {
@@ -28,6 +32,7 @@ export default function Preload() {
     return ['Realismo', 'Black & Grey'];
   });
   const [profilePhotoUrl, setProfilePhotoUrl] = useState(() => {
+    if (globalPreloadCache[id || 'demo']?.profilePhotoUrl) return globalPreloadCache[id || 'demo'].profilePhotoUrl;
     try {
       const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
       if (saved) {
@@ -37,8 +42,9 @@ export default function Preload() {
     } catch(e) {}
     return 'https://lh3.googleusercontent.com/aida-public/AB6AXuC_KPGqcJA_LhFIZepjSW5Tf7MtTYEc4iRE4J7SbB3ZSPxSwnEhyd39Iptl8UJFQS6m269Hwwx2KZd5ywVY5a6mTaGP0eKxhhFlOChAey3A8OvJ2X43uTD6BH3bkh9AjFk_ged61veFwFc7XeGxUyraAjawtpIIQxmkRhrpbijpEFfFKyxzuCj7Ltek0mSl4QQtognkqRBrsSC25geKA2JCuif3FBQ8nEvcajl0_fkXLSakiANOEXbVDwi9vnMRrjEXDcc5_qMFBm0';
   });
-  const [isFetchingBg, setIsFetchingBg] = useState(true);
+  
   const [bgPhotos, setBgPhotos] = useState<string[]>(() => {
+    if (globalPreloadCache[id || 'demo']?.bgPhotos) return globalPreloadCache[id || 'demo'].bgPhotos;
     try {
       const savedBg = localStorage.getItem('demoBgPhotos_' + (id || 'demo'));
       if (savedBg) {
@@ -55,9 +61,9 @@ export default function Preload() {
       if (saved) {
         try {
           const data = JSON.parse(saved);
-          if (data.displayName) setArtistName(data.displayName);
-          if (data.specialtyTags && data.specialtyTags.length > 0) setSpecialties(data.specialtyTags);
-          if (data.profilePhotoUrl) setProfilePhotoUrl(data.profilePhotoUrl);
+          if (data.displayName) { setArtistName(data.displayName); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], artistName: data.displayName }; }
+          if (data.specialtyTags && data.specialtyTags.length > 0) { setSpecialties(data.specialtyTags); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], specialties: data.specialtyTags }; }
+          if (data.profilePhotoUrl) { setProfilePhotoUrl(data.profilePhotoUrl); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], profilePhotoUrl: data.profilePhotoUrl }; }
         } catch(e) {}
       }
 
@@ -89,20 +95,37 @@ export default function Preload() {
     const preloadImages = async () => {
       try {
         let artistUid = id;
-        if (!artistUid && auth.currentUser) {
-            artistUid = auth.currentUser.uid;
-        } else if (!artistUid) {
+        if (!artistUid) {
+            artistUid = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+        }
+        if (!artistUid) {
             artistUid = 'anonymous_demo';
         }
 
         // Fetch artist profile data for preload display
         if (artistUid !== 'anonymous_demo') {
-           const userDoc = await getDoc(doc(db, 'users', artistUid));
-           if (userDoc.exists()) {
+           let userDoc = await getDoc(doc(db, 'users', artistUid));
+           if (!userDoc.exists() && typeof artistUid === 'string' && artistUid.startsWith('@')) {
+                const q = query(collection(db, 'users'), where('userTag', '==', artistUid));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    userDoc = snap.docs[0];
+                    artistUid = userDoc.id; // Correct the artistUid for photos query
+                }
+           } else if (!userDoc.exists() && typeof artistUid === 'string') {
+                const q = query(collection(db, 'users'), where('userTag', '==', '@' + artistUid));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    userDoc = snap.docs[0];
+                    artistUid = userDoc.id;
+                }
+           }
+           
+           if (userDoc && userDoc.exists()) {
                const data = userDoc.data();
-               if (data.displayName) setArtistName(data.displayName);
-               if (data.specialtyTags && data.specialtyTags.length > 0) setSpecialties(data.specialtyTags);
-               if (data.profilePhotoUrl) setProfilePhotoUrl(data.profilePhotoUrl);
+               if (data.displayName) { setArtistName(data.displayName); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], artistName: data.displayName }; }
+               if (data.specialtyTags && data.specialtyTags.length > 0) { setSpecialties(data.specialtyTags); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], specialties: data.specialtyTags }; }
+               if (data.profilePhotoUrl) { setProfilePhotoUrl(data.profilePhotoUrl); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], profilePhotoUrl: data.profilePhotoUrl }; }
                localStorage.setItem('demoArtistData_' + (id || 'demo'), JSON.stringify(data));
            }
         }
@@ -145,31 +168,36 @@ export default function Preload() {
         
         // Grab top 3 pinned/recent for background
         let top3 = mappedPhotos.slice(0, 3).map(data => data.thumbnailUrl || data.src).filter(url => url);
+        let bg4 = [];
         if (top3.length > 0) {
-            // Need exactly 4 items for the CSS 25% width logic to work correctly
-            let bg4 = [...top3];
+            bg4 = [...top3];
             while(bg4.length < 4) {
                 bg4.push(bg4[bg4.length % top3.length]);
             }
-            // Only update state if URLs are different to avoid re-rendering jump
-            setBgPhotos(prev => {
-              if (JSON.stringify(prev) !== JSON.stringify(bg4)) {
-                return bg4;
-              }
-              return prev;
-            });
-            localStorage.setItem('demoBgPhotos_' + (id || 'demo'), JSON.stringify(bg4));
         }
 
-        // Wait for images to load in browser cache
+        // Preload all images in browser cache
         await Promise.all(urlsToPreload.map(url => {
           return new Promise((resolve) => {
             const img = new Image();
             img.src = url;
             img.onload = resolve;
-            img.onerror = resolve; // resolve anyway so we don't block
+            img.onerror = resolve; 
           });
         }));
+
+        if (bg4.length > 0) {
+            localStorage.setItem('demoBgPhotos_' + (id || 'demo'), JSON.stringify(bg4));
+            setBgPhotos(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(bg4)) {
+                // To avoid animation jump, we could only update if prev is empty, 
+                // but if we want perfect sync we update it here since they are now loaded.
+                globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], bgPhotos: bg4 };
+                return bg4;
+              }
+              return prev;
+            });
+        }
       } catch (err) {
         console.error('Error preloading images:', err);
       } finally {
@@ -202,7 +230,7 @@ export default function Preload() {
                 <img key={`dup-${i}`} alt={`Background Tattoo ${i+1}`} className="carousel-img" src={url} />
               ))}
             </>
-          ) : isFetchingBg ? null : (
+          ) : (
             <>
               <img alt="Tattoo 1" className="carousel-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" />
               <img alt="Tattoo 2" className="carousel-img" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHwNb_MhbHOaP6c0Rl1EqFCiTHvx3OrwkHec41w-pIzdVOr7fsJR6seTV1H8FzBJ3iiQ-niPppsHlussWManmq3_37uMTyIRgGyAfz38023h98-mc7TXCSIobUFesaE9i91952TUovITXSuF_0DHR_r_6GS38wv-AYSWni62vZFkiIacuuAHSHqUBld76UFh-NsXjsIcZg-h_Vn10CGZcp3HYUtlUEeh82negXGsgP2u_nBmavAlj48S7v5uf-_qARYs4xf7o9gE8" />
