@@ -4,20 +4,21 @@ import DemoLayout from './DemoLayout';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc, where } from 'firebase/firestore';
 
 
 export default function DemoMetrics() {
     const navigate = useNavigate();
 
     const [metrics, setMetrics] = useState({
-        views: 12400,
-        photoClicks: 1200,
-        whatsappClicks: 856,
-        agendaClicks: 48
+        views: 0,
+        photoClicks: 0,
+        whatsappClicks: 0,
+        agendaClicks: 0
     });
 
     const [animating, setAnimating] = useState(false);
+    const [isDemoAccount, setIsDemoAccount] = useState(false);
     const [periodIndex, setPeriodIndex] = useState(0);
     const periods = ['day', 'week', 'month'];
     const periodLabels = { day: 'Hoy', week: 'Esta sem', month: 'Este mes' };
@@ -29,19 +30,27 @@ export default function DemoMetrics() {
             if (demoUserId) {
                 try {
                     const docSnap = await getDoc(doc(db, 'users', demoUserId));
-                    if (docSnap.exists() && docSnap.data().metrics) {
-                        parsed = docSnap.data().metrics;
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.userTag === '@demo' || data.userTag === '@victor_ink' || data.userTag === 'victor_ink' || data.userTag === 'demo') {
+                            parsed = {
+                                views: 12400,
+                                photoClicks: 1200,
+                                whatsappClicks: 856,
+                                agendaClicks: 48
+                            };
+                        } else {
+                            parsed = {
+                                views: data.views || 0,
+                                photoClicks: data.photoClicks || 0,
+                                whatsappClicks: data.whatsappClicks || 0,
+                                agendaClicks: data.agendaClicks || 0
+                            };
+                        }
                     }
                 } catch(e) {}
             }
-            if (!parsed) {
-                try {
-                    const stored = localStorage.getItem('demoMetricsData');
-                    if (stored) {
-                        parsed = JSON.parse(stored);
-                    }
-                } catch (e) {}
-            }
+
             if (parsed) {
                 try {
                     setMetrics(prev => {
@@ -76,9 +85,35 @@ export default function DemoMetrics() {
     useEffect(() => {
         const loadPhotos = async () => {
             try {
-                const q = query(collection(db, 'photos'), orderBy('createdAt', 'desc'));
+                const demoUserId = localStorage.getItem('demoUserId');
+                const q = demoUserId 
+                    ? query(collection(db, 'photos'), where('createdBy', '==', demoUserId))
+                    : query(collection(db, 'photos'), orderBy('createdAt', 'desc'));
                 const snapshot = await getDocs(q);
-                const dbPhotos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+                let dbPhotos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+                
+
+                let isDemoUser = false;
+                if (demoUserId) {
+                    const { doc, getDoc } = await import('firebase/firestore');
+                    const userSnap = await getDoc(doc(db, 'users', demoUserId));
+                    if (userSnap.exists()) {
+                        const tag = userSnap.data().userTag;
+                        if (tag === '@demo' || tag === '@victor_ink' || tag === 'victor_ink' || tag === 'demo') {
+                            isDemoUser = true;
+                        }
+                    } else if (typeof demoUserId === 'string' && demoUserId.startsWith('@')) {
+                        const q = query(collection(db, 'users'), where('userTag', '==', demoUserId));
+                        const snap = await getDocs(q);
+                        if (!snap.empty) {
+                            const tag = snap.docs[0].data().userTag;
+                            if (tag === '@demo' || tag === '@victor_ink' || tag === 'victor_ink' || tag === 'demo') {
+                                isDemoUser = true;
+                            }
+                        }
+                    }
+                    setIsDemoAccount(isDemoUser);
+                }
                 
                 const fallback = [
                     {
@@ -143,22 +178,24 @@ export default function DemoMetrics() {
                     }
                 ];
 
-                const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
-                const finalPhotos = [
-                    ...dbPhotos.map(p => ({
-                        id: p.id,
-                        imageUrl: p.imageUrl || p.src,
-                        title: p.title || 'Foto de Tatuaje',
-                        category: p.category || 'Portfolio'
-                    })),
-                    ...fallback.filter(f => !dbPhotos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id))
-                ];
+                let finalPhotos = dbPhotos.map(p => ({
+                    id: p.id,
+                    imageUrl: p.imageUrl || p.src,
+                    title: p.title || p.tags?.[0] || 'Foto de Tatuaje',
+                    category: p.category || p.tags?.[0] || 'Portfolio'
+                }));
+                
+                if (isDemoUser) {
+                    const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
+                    const filteredFallback = fallback.filter(f => !dbPhotos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id));
+                    finalPhotos = [...finalPhotos, ...filteredFallback];
+                }
 
                 const stats = JSON.parse(localStorage.getItem('photoStats') || '{}');
                 
                 const photosWithStats = finalPhotos.map(photo => ({
                     ...photo,
-                    clicks: stats[photo.id] || Math.floor(Math.random() * 50) + 10 // Mock clicks if no real stats yet
+                    clicks: stats[photo.id] || 0 // No mock clicks if no real stats yet
                 }));
 
                 photosWithStats.sort((a, b) => b.clicks - a.clicks);
@@ -178,19 +215,34 @@ export default function DemoMetrics() {
     const [chartPeriod, setChartPeriod] = useState('week');
 
     const chartData = useMemo(() => {
-        const baseValues = {
-            views: { day: 1500, week: 11025, month: 45000 },
-            photoClicks: { day: 150, week: 1140, month: 4800 },
-            whatsappClicks: { day: 90, week: 790, month: 3200 }
-        };
-        const base = baseValues[chartMetric][chartPeriod];
         let data = [];
+        let actualTotal = metrics[chartMetric] || 0;
+        
+        // For 'day', we generate 8 points. 
+        // For 'week', 7 points.
+        // For 'month', 10 points.
+        
+        if (actualTotal === 0) {
+            if (chartPeriod === 'day') {
+                for (let i = 8; i <= 22; i+=2) data.push({ name: `${i}:00`, value: 0 });
+            } else if (chartPeriod === 'week') {
+                const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+                for (let i = 0; i < 7; i++) data.push({ name: days[i], value: 0 });
+            } else if (chartPeriod === 'month') {
+                for (let i = 1; i <= 30; i+=3) data.push({ name: `${i}`, value: 0 });
+            }
+            return data;
+        }
+
+        // If we have data, we divide it across the period somewhat realistically
+        // We simulate a realistic distribution where the sum approximates actualTotal (or scales with it)
+        const base = actualTotal;
+        
         if (chartPeriod === 'day') {
             for (let i = 8; i <= 22; i+=2) {
-                // Generate a believable curve
                 let multiplier = 0.02;
-                if (i >= 12 && i <= 14) multiplier = 0.1; // lunch peak
-                if (i >= 18 && i <= 20) multiplier = 0.15; // evening peak
+                if (i >= 12 && i <= 14) multiplier = 0.1;
+                if (i >= 18 && i <= 20) multiplier = 0.15;
                 const value = Math.floor(base * (multiplier + (Math.random() * 0.05)));
                 data.push({ name: `${i}:00`, value });
             }
@@ -198,7 +250,7 @@ export default function DemoMetrics() {
             const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
             for (let i = 0; i < 7; i++) {
                 let multiplier = 0.1;
-                if (i >= 4) multiplier = 0.18; // weekend peak
+                if (i >= 4) multiplier = 0.18;
                 const value = Math.floor(base * (multiplier + (Math.random() * 0.05)));
                 data.push({ name: days[i], value });
             }
@@ -209,7 +261,7 @@ export default function DemoMetrics() {
             }
         }
         return data;
-    }, [chartMetric, chartPeriod]);
+    }, [chartMetric, chartPeriod, metrics]);
 
     const chartTitles = {
         views: 'Visitas Totales',
@@ -219,18 +271,14 @@ export default function DemoMetrics() {
 
 
 
-    const baseMetrics = {
-        views: { day: 12200, week: 11025, month: 9500 },
-        photoClicks: { day: 1180, week: 1140, month: 850 },
-        whatsappClicks: { day: 830, week: 790, month: 520 },
-        agendaClicks: { day: 45, week: 40, month: 25 },
-        conversion: { day: 24.1, week: 22.1, month: 18.5 }
-    };
-
     const calcIncrease = (current, periodKey, metricName) => {
-        const base = baseMetrics[metricName][periodKey];
-        if (current <= base) return '0.0%';
-        return '+' + (((current - base) / base) * 100).toFixed(1) + '%';
+        if (current === 0) return '0.0%';
+        // Mock a reasonable increase based on period if we have actual data
+        let factor = 0.05;
+        if (periodKey === 'week') factor = 0.12;
+        if (periodKey === 'month') factor = 0.25;
+        
+        return '+' + (factor * 100).toFixed(1) + '%';
     };
 
     const formatNumber = (num) => new Intl.NumberFormat('en-US').format(num);
@@ -325,10 +373,10 @@ export default function DemoMetrics() {
                             <span className="material-symbols-outlined text-primary-container text-[18px]" style={{color: '#054d44'}}>analytics</span>
                         </div>
                         <div className="relative z-10">
-                            <p className="font-headline-md text-headline-md text-silver-text text-2xl font-bold">24.5%</p>
+                            <p className="font-headline-md text-headline-md text-silver-text text-2xl font-bold">{isDemoAccount ? '24.5%' : '0%'}</p>
                             <p className={`font-caption text-caption text-primary flex items-center gap-1 mt-0.5 text-[12px] transition-all duration-500 ${animating ? 'scale-110 text-emerald-accent' : ''}`} style={{color: '#95d2c6'}}>
                                 <span className="material-symbols-outlined text-[12px]">arrow_upward</span>
-                                <span className="transition-all duration-500 animate-fade-in" key={currentPeriod}>{calcIncrease(24.5, currentPeriod, 'conversion')}</span>
+                                <span className="transition-all duration-500 animate-fade-in" key={currentPeriod}>{isDemoAccount ? calcIncrease(24.5, currentPeriod, 'conversion') : '0.0%'}</span>
                                 <span className="text-[9px] text-on-surface-variant ml-1 transition-all duration-500 animate-fade-in" key={`label-${currentPeriod}`}>{periodLabels[currentPeriod]}</span>
                             </p>
                         </div>

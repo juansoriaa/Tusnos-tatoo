@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
+import { db } from '../firebase';
 
 export default function DemoWaitlist() {
     const navigate = useNavigate();
@@ -61,27 +62,20 @@ export default function DemoWaitlist() {
     const [waitlistMessages, setWaitlistMessages] = useState<any[]>([]);
     
     React.useEffect(() => {
-        const load = () => {
-            try {
-                const saved = localStorage.getItem('demoWaitlistMessages');
-                if (saved) {
-                    const parsed = JSON.parse(saved).map((msg: any) => ({
-                        ...msg,
-                        tags: msg.tags ? msg.tags.map((tag: string) => 
-                            tag === 'Referencia subida por el usuario' ? 'Refe. del usuario' : 
-                            tag === 'Referencia del portafolio' ? 'Refe. del portafolio' : tag
-                        ) : msg.tags
-                    }));
-                    setWaitlistMessages(parsed);
-                } else {
-                    localStorage.setItem('demoWaitlistMessages', JSON.stringify(defaultMessages));
-                    setWaitlistMessages(defaultMessages);
-                }
-            } catch(e) {}
+        let unsubscribe = () => {};
+        const load = async () => {
+            const { collection, onSnapshot, query, orderBy } = await import('firebase/firestore');
+            const demoUserId = localStorage.getItem('demoUserId');
+            if (demoUserId) {
+                const q = query(collection(db, 'users', demoUserId, 'waitlist'), orderBy('createdAt', 'desc'));
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setWaitlistMessages(messages as any);
+                });
+            }
         };
         load();
-        window.addEventListener('newWaitlistMessage', load);
-        return () => window.removeEventListener('newWaitlistMessage', load);
+        return () => unsubscribe();
     }, []);
 
     const openMessageModal = (data: any) => {
@@ -91,7 +85,7 @@ export default function DemoWaitlist() {
                 msg.id === data.id ? { ...msg, read: true } : msg
             );
             setWaitlistMessages(updatedMessages);
-            localStorage.setItem('demoWaitlistMessages', JSON.stringify(updatedMessages));
+            localStorage.setItem('demoWaitlistMessages_' + (localStorage.getItem('demoUserId') || 'anonymous_demo'), JSON.stringify(updatedMessages));
             window.dispatchEvent(new CustomEvent('newWaitlistMessage'));
         }
     };

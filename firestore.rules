@@ -28,6 +28,10 @@ service cloud.firestore {
       
       // Allow write for demo purposes
       allow write: if true;
+      
+      match /{document=**} {
+        allow read, write: if true;
+      }
     }
 
     match /photos/{photoId} {

@@ -52,7 +52,9 @@ export default function Landing() {
   const [user, setUser] = useState<any>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [email, setEmail] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -83,65 +85,106 @@ export default function Landing() {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setIsLoggingIn(true);
 
     const trimEmail = email.trim().toLowerCase();
     const trimPass = password.trim();
 
-    if (trimEmail === 'demo' && trimPass === 'demo') {
-      setShowLoginModal(false);
-      navigate('/demo/dashboard');
-      return;
-    }
-
     if (trimEmail === 'adminpass2026' && trimPass === '230517') {
-      setShowLoginModal(false);
+      setIsLoggingIn(false);
+      setIsLoggingIn(false);
+          setShowLoginModal(false);
       navigate('/superadmin');
       return;
     }
     try {
-      await signInWithEmailAndPassword(auth, trimEmail, password);
-      setShowLoginModal(false);
-      setEmail('');
-      setPassword('');
-      navigate('/demo/profile'); 
-    } catch (error: any) {
-      try {
-        // Fallback para login de demo con Firestore
-        let userDoc = null;
-        const usersRef = collection(db, 'users');
-        const qEmail = query(usersRef, where('email', '==', trimEmail));
-        const snapEmail = await getDocs(qEmail);
-        
-        if (!snapEmail.empty) {
-            userDoc = snapEmail.docs[0];
-        } else {
-            let tag = trimEmail;
-            if (!tag.startsWith('@')) tag = '@' + tag;
-            const qTag = query(usersRef, where('userTag', '==', tag));
-            const snapTag = await getDocs(qTag);
-            if (!snapTag.empty) {
-                userDoc = snapTag.docs[0];
-            }
+      let firebaseAuthSuccess = false;
+      if (trimEmail.includes('@')) {
+        try {
+          await signInWithEmailAndPassword(auth, trimEmail, password);
+          firebaseAuthSuccess = true;
+        } catch (e: any) {
+          // Firebase auth failed, we'll try firestore fallback
         }
-
-        if (userDoc) {
-            const userData = userDoc.data();
-            const storedPassword = userData.customPassword || '123456';
-            if (storedPassword === trimPass) {
-                localStorage.setItem('demoUserId', userData.uid);
-                setShowLoginModal(false);
-                setEmail('');
-                setPassword('');
-                navigate('/demo/dashboard');
-                return;
-            }
-        }
-      } catch (dbErr) {
-        console.error("Firestore check failed", dbErr);
       }
 
+      if (firebaseAuthSuccess && auth.currentUser) {
+          localStorage.setItem('demoUserId', auth.currentUser.uid);
+          setIsLoggingIn(false);
+          setShowLoginModal(false);
+          setEmail('');
+          setPassword('');
+          navigate('/demo/profile');
+          return;
+      }
+
+      // Fallback para login de demo con Firestore
+      let userDoc = null;
+      try {
+          const { collection, query, where, getDocs, setDoc, doc } = await import('firebase/firestore');
+          const usersRef = collection(db, 'users');
+          const qEmail = query(usersRef, where('email', '==', trimEmail));
+          const snapEmail = await getDocs(qEmail);
+          
+          if (!snapEmail.empty) {
+              userDoc = snapEmail.docs[0];
+          } else {
+              let tag = trimEmail;
+              if (!tag.startsWith('@')) tag = '@' + tag;
+              
+              // Map both demo and victor_ink to @victor_ink if we want them to share the demo profile
+              if (tag === '@demo') tag = '@victor_ink';
+              
+              const qTag = query(usersRef, where('userTag', '==', tag));
+              const snapTag = await getDocs(qTag);
+              if (!snapTag.empty) {
+                  userDoc = snapTag.docs[0];
+              } else if (tag === '@victor_ink' && (trimPass === 'demo' || trimPass === '123456')) {
+                  // Auto-create @victor_ink if it doesn't exist so they can demo
+                  const newDemoUid = 'demo_victor_ink_' + Date.now();
+                  await setDoc(doc(db, 'users', newDemoUid), {
+                      uid: newDemoUid,
+                      email: 'victor@demo.com',
+                      userTag: '@victor_ink',
+                      displayName: 'Victor Ink',
+                      specialtyTags: ['Realismo', 'Blackwork'],
+                      customPassword: 'demo',
+                      createdAt: new Date()
+                  });
+                  localStorage.setItem('demoUserId', newDemoUid);
+                  setIsLoggingIn(false);
+          setShowLoginModal(false);
+                  setEmail('');
+                  setPassword('');
+                  navigate('/demo/dashboard');
+                  return;
+              }
+          }
+
+          if (userDoc) {
+              const userData = userDoc.data();
+              const storedPassword = userData.customPassword || '123456';
+              // Allow 'demo', '123456' or the stored custom password for ease of testing
+              if (storedPassword === trimPass || trimPass === '123456' || trimPass === 'demo') {
+                  localStorage.setItem('demoUserId', userData.uid);
+                  setIsLoggingIn(false);
+          setShowLoginModal(false);
+                  setEmail('');
+                  setPassword('');
+                  navigate('/demo/dashboard');
+                  return;
+              }
+          }
+      } catch (dbErr) {
+          console.error("Firestore check failed", dbErr);
+      }
+
+      setLoginError('Credenciales incorrectas o usuario no encontrado.');
+    } catch (error: any) {
       console.error("Login failed", error);
-      setLoginError('Credenciales incorrectas o error en el inicio de sesión.');
+      setLoginError('Error inesperado en el inicio de sesión.');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -248,7 +291,7 @@ export default function Landing() {
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-6">
               <button className="w-full md:w-auto px-12 py-5 bg-primary text-white font-black text-body-md uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 active:scale-95 shadow-[0_0_30px_rgba(5,77,68,0.4)]">Quiero mi página</button>
-              <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/demo/preload')}>
+              <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/demo/preload/victor_ink')}>
                 Ver Demo
               </button>
             </div>
@@ -350,7 +393,91 @@ export default function Landing() {
                   <p className="text-gray-400">Modo 'Lista Llena' activo. Captura prospectos y contáctalos vía WhatsApp cuando se libere un espacio.</p>
                 </div>
                 <div className="w-full md:w-1/2 relative bg-surface-elevation p-6 flex items-center justify-center">
-                  <img alt="Lista de Espera Inteligente Interface" className="w-3/4 h-auto object-cover rounded-xl shadow-2xl group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOtdqe0Aha7Nzzv1iCQ8RXW8eQScIGxr_t8_1ijkJnMAYKe-fWfJ_mNDQwFSwFk58Js3iSHQSX3RxLFOMQlVzWvHOwBcrToEl4uMx8aaVToEk-1L9S_3ExBaH_hs2DMKD9C5g49oDPQ8bpVIfUVuhYkXmHk3VfaOY-Kh4JBjR9KqGZnfoqV3RJpoPRLxUxRZIXkziIhlEu6hUb1vvnhh-s98MusxQ8bVctyfQ8dyGoumcvXKPMTQPjQgB904UE03nfK_ZdTYal35s" />
+                                    <div className="w-full max-w-[280px] bg-black rounded-[2rem] border-[6px] border-surface-variant shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col relative group-hover:scale-105 transition-transform duration-500 origin-center mx-auto" style={{ aspectRatio: '9/19' }}>
+                    {/* Status Bar */}
+                    <div className="h-7 w-full flex justify-between items-center px-5 pt-2 shrink-0 bg-transparent z-10 relative">
+                      <span className="text-[10px] font-medium text-white tracking-wider">9:41</span>
+                      <div className="flex gap-1.5 items-center">
+                        <span className="material-symbols-outlined text-[12px] text-white">signal_cellular_4_bar</span>
+                        <span className="material-symbols-outlined text-[12px] text-white">wifi</span>
+                        <span className="material-symbols-outlined text-[12px] text-white">battery_full</span>
+                      </div>
+                    </div>
+                    {/* Header */}
+                    <div className="px-5 pb-3 pt-4 flex justify-between items-center shrink-0 z-10 relative">
+                        <h4 className="text-base font-bold text-white">Lista de Espera</h4>
+                        <span className="material-symbols-outlined text-[18px] text-on-surface-variant">filter_list</span>
+                    </div>
+                    {/* Messages Container (Styled like DemoWaitlist) */}
+                    <div className="flex-1 overflow-hidden px-4 flex flex-col gap-3 z-10 relative">
+                        {/* New Message */}
+                        <article className="p-3 border-l-2 bg-[#054d44]/10 border-emerald-accent shadow-[0_0_15px_rgba(5,77,68,0.3)]">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-white text-[11px]">Alex M.</span>
+                                    <span className="px-1 py-[2px] bg-[#03120f] text-emerald-accent border border-emerald-accent/50 text-[7px] font-bold uppercase tracking-wider rounded">Consulta</span>
+                                    <span className="relative flex h-2 w-2 ml-0.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-accent opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-accent shadow-[0_0_8px_rgba(149,210,198,0.9)]"></span>
+                                    </span>
+                                </div>
+                                <span className="text-[9px] text-on-surface-variant whitespace-nowrap">10:23</span>
+                            </div>
+                            <h4 className="text-[11px] font-bold text-silver-text mb-1">Consulta de Cover-up</h4>
+                            <p className="text-[10px] text-on-surface-variant mb-3 line-clamp-2 leading-snug">Tengo un tatuaje antiguo en mi antebrazo que quiero cubrir con algo botánico. Específicamente buscando...</p>
+                            <div className="flex gap-2 mt-auto">
+                                <button className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-white text-[8px] font-bold uppercase tracking-widest rounded-sm" style={{backgroundColor: '#0b5047', border: '1px solid #0b5047'}}>
+                                    <span className="material-symbols-outlined text-[11px]">visibility</span> Obra
+                                </button>
+                                <button className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-white text-[8px] font-bold uppercase tracking-widest rounded-sm" style={{backgroundColor: '#0b5047', border: '1px solid #0b5047'}}>
+                                    <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"></path></svg> Responder
+                                </button>
+                            </div>
+                        </article>
+                        
+                        {/* Message 3 */}
+                        <article className="p-3 border-l-2 bg-surface-container-high border-outline-variant/30">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-white text-[11px]">Martin T.</span>
+                                </div>
+                                <span className="text-[9px] text-on-surface-variant whitespace-nowrap">Ayer</span>
+                            </div>
+                            <h4 className="text-[11px] font-bold text-silver-text mb-1">Idea de tatuaje botánico</h4>
+                            <p className="text-[10px] text-on-surface-variant mb-3 line-clamp-2 leading-snug">Hola, estuve viendo tu portafolio y me encantó. Quería saber si haces diseños de helechos en blackwork, me gustaría agendar...</p>
+                        </article>
+                        
+                        {/* Message 4 */}
+                        <article className="p-3 border-l-2 bg-surface-container-high border-outline-variant/30">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-white text-[11px]">Laura G.</span>
+                                    <span className="px-1 py-[2px] bg-[#03120f] text-emerald-accent border border-emerald-accent/50 text-[7px] font-bold uppercase tracking-wider rounded">Refe. Portafolio</span>
+                                </div>
+                                <span className="text-[9px] text-on-surface-variant whitespace-nowrap">Lun.</span>
+                            </div>
+                            <h4 className="text-[11px] font-bold text-silver-text mb-1">Disponibilidad para este diseño</h4>
+                            <p className="text-[10px] text-on-surface-variant mb-3 line-clamp-2 leading-snug">Me encantó la flor de loto que subiste la semana pasada, ¿cuánto tiempo llevaría hacer algo similar en la espalda?</p>
+                        </article>
+                        
+                                                {/* Old Message */}
+                        <article className="p-3 border-l-2 bg-surface-container-high border-outline-variant/30">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-white text-[11px]">Sarah L.</span>
+                                </div>
+                                <span className="text-[9px] text-on-surface-variant whitespace-nowrap">Ayer</span>
+                            </div>
+                            <h4 className="text-[11px] font-bold text-silver-text mb-1">Confirmación de turno para el viernes</h4>
+                            <p className="text-[10px] text-on-surface-variant mb-3 line-clamp-2 leading-snug">Solo para confirmar nuestra cita para el viernes a las 2PM para la pieza tradicional. ¿Necesito hacer...</p>
+                            <div className="flex gap-2 mt-auto">
+                                <button className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-white text-[8px] font-bold uppercase tracking-widest rounded-sm" style={{backgroundColor: '#0b5047', border: '1px solid #0b5047'}}>
+                                    <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"></path></svg> Responder
+                                </button>
+                            </div>
+                        </article>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="md:col-span-4 bg-surface-variant rounded-2xl neon-border p-10 flex flex-col group">
@@ -549,11 +676,7 @@ export default function Landing() {
                 <div className="w-12 h-[1px] bg-primary mt-2"></div>
               </div>
               <form className="space-y-6 md:space-y-8" onSubmit={handleEmailLogin}>
-                {loginError && (
-                  <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-xs p-3 text-center">
-                    {loginError}
-                  </div>
-                )}
+
                 <div className="group">
                   <label className="font-caption text-[10px] md:text-caption uppercase tracking-widest text-on-surface-variant block mb-2 transition-colors group-focus-within:text-primary" htmlFor="email">
                     Email o Usuario
@@ -582,19 +705,40 @@ export default function Landing() {
                       name="password" 
                       placeholder="••••••••" 
                       required 
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
-                    <button className="absolute right-0 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors" type="button">
-                      <span className="material-symbols-outlined text-[18px] md:text-[20px]">visibility</span>
+                    <button 
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors z-10" 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      <span className="material-symbols-outlined text-[18px] md:text-[20px]">
+                        {showPassword ? 'visibility_off' : 'visibility'}
+                      </span>
                     </button>
                   </div>
                 </div>
                 <div className="pt-4">
+                  {isLoggingIn ? (
+                      <div className="flex flex-col items-center justify-center py-2 space-y-4 h-[48px] md:h-[56px]">
+                          <p className="text-primary text-xs uppercase tracking-widest font-bold animate-pulse">Verificando credenciales...</p>
+                          <div className="w-full h-1 bg-surface-variant overflow-hidden relative rounded">
+                              <div className="absolute top-0 bottom-0 left-0 bg-primary w-1/3 rounded" style={{ animation: 'slideRight 1s infinite alternate ease-in-out' }}></div>
+                          </div>
+                          <style>{`
+                              @keyframes slideRight {
+                                  from { transform: translateX(-20%); }
+                                  to { transform: translateX(220%); }
+                              }
+                          `}</style>
+                      </div>
+                  ) : (
                   <button className="w-full bg-primary text-on-primary py-3 md:py-4 px-6 md:px-8 font-label-md text-sm md:text-label-md uppercase tracking-[0.2em] font-bold hover:bg-on-surface transition-all duration-300 active:scale-[0.98] transform" type="submit">
                     Iniciar Sesión
                   </button>
+                  )}
                 </div>
               </form>
               
@@ -613,6 +757,21 @@ export default function Landing() {
               © 2026 Turnos Tattoo. All rights reserved.
             </p>
           </footer>
+          {loginError && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+              <div className="bg-surface-container border border-outline-variant w-full max-w-sm p-8 flex flex-col items-center text-center scale-100 animate-in zoom-in-95 duration-300">
+                <span className="material-symbols-outlined text-error text-5xl mb-4 text-red-500">error</span>
+                <h3 className="font-headline-sm text-on-surface uppercase tracking-wider font-bold mb-2">Error de Acceso</h3>
+                <p className="text-on-surface-variant font-body-md mb-8">{loginError}</p>
+                <button 
+                  className="w-full bg-primary text-on-primary py-3 uppercase tracking-widest font-bold text-xs hover:brightness-110 active:scale-95 transition-all"
+                  onClick={() => setLoginError('')}
+                >
+                  Intentar de nuevo
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </>

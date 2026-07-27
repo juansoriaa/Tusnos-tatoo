@@ -19,18 +19,19 @@ export default function DemoLayout
     const [waitlistCount, setWaitlistCount] = useState(3);
 
     useEffect(() => {
-        const updateCount = () => {
-            try {
-                const saved = localStorage.getItem('demoWaitlistMessages');
-                if (saved) {
-                    const messages = JSON.parse(saved);
-                    setWaitlistCount(messages.filter((msg: any) => msg.read === false).length);
-                }
-            } catch(e) {}
+        let unsubscribe = () => {};
+        const load = async () => {
+            const demoUserId = localStorage.getItem('demoUserId');
+            if (demoUserId) {
+                const { collection, onSnapshot, query, where } = await import('firebase/firestore');
+                const q = query(collection(db, 'users', demoUserId, 'waitlist'), where('read', '==', false));
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    setWaitlistCount(snapshot.docs.length);
+                });
+            }
         };
-        updateCount();
-        window.addEventListener('newWaitlistMessage', updateCount);
-        return () => window.removeEventListener('newWaitlistMessage', updateCount);
+        load();
+        return () => unsubscribe();
     }, []);
         const [avatarUrl, setAvatarUrl] = useState('https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo');
     const [turnosLlenos, setTurnosLlenos] = useState(false);
@@ -39,6 +40,7 @@ export default function DemoLayout
     const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
     const [configEmail, setConfigEmail] = useState('');
+    const [currentUserTag, setCurrentUserTag] = useState('');
     const [configPassword, setConfigPassword] = useState('');
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -88,6 +90,7 @@ export default function DemoLayout
                     const docSnap = await getDoc(doc(db, 'users', demoUserId));
                     if (docSnap.exists()) {
                         setConfigEmail(docSnap.data().email || '');
+                        setCurrentUserTag(docSnap.data().userTag || '');
                     }
                 } catch (e) {
                     console.error("Error fetching demo user config", e);
@@ -169,6 +172,10 @@ export default function DemoLayout
     const navigate = useNavigate();
 
     const handleNav = (path: string) => {
+        if (path === '/') {
+            localStorage.removeItem('demoUserId');
+            import('../firebase').then(({ auth }) => auth.signOut());
+        }
         if (onNavigate) {
             onNavigate(path);
         } else {
@@ -287,7 +294,7 @@ export default function DemoLayout
             <header className="md:hidden fixed top-0 w-full h-16 bg-surface-elevation/80 backdrop-blur-md border-b border-border-muted z-50 flex justify-between items-center px-4" style={{backgroundColor: 'rgba(20, 19, 19, 0.8)', borderColor: '#353434'}}>
                 <h1 className="font-headline-md text-on-surface font-bold text-lg uppercase tracking-tighter">Turnos <span className="text-emerald-accent" style={{color: '#054d44'}}>Tattoo</span></h1>
                 <div className="flex gap-3 items-center">
-                    <button onClick={() => handleNav('/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-2 py-1.5 rounded hover:text-primary border border-outline-variant/30 transition-all mr-1">
+                    <button onClick={() => handleNav(currentUserTag ? '/artist/' + currentUserTag : '/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-2 py-1.5 rounded hover:text-primary border border-outline-variant/30 transition-all mr-1">
                         Ver Perfil
                     </button>
                     <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">
@@ -315,7 +322,7 @@ export default function DemoLayout
                         <h2 className="font-headline-md text-on-surface hidden">Turnos Tattoo</h2>
                     </div>
                     <div className="flex items-center space-x-6">
-                        <button onClick={() => handleNav('/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-4 py-2 rounded-full hover:text-primary border border-outline-variant/30 transition-all">
+                        <button onClick={() => handleNav(currentUserTag ? '/artist/' + currentUserTag : '/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-4 py-2 rounded-full hover:text-primary border border-outline-variant/30 transition-all">
                             Ver Perfil
                         </button>
                         <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">

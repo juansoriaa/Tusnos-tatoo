@@ -42,25 +42,32 @@ export default function Profile() {
 
   useEffect(() => {
     const fetchArtist = async () => {
-      if (id) {
-        const docRef = doc(db, 'users', id);
+      let targetId = id;
+      if (!targetId) {
+          targetId = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+      }
+      if (targetId) {
+        const docRef = doc(db, 'users', targetId);
         let docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setArtistData(docSnap.data());
-          globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], artistData: docSnap.data() };
+          const data = docSnap.data();
+          // Include UID to ensure we can identify the user
+          setArtistData({ ...data, uid: docSnap.id });
+          globalPreloadCache[targetId || 'demo'] = { ...globalPreloadCache[targetId || 'demo'], artistData: { ...data, uid: docSnap.id } };
         } else {
             // Try by userTag
-            let tag = id;
+            let tag = targetId;
             if (!tag.startsWith('@')) tag = '@' + tag;
             const q = query(collection(db, 'users'), where('userTag', '==', tag));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
-                setArtistData(querySnapshot.docs[0].data());
-                globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], artistData: querySnapshot.docs[0].data() };
+                const data = querySnapshot.docs[0].data();
+                setArtistData({ ...data, uid: querySnapshot.docs[0].id });
+                globalPreloadCache[targetId || 'demo'] = { ...globalPreloadCache[targetId || 'demo'], artistData: { ...data, uid: querySnapshot.docs[0].id } };
             }
         }
       } else {
-        const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
+        const saved = localStorage.getItem('demoArtistData_demo');
         if (saved) {
             try {
                 setArtistData(JSON.parse(saved));
@@ -80,17 +87,33 @@ export default function Profile() {
 
   const trackMetric = async (metricKey: 'views' | 'photoClicks' | 'whatsappClicks' | 'agendaClicks') => {
       try {
-          const metricsStr = localStorage.getItem('demoMetricsData');
-          const metrics = metricsStr ? JSON.parse(metricsStr) : { views: 12400, photoClicks: 1200, whatsappClicks: 856, agendaClicks: 48 };
-          metrics[metricKey] = (metrics[metricKey] || 0) + 1;
-          localStorage.setItem('demoMetricsData', JSON.stringify(metrics));
-          window.dispatchEvent(new CustomEvent('demoMetricsUpdated'));
-          
-          if (id) {
+          // If we have artistUid, increment in Firestore
+          let targetUid = id;
+          if (targetUid && targetUid.startsWith('@')) {
+              // we don't have the UID, just the tag, let's try to resolve it from artistData if it matches
+              if (artistData && artistData.uid) {
+                  targetUid = artistData.uid;
+              }
+          }
+          if (targetUid && !targetUid.startsWith('@')) {
               const { doc, updateDoc, increment } = await import('firebase/firestore');
-              await updateDoc(doc(db, 'users', id), {
-                  ['metrics.' + metricKey]: increment(1)
+              await updateDoc(doc(db, 'users', targetUid), {
+                  [metricKey]: increment(1)
               });
+              window.dispatchEvent(new CustomEvent('demoMetricsUpdated'));
+          } else {
+              // try by resolving
+              const { collection, query, where, getDocs, doc, updateDoc, increment } = await import('firebase/firestore');
+              let tag = id;
+              if (!tag.startsWith('@')) tag = '@' + tag;
+              const q = query(collection(db, 'users'), where('userTag', '==', tag));
+              const snap = await getDocs(q);
+              if (!snap.empty) {
+                  await updateDoc(doc(db, 'users', snap.docs[0].id), {
+                      [metricKey]: increment(1)
+                  });
+                  window.dispatchEvent(new CustomEvent('demoMetricsUpdated'));
+              }
           }
       } catch(e) {}
   };
@@ -149,16 +172,16 @@ export default function Profile() {
                 orderBy('createdAt', 'desc')
             );
             const snapshot = await getDocs(q);
-            const photos = snapshot.docs.map(doc => {
+            let finalPhotos: any[] = snapshot.docs.map(doc => {
                 const data = doc.data();
                 return {
                     id: doc.id,
-                    src: data.url,
+                    src: data.url || data.imageUrl || data.src,
                     thumbnailUrl: data.thumbnailUrl,
                     alt: data.info || data.title,
-                    title: data.title,
-                    categories: data.tags || [],
-                    filters: data.filters,
+                    title: data.title || 'Foto de Tatuaje',
+                    categories: data.tags || data.categories || ['Portfolio'],
+                    filters: data.filters || [],
                     hours: data.hours,
                     sessions: data.sessions,
                     size: data.size,
@@ -167,139 +190,145 @@ export default function Profile() {
                 };
             });
             
-            // If no photos from DB, use fallback defaults for demo
-            const fallback = [
-    {
-      id: "fallback_1",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ",
-      alt: "A highly detailed black and grey realism tattoo of a lion's face on a human forearm.",
-      title: "Detailed black & grey realism",
-      categories: ["Realismo", "Blackwork"],
-      hours: 12,
-      sessions: 2,
-      size: "20x15 cm"
-    },
-    {
-      id: "fallback_2",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA5DDAAcFYiq49hBeVBI21d-Kfzr6qKoiRfIXKP1UnRW7YF5GJFA5MFkoXHtdBxy6uEbgH9z0zVWPWxKIEtX3oXemICFI1Ssr7FZ-Hh_OVDjHQ-QLRxMXBp5c4FwHXswrbPE9ZdzVelcUFL0h0nTLuzuWpLR_QRaZBZsyq7srBJaHktN6PcAYY-NQ2d-8FRg_RJ15MYhPUfdaEk_oGzE57hWrd7ZFkT4ldOW1tTIz0PqCqzo5_ALKPhXP1byoz8eiIEM30X9HQLzho",
-      alt: "Close-up of a delicate minimalist tattoo of a single rose.",
-      title: "Delicate minimalist single rose",
-      categories: ["Minimalista"],
-      hours: 3,
-      sessions: 1,
-      size: "8x5 cm"
-    },
-    {
-      id: "fallback_3",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE9qEOTq3DlR_Z_PI95eeZBU5YHIAzEqTN6zzltLD_41wX6e4LCHu8sREZZ4N_qV-XW271u6bCjyo14IHISQRVRhCSBJdX_ICJvg9EM-iYGcv1owFVPqatY3-0uESdozTCTcvTib8fe2Um_CI2L6mxqWeMg8IoYm0FYaTzlqISISzi52HOylwmgk_IxCrKp2vueZ90nk1bGHhgH3ybo0PI5u7VOpkB_kQTPzrRjD2-N3hC-9IB-OKvuic1rp7_8b4w562jI2tcCKA",
-      alt: "Large-scale blackwork tattoo covering a full back.",
-      title: "Large-scale blackwork back piece",
-      categories: ["Blackwork", "Tradicional"],
-      hours: 24,
-      sessions: 4,
-      size: "Espalda completa"
-    },
-    {
-      id: "fallback_4",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBYd_bLleuw4yQOy32XLTc-ZA36ZI1Tx20UNajjWgcV5DQKPXzxE6vuXBvD3Ov7hcyCDB0Wpbc1BK7v4CJMIFC3KWS1bBdxzGJUcjSraTSohPMSOjESD5If5O8I8ZxmV0rWCZ_T_ncpPVYMBz9OD9_NXcCjwNkftJNjmowLcbK_jq3Fy-FieRJHky4A0G8SWmDSNGfDrlvoUxmb8aYt9Dxvi2w5uLOR4ir0BxgO2Sh5IfSstId4FI96uowW3Y1Jw1YCCRUk82ep4yPk",
-      alt: "Hyper-realistic black and grey realism tattoo",
-      title: "Hyper-realistic black & grey",
-      categories: ["Realismo", "Blackwork"],
-      hours: 15,
-      sessions: 3,
-      size: "Media manga"
-    },
-    {
-      id: "fallback_5",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5LMtrwwTSFu95uiU0bVfXq9VmWZIJ10dyJ3Lwbu6VmGCGEnBfZXi0WQlrXz0JAAAXzBurYTXa8IleL_Z1UTW7x4BHigWcVZCarsYy-PDu3G5JOwCsz3c0mgBTVI90e2b4bcw5lLDYzc5mU0qXptlWkjo0e3ynOS0xxfhCjxtvA0Bykbfo3wSX79T_fwcMg4uFHYXGxws2NYoOaKhhgr6J8ErFHQqB5QJSnK9c2zkwmEgiIM-74wbPKlVjQPO8pxETkDa8jrj1OmA",
-      alt: "Detailed blackwork owl",
-      title: "Detailed blackwork owl",
-      categories: ["Blackwork", "Realismo"],
-      hours: 8,
-      sessions: 2,
-      size: "15x15 cm"
-    },
-    {
-      id: "fallback_6",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuAiCcgze-zMmmFAOjCN4xQ6CeoqLv_BgkKj7iZWfDqCXh_QoGPCTeSVYBVbA3H_kloM0bS3tXxBa3cY1pNmeNr4CtKPuWY_AFMUCkSb29fVkPS2cJxnOnCZXdCOsST5XxUvicao5fv4hZLXgol8izTusYUx7vRcLz4wQi2YO2jqeWtkjahkSIkJ9bsZTT9Yc4B7Xyxsbuht5vClIiVLFRgAVTnmtfvKmMPDtXdGMokCs42r9vRajXl7r_QmrmtosOLgBWwvZeva_eLj",
-      alt: "Minimalist mountain",
-      title: "Minimalist mountain",
-      categories: ["Minimalista"],
-      hours: 2,
-      sessions: 1,
-      size: "5x5 cm"
-    },
-    {
-      id: "fallback_7",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuB4kAzmGiitSjdk2D4_OGK9WYclBZmk7cefWe8BPMcY8LBacqpcoUc38Awd5FqNh4Eba1D7004xOI8zM_OfSwqcVZtS51XTNjE110SdiB0YMIgxjjBiNGxIGDifU-2yV2DRHxJyft8AS6K6D8tdWl2VVOQfu7wbFLEt11twfKV6pV5KYEwWElAna9GN2J36mCgbidD9hs4hjuPVR45M0Pps7tijbmPhi-RljtyBBrI8SYhiXDvFxXBFVQP1eN6iXqLAzNKsTq_SVt3I",
-      alt: "Realistic koi fish",
-      title: "Realistic koi fish",
-      categories: ["Realismo", "Tradicional"],
-      hours: 10,
-      sessions: 2,
-      size: "20x20 cm"
-    },
-    {
-      id: "fallback_8",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCeiQ96QvK_CB1f544ltSr7zUBzrf2JkPLOlygIBhVzlG8_X5vs1kq9-qAOcPYyPpmhMJ1zn9Tcmc7NtA_i3PYk36Iz_1F__r0TDyBqJSggpzoN5zrF7-cvpX9b6WXiYVcfeoqEuaJYzdSoe8kUbhd0B4xu4PGqI41o9CycgDPQVit7QtUNuxbu8VjI8LNqibJ2Qpoa09qjNLV4Jo2vA81r1KdlIAW9YBEaay9duZ3ZH7HaFAD81admkcERAH-uJz-36mHQSAIx-9Eb",
-      alt: "Micro-realism pocket watch",
-      title: "Micro-realism pocket watch",
-      categories: ["Realismo", "Minimalista"],
-      hours: 4,
-      sessions: 1,
-      size: "8x8 cm"
-    },
-    {
-      id: "fallback_9",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBq1VnZZF7nLUADCQTiQU7dFsZs6g49GFftf-8vLI5Eht2qRTRatf1CSOeX5KEYDypiRNGBkOf_c2xFWSl0jIvxnDMDACEPe9flYK5v_8YXNAZsg1vf9sU4ErKlOyti57hRTbY2bE0gaC06B9DTveMjFNKECVQukrTC9VKQib6kXWcVETRdRFmdCUJdFtzLRk4Dnc1UmNwEx2kNBrXTze-GZPlY4FY-H1oaaAh6UzJLZKz8EHc8jTj761A7z6b_CVlSjqiWdBYTjuCS",
-      alt: "Large-scale abstract geometric",
-      title: "Large-scale abstract geometric",
-      categories: ["Blackwork", "Minimalista"],
-      hours: 6,
-      sessions: 1,
-      size: "10x20 cm"
-    },
-    {
-      id: "fallback_10",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDhMj-R1FS_ht2tgrQqme6b2-Hg846oZVQyQ8p1Rchy_7azS2BnqJ5ysLJC8ekDsqqJ8r8LVqJy7K0vGLwO3JKB2uZz_KP8CkOCEmoJ8VMPaUL6cRZryKuQ6HnyRnPdwZ1Qjl2e9IwAs2V3gj-qNn3VIs25WmVqhxfKa7qTsFCOZujgAJV7F3Sot0QO3TJ23bSoB7cpiXHeyHfC00e9Z2qW6y_9DnVNd3R4U30ZGgtAdmqv9-xhzzVl6qAEs0focdc8_W14OXWEfcFu",
-      alt: "Small elegant script",
-      title: "Small elegant script",
-      categories: ["Minimalista"],
-      hours: 1,
-      sessions: 1,
-      size: "3x10 cm"
-    },
-    {
-      id: "fallback_11",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuAeHO5mvih_r7YM-AQGfl6iWFA1d3CbUokk5zQ4HXbH3KTIJGeDLkdA-9tQrC1005dLiu4B2NyIL87-Y2DeE-B2IaiAIAPscoi7yJyYW7p5C1BPnRQPAcrbpxuDExdI3Xp8j__iKVjs1sqqpCXXVAVzm8PpbbFoPB7ca91f2keDdXcwyQz10d28H_44u4UwZFaPaQzuS6lKDiS77IZ05qxOyMiiwJd0D48vNuQQqLxWFA4X67UB_J03NSR6pFTMBXwwJWUIXU-RHbwf",
-      alt: "Forest landscape inside diamond",
-      title: "Forest landscape",
-      categories: ["Blackwork", "Minimalista"],
-      hours: 5,
-      sessions: 1,
-      size: "12x12 cm"
-    },
-    {
-      id: "fallback_12",
-      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA_jhISTzGUC2siSj7XIqc-tB7Bzph9Pa50g881aLp9acURUaH40UfWqwlaPN8vl_o5GGNJwNHZFFRzpVpoVffXojuHdynlpn4l8usek3UlfDg4f2TZsxxNPWV8Iqm6jgpbW3-TnVjiwYzCzrj_Htjt1I3iffZTFCM68lixk6Oz4Jml38mAv0HpdJWGJaSe1Y8Img_4dzl_iPZkU9_WaeA0xH6i2x-1XthcwczFtCWa1ScOMF05bFoWQ7OSotfbDwUlQeZrcGO8bjT7",
-      alt: "Neo-traditional dagger",
-      title: "Neo-traditional dagger",
-      categories: ["Tradicional"],
-      hours: 7,
-      sessions: 2,
-      size: "15x10 cm"
-    }
-  ];
-            const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
-            const pinnedFallbacks = JSON.parse(localStorage.getItem('pinnedFallbacks') || '{}');
-            const allTatts = [
-                ...photos,
-                ...fallback
-                    .filter(f => !photos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id))
-                    .map(f => ({ ...f, pinnedOrder: pinnedFallbacks[f.id] || null }))
-            ];
+            let isDemoUser = false;
+            if (artistData && (artistData.userTag === '@demo' || artistData.userTag === '@victor_ink' || artistData.userTag === 'victor_ink' || artistData.userTag === 'demo')) {
+                isDemoUser = true;
+            }
+            if (artistUid === 'anonymous_demo') isDemoUser = true;
+
+            if (isDemoUser) {
+                const fallback = [
+                    {
+                      id: "fallback_1",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ",
+                      alt: "A highly detailed black and grey realism tattoo of a lion's face on a human forearm.",
+                      title: "Detailed black & grey realism",
+                      categories: ["Realismo", "Blackwork"],
+                      hours: 12,
+                      sessions: 2,
+                      size: "20x15 cm"
+                    },
+                    {
+                      id: "fallback_2",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA5DDAAcFYiq49hBeVBI21d-Kfzr6qKoiRfIXKP1UnRW7YF5GJFA5MFkoXHtdBxy6uEbgH9z0zVWPWxKIEtX3oXemICFI1Ssr7FZ-Hh_OVDjHQ-QLRxMXBp5c4FwHXswrbPE9ZdzVelcUFL0h0nTLuzuWpLR_QRaZBZsyq7srBJaHktN6PcAYY-NQ2d-8FRg_RJ15MYhPUfdaEk_oGzE57hWrd7ZFkT4ldOW1tTIz0PqCqzo5_ALKPhXP1byoz8eiIEM30X9HQLzho",
+                      alt: "Close-up of a delicate minimalist tattoo of a single rose.",
+                      title: "Delicate minimalist single rose",
+                      categories: ["Minimalista"],
+                      hours: 3,
+                      sessions: 1,
+                      size: "8x5 cm"
+                    },
+                    {
+                      id: "fallback_3",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE9qEOTq3DlR_Z_PI95eeZBU5YHIAzEqTN6zzltLD_41wX6e4LCHu8sREZZ4N_qV-XW271u6bCjyo14IHISQRVRhCSBJdX_ICJvg9EM-iYGcv1owFVPqatY3-0uESdozTCTcvTib8fe2Um_CI2L6mxqWeMg8IoYm0FYaTzlqISISzi52HOylwmgk_IxCrKp2vueZ90nk1bGHhgH3ybo0PI5u7VOpkB_kQTPzrRjD2-N3hC-9IB-OKvuic1rp7_8b4w562jI2tcCKA",
+                      alt: "Large-scale blackwork tattoo covering a full back.",
+                      title: "Large-scale blackwork back piece",
+                      categories: ["Blackwork", "Tradicional"],
+                      hours: 24,
+                      sessions: 4,
+                      size: "Espalda completa"
+                    },
+                    {
+                      id: "fallback_4",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBYd_bLleuw4yQOy32XLTc-ZA36ZI1Tx20UNajjWgcV5DQKPXzxE6vuXBvD3Ov7hcyCDB0Wpbc1BK7v4CJMIFC3KWS1bBdxzGJUcjSraTSohPMSOjESD5If5O8I8ZxmV0rWCZ_T_ncpPVYMBz9OD9_NXcCjwNkftJNjmowLcbK_jq3Fy-FieRJHky4A0G8SWmDSNGfDrlvoUxmb8aYt9Dxvi2w5uLOR4ir0BxgO2Sh5IfSstId4FI96uowW3Y1Jw1YCCRUk82ep4yPk",
+                      alt: "Hyper-realistic black and grey realism tattoo",
+                      title: "Hyper-realistic black & grey",
+                      categories: ["Realismo", "Blackwork"],
+                      hours: 15,
+                      sessions: 3,
+                      size: "Media manga"
+                    },
+                    {
+                      id: "fallback_5",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5LMtrwwTSFu95uiU0bVfXq9VmWZIJ10dyJ3Lwbu6VmGCGEnBfZXi0WQlrXz0JAAAXzBurYTXa8IleL_Z1UTW7x4BHigWcVZCarsYy-PDu3G5JOwCsz3c0mgBTVI90e2b4bcw5lLDYzc5mU0qXptlWkjo0e3ynOS0xxfhCjxtvA0Bykbfo3wSX79T_fwcMg4uFHYXGxws2NYoOaKhhgr6J8ErFHQqB5QJSnK9c2zkwmEgiIM-74wbPKlVjQPO8pxETkDa8jrj1OmA",
+                      alt: "Detailed blackwork owl",
+                      title: "Detailed blackwork owl",
+                      categories: ["Blackwork", "Realismo"],
+                      hours: 8,
+                      sessions: 2,
+                      size: "15x15 cm"
+                    },
+                    {
+                      id: "fallback_6",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuAiCcgze-zMmmFAOjCN4xQ6CeoqLv_BgkKj7iZWfDqCXh_QoGPCTeSVYBVbA3H_kloM0bS3tXxBa3cY1pNmeNr4CtKPuWY_AFMUCkSb29fVkPS2cJxnOnCZXdCOsST5XxUvicao5fv4hZLXgol8izTusYUx7vRcLz4wQi2YO2jqeWtkjahkSIkJ9bsZTT9Yc4B7Xyxsbuht5vClIiVLFRgAVTnmtfvKmMPDtXdGMokCs42r9vRajXl7r_QmrmtosOLgBWwvZeva_eLj",
+                      alt: "Minimalist mountain",
+                      title: "Minimalist mountain",
+                      categories: ["Minimalista"],
+                      hours: 2,
+                      sessions: 1,
+                      size: "5x5 cm"
+                    },
+                    {
+                      id: "fallback_7",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuB4kAzmGiitSjdk2D4_OGK9WYclBZmk7cefWe8BPMcY8LBacqpcoUc38Awd5FqNh4Eba1D7004xOI8zM_OfSwqcVZtS51XTNjE110SdiB0YMIgxjjBiNGxIGDifU-2yV2DRHxJyft8AS6K6D8tdWl2VVOQfu7wbFLEt11twfKV6pV5KYEwWElAna9GN2J36mCgbidD9hs4hjuPVR45M0Pps7tijbmPhi-RljtyBBrI8SYhiXDvFxXBFVQP1eN6iXqLAzNKsTq_SVt3I",
+                      alt: "Realistic koi fish",
+                      title: "Realistic koi fish",
+                      categories: ["Realismo", "Tradicional"],
+                      hours: 10,
+                      sessions: 2,
+                      size: "20x20 cm"
+                    },
+                    {
+                      id: "fallback_8",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCeiQ96QvK_CB1f544ltSr7zUBzrf2JkPLOlygIBhVzlG8_X5vs1kq9-qAOcPYyPpmhMJ1zn9Tcmc7NtA_i3PYk36Iz_1F__r0TDyBqJSggpzoN5zrF7-cvpX9b6WXiYVcfeoqEuaJYzdSoe8kUbhd0B4xu4PGqI41o9CycgDPQVit7QtUNuxbu8VjI8LNqibJ2Qpoa09qjNLV4Jo2vA81r1KdlIAW9YBEaay9duZ3ZH7HaFAD81admkcERAH-uJz-36mHQSAIx-9Eb",
+                      alt: "Micro-realism pocket watch",
+                      title: "Micro-realism pocket watch",
+                      categories: ["Realismo", "Minimalista"],
+                      hours: 4,
+                      sessions: 1,
+                      size: "8x8 cm"
+                    },
+                    {
+                      id: "fallback_9",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBq1VnZZF7nLUADCQTiQU7dFsZs6g49GFftf-8vLI5Eht2qRTRatf1CSOeX5KEYDypiRNGBkOf_c2xFWSl0jIvxnDMDACEPe9flYK5v_8YXNAZsg1vf9sU4ErKlOyti57hRTbY2bE0gaC06B9DTveMjFNKECVQukrTC9VKQib6kXWcVETRdRFmdCUJdFtzLRk4Dnc1UmNwEx2kNBrXTze-GZPlY4FY-H1oaaAh6UzJLZKz8EHc8jTj761A7z6b_CVlSjqiWdBYTjuCS",
+                      alt: "Geometric dotwork design",
+                      title: "Geometric dotwork design",
+                      categories: ["Minimalista", "Blackwork"],
+                      hours: 6,
+                      sessions: 1,
+                      size: "12x12 cm"
+                    },
+                    {
+                      id: "fallback_10",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDhMj-R1FS_ht2tgrQqme6b2-Hg846oZVQyQ8p1Rchy_7azS2BnqJ5ysLJC8ekDsqqJ8r8LVqJy7K0vGLwO3JKB2uZz_KP8CkOCEmoJ8VMPaUL6cRZryKuQ6HnyRnPdwZ1Qjl2e9IwAs2V3gj-qNn3VIs25WmVqhxfKa7qTsFCOZujgAJV7F3Sot0QO3TJ23bSoB7cpiXHeyHfC00e9Z2qW6y_9DnVNd3R4U30ZGgtAdmqv9-xhzzVl6qAEs0focdc8_W14OXWEfcFu",
+                      alt: "Elegant script lettering",
+                      title: "Elegant script lettering",
+                      categories: ["Fine Line"],
+                      hours: 2,
+                      sessions: 1,
+                      size: "10x3 cm"
+                    },
+                    {
+                      id: "fallback_11",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuAeHO5mvih_r7YM-AQGfl6iWFA1d3CbUokk5zQ4HXbH3KTIJGeDLkdA-9tQrC1005dLiu4B2NyIL87-Y2DeE-B2IaiAIAPscoi7yJyYW7p5C1BPnRQPAcrbpxuDExdI3Xp8j__iKVjs1sqqpCXXVAVzm8PpbbFoPB7ca91f2keDdXcwyQz10d28H_44u4UwZFaPaQzuS6lKDiS77IZ05qxOyMiiwJd0D48vNuQQqLxWFA4X67UB_J03NSR6pFTMBXwwJWUIXU-RHbwf",
+                      alt: "Diamond framed landscape",
+                      title: "Diamond framed landscape",
+                      categories: ["Blackwork", "Realismo"],
+                      hours: 7,
+                      sessions: 1,
+                      size: "15x10 cm"
+                    },
+                    {
+                      id: "fallback_12",
+                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA_jhISTzGUC2siSj7XIqc-tB7Bzph9Pa50g881aLp9acURUaH40UfWqwlaPN8vl_o5GGNJwNHZFFRzpVpoVffXojuHdynlpn4l8usek3UlfDg4f2TZsxxNPWV8Iqm6jgpbW3-TnVjiwYzCzrj_Htjt1I3iffZTFCM68lixk6Oz4Jml38mAv0HpdJWGJaSe1Y8Img_4dzl_iPZkU9_WaeA0xH6i2x-1XthcwczFtCWa1ScOMF05bFoWQ7OSotfbDwUlQeZrcGO8bjT7",
+                      alt: "Neo-traditional dagger and rose",
+                      title: "Neo-traditional dagger",
+                      categories: ["Tradicional"],
+                      hours: 9,
+                      sessions: 2,
+                      size: "18x12 cm"
+                    }
+                ];
+                
+                // User requested ONLY 5 photos for the demo
+                const limitedFallback = fallback.slice(0, 5);
+                const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
+                const addedFallbackPhotos = limitedFallback.filter(f => !finalPhotos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id));
+                finalPhotos = [...finalPhotos, ...addedFallbackPhotos];
+            }
+
             // Sort to bring pinned tattoos to the top
-            allTatts.sort((a, b) => {
+            finalPhotos.sort((a, b) => {
                 const aPinned = typeof a.pinnedOrder === 'number' && a.pinnedOrder > 0;
                 const bPinned = typeof b.pinnedOrder === 'number' && b.pinnedOrder > 0;
                 if (aPinned && bPinned) return a.pinnedOrder - b.pinnedOrder;
@@ -307,7 +336,7 @@ export default function Profile() {
                 if (bPinned) return 1;
                 return 0; // fallback to original order (which is desc createdAt)
             });
-            setAllTattoos(allTatts);
+            setAllTattoos(finalPhotos);
         } catch (error) {
             console.error("Error fetching tattoos", error);
         }
@@ -436,6 +465,11 @@ export default function Profile() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  let isDemoProfile = false;
+  if (artistData && (artistData.userTag === '@demo' || artistData.userTag === '@victor_ink' || artistData.userTag === 'victor_ink' || artistData.userTag === 'demo' || !id || id === 'demo' || id === 'victor_ink' || id === '@victor_ink')) {
+      isDemoProfile = true;
+  }
+
   return (
     <div className="bg-background text-on-background font-body-md selection:bg-primary selection:text-on-primary min-h-screen">
       <Helmet>
@@ -492,22 +526,22 @@ export default function Profile() {
           <div className="flex justify-center mt-4 mb-4">
             <div className="flex items-center gap-2">
               
-              { (artistData?.instagram || !id || id === 'demo') && (
-              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" href={artistData?.instagram || "#"} aria-label="Instagram">
+              { (artistData?.instagram || isDemoProfile) && (
+              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" href={artistData?.instagram || "https://instagram.com"} aria-label="Instagram">
                               <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                                 <path fillRule="evenodd" clipRule="evenodd" d="M12 7C9.24 7 7 9.24 7 12C7 14.76 9.24 17 12 17C14.76 17 17 14.76 17 12C17 9.24 14.76 7 12 7ZM12 15C10.34 15 9 13.66 9 12C9 10.34 10.34 9 12 9C13.66 9 15 10.34 15 12C15 13.66 13.66 15 12 15ZM17 6C17 6.55 16.55 7 16 7C15.45 7 15 6.55 15 6C15 5.45 15.45 5 16 5C16.55 5 17 5.45 17 6ZM12 2.16C15.2 2.16 15.58 2.17 16.89 2.23C18.11 2.29 18.77 2.49 19.22 2.66C19.82 2.9 20.25 3.2 20.7 3.65C21.15 4.1 21.46 4.53 21.69 5.13C21.87 5.58 22.07 6.24 22.13 7.46C22.19 8.77 22.2 9.15 22.2 12C22.2 14.85 22.19 15.23 22.13 16.54C22.07 17.76 21.87 18.42 21.69 18.87C21.46 19.47 21.15 19.9 20.7 20.35C20.25 20.8 19.82 21.1 19.22 21.34C18.77 21.51 18.11 21.71 16.89 21.77C15.58 21.83 15.2 21.84 12 21.84C8.8 21.84 8.42 21.83 7.11 21.77C5.89 21.71 5.23 21.51 4.78 21.34C4.18 21.1 3.75 20.8 3.3 20.35C2.85 19.9 2.54 19.47 2.31 18.87C2.13 18.42 1.93 17.76 1.87 16.54C1.81 15.23 1.8 14.85 1.8 12C1.8 9.15 1.81 8.77 1.87 7.46C1.93 6.24 2.13 5.58 2.31 5.13C2.54 4.53 2.85 4.1 3.3 3.65C3.75 3.2 4.18 2.9 4.78 2.66C5.23 2.49 5.89 2.29 7.11 2.23C8.42 2.17 8.8 2.16 12 2.16ZM12 0C8.74 0 8.33 0.01 7.05 0.07C5.77 0.13 4.9 0.33 4.14 0.63C3.36 0.93 2.69 1.32 2.02 1.99C1.35 2.66 0.96 3.33 0.66 4.11C0.36 4.87 0.16 5.74 0.1 7.02C0.04 8.3 0.03 8.71 0.03 11.97C0.03 15.23 0.04 15.64 0.1 16.92C0.16 18.2 0.36 19.07 0.66 19.83C0.96 20.61 1.35 21.28 2.02 21.95C2.69 22.62 3.36 23.01 4.14 23.31C4.9 23.61 5.77 23.81 7.05 23.87C8.33 23.93 8.74 23.94 12 23.94C15.26 23.94 15.67 23.93 16.95 23.87C18.23 23.81 19.1 23.61 19.86 23.31C20.64 23.01 21.31 22.62 21.98 21.95C22.65 21.28 23.04 20.61 23.34 19.83C23.64 19.07 23.84 18.2 23.9 16.92C23.96 15.64 23.97 15.23 23.97 11.97C23.97 8.71 23.96 8.3 23.9 7.02C23.84 5.74 23.64 4.87 23.34 4.11C23.04 3.33 22.65 2.66 21.98 1.99C21.31 1.32 20.64 0.93 19.86 0.63C19.1 0.33 18.23 0.13 16.95 0.07C15.67 0.01 15.26 0 12 0Z"/>
                               </svg>
                             </a>
             )}
-              { (artistData?.tiktok || !id || id === 'demo') && (
-              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" href={artistData?.tiktok || "#"} aria-label="TikTok">
+              { (artistData?.tiktok || isDemoProfile) && (
+              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" href={artistData?.tiktok || "https://tiktok.com"} aria-label="TikTok">
                               <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                                 <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.12-3.44-3.17-3.66-5.46-.22-2.39.54-4.78 2.15-6.44 1.8-1.88 4.37-2.65 6.9-2.21 1.02.17 2.04.5 2.95 1.05V10.3c-.52-.3-1.08-.54-1.68-.69-1.2-.3-2.5-.15-3.62.4-1.3.62-2.22 1.8-2.54 3.2-.23 1.03-.02 2.14.53 3.02.58.94 1.53 1.57 2.6 1.77 1.6.31 3.3-.23 4.33-1.47.82-.99 1.2-2.3 1.23-3.6.08-3.92.03-7.85.03-11.78.01-.39-.02-.79.03-1.18z"/>
                               </svg>
                             </a>
             )}
-              { (artistData?.facebook || !id || id === 'demo') && (
-              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" href={artistData?.facebook || "#"} aria-label="Facebook">
+              { (artistData?.facebook || isDemoProfile) && (
+              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" href={artistData?.facebook || "https://facebook.com"} aria-label="Facebook">
                               <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                                 <path d="M14 13.5h2.5l1-4H14v-2c0-1.03 0-2 2-2h1.5V2.14c-.326-.043-1.557-.14-2.857-.14C11.928 2 10 3.657 10 6.7v2.8H7v4h3V22h4v-8.5z" />
                               </svg>
@@ -728,14 +762,14 @@ export default function Profile() {
           <button className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setContactModalOpen(true)}>Contacto</button>
           
 
-          {artistData?.instagram && (
-             <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href={artistData.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>
+          {(artistData?.instagram || isDemoProfile) && (
+             <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href={artistData?.instagram || "https://instagram.com"} target="_blank" rel="noopener noreferrer">Instagram</a>
           )}
-          {artistData?.facebook && (
-             <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href={artistData.facebook} target="_blank" rel="noopener noreferrer">Facebook</a>
+          {(artistData?.facebook || isDemoProfile) && (
+             <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href={artistData?.facebook || "https://facebook.com"} target="_blank" rel="noopener noreferrer">Facebook</a>
           )}
-          {artistData?.tiktok && (
-             <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href={artistData.tiktok} target="_blank" rel="noopener noreferrer">TikTok</a>
+          {(artistData?.tiktok || isDemoProfile) && (
+             <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href={artistData?.tiktok || "https://tiktok.com"} target="_blank" rel="noopener noreferrer">TikTok</a>
           )}
 
 
@@ -1046,7 +1080,7 @@ Perfil: ${profileUrl}`;
             <button 
               className="w-full py-3 mt-2 bg-emerald-accent text-on-surface font-label-md font-extrabold uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all"
               style={{backgroundColor: '#054d44', color: '#e5e2e1'}}
-              onClick={() => {
+              onClick={async () => {
                 const newMessage = {
                   id: Date.now(),
                   name: waitlistForm.name || waitlistForm.phone || 'Sin nombre',
@@ -1065,15 +1099,11 @@ Perfil: ${profileUrl}`;
                   read: false
                 };
                 
-                let existingMessages = [];
-                try {
-                  const saved = localStorage.getItem('demoWaitlistMessages');
-                  if (saved) existingMessages = JSON.parse(saved);
-                } catch(e) {}
-                
-                existingMessages.unshift(newMessage);
-                localStorage.setItem('demoWaitlistMessages', JSON.stringify(existingMessages));
-                window.dispatchEvent(new CustomEvent('newWaitlistMessage'));
+                const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+                await addDoc(collection(db, 'users', artistData.uid, 'waitlist'), {
+                    ...newMessage,
+                    createdAt: serverTimestamp()
+                });
                 
                 setWaitlistSuccess(true);
                 setTimeout(() => {

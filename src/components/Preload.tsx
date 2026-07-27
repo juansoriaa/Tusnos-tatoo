@@ -127,6 +127,10 @@ export default function Preload() {
                if (data.specialtyTags && data.specialtyTags.length > 0) { setSpecialties(data.specialtyTags); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], specialties: data.specialtyTags }; }
                if (data.profilePhotoUrl) { setProfilePhotoUrl(data.profilePhotoUrl); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], profilePhotoUrl: data.profilePhotoUrl }; }
                localStorage.setItem('demoArtistData_' + (id || 'demo'), JSON.stringify(data));
+               
+               if (id) {
+                   localStorage.setItem('demoUserId', userDoc.id);
+               }
            }
         }
 

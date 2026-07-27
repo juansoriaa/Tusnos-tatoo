@@ -231,7 +231,7 @@
     animation: scroll-bg 40s linear infinite;
   }
   .carousel-img {
-    width: 25vw;
+    width: 33.33vw;
     height: 100vh;
     object-fit: cover;
     flex-shrink: 0;
@@ -300,6 +300,6 @@
 
 @media (max-width: 768px) { 
   .carousel-img { 
-    width: 33.33vw; 
+    width: 50vw; 
   } 
 }

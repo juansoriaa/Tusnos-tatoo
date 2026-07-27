@@ -7,8 +7,7 @@ import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, where, do
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createThumbnail } from '../lib/imageUtils';
 
-let globalCachedPhotos: any[] | null = null;
-let globalCachedArtistUid: string | null = null;
+const globalCachedPhotos: Record<string, any[]> = {};
 
 export default function DemoPortfolio() {
     const [categories, setCategories] = useState(['Realismo', 'Blackwork', 'Minimalista', 'Tradicional']);
@@ -142,22 +141,11 @@ export default function DemoPortfolio() {
     useEffect(() => {
         // Fetch existing photos when component mounts
     const fetchPhotos = async (userUid: string) => {
-            let artistUid = userUid || 'anonymous_demo';
-            // Resolve tag to actual uid if it's a tag
-            if (typeof artistUid === 'string' && artistUid.startsWith('@')) {
-                try {
-                    const { collection, query, where, getDocs } = await import('firebase/firestore');
-                    const q = query(collection(db, 'users'), where('userTag', '==', artistUid));
-                    const snap = await getDocs(q);
-                    if (!snap.empty) {
-                        artistUid = snap.docs[0].id;
-                    }
-                } catch(e) {}
-            }
-            if (globalCachedPhotos && globalCachedArtistUid === artistUid) {
-                setExistingPhotos(globalCachedPhotos);
+            if (globalCachedPhotos[artistUid]) {
+                setExistingPhotos(globalCachedPhotos[artistUid]);
                 return;
             }
+            let artistUid = userUid || 'anonymous_demo';
             try {
                 const q = query(
                     collection(db, 'photos'),
@@ -169,21 +157,12 @@ export default function DemoPortfolio() {
 
                 let isDemoUser = false;
                 if (artistUid) {
-                    const { doc, getDoc, query, collection, where, getDocs } = await import('firebase/firestore');
-                    let userSnap = await getDoc(doc(db, 'users', artistUid));
+                    const { doc, getDoc } = await import('firebase/firestore');
+                    const userSnap = await getDoc(doc(db, 'users', artistUid));
                     if (userSnap.exists()) {
                         const tag = userSnap.data().userTag;
                         if (tag === '@demo' || tag === '@victor_ink' || tag === 'victor_ink' || tag === 'demo') {
                             isDemoUser = true;
-                        }
-                    } else if (typeof artistUid === 'string' && artistUid.startsWith('@')) {
-                        const q = query(collection(db, 'users'), where('userTag', '==', artistUid));
-                        const snap = await getDocs(q);
-                        if (!snap.empty) {
-                            const tag = snap.docs[0].data().userTag;
-                            if (tag === '@demo' || tag === '@victor_ink' || tag === 'victor_ink' || tag === 'demo') {
-                                isDemoUser = true;
-                            }
                         }
                     }
                 }
@@ -367,15 +346,13 @@ export default function DemoPortfolio() {
                 }
 
                 setExistingPhotos(finalPhotos);
-                globalCachedPhotos = finalPhotos;
-                globalCachedArtistUid = artistUid;
+                globalCachedPhotos[artistUid] = finalPhotos;
             } catch (error) {
                 console.error("Error fetching photos", error);
             }
         };
         const unsubscribe = auth.onAuthStateChanged((user) => {
-            const demoUserId = localStorage.getItem('demoUserId');
-            fetchPhotos(demoUserId || user?.uid || '');
+            fetchPhotos(user?.uid || '');
         });
         return () => unsubscribe();
     }, []);
@@ -393,7 +370,7 @@ export default function DemoPortfolio() {
             }
             setExistingPhotos(prev => {
                 const newPhotos = prev.filter(p => p.id !== photoToDelete.id);
-                globalCachedPhotos = newPhotos;
+                globalCachedPhotos[userUid || "anonymous_demo"] = newPhotos;
                 return newPhotos;
             });
             setPhotoToDelete(null);
@@ -433,7 +410,7 @@ export default function DemoPortfolio() {
                         if (pinnedIndex !== -1) return { ...p, pinnedOrder: pinnedIndex + 1 };
                         return p;
                     });
-                    globalCachedPhotos = newPhotos;
+                    globalCachedPhotos[userUid || "anonymous_demo"] = newPhotos;
                     return newPhotos;
                 });
                 
@@ -462,7 +439,7 @@ export default function DemoPortfolio() {
                 }
                 setExistingPhotos(prev => {
                     const newPhotos = prev.map(p => p.id === photo.id ? { ...p, pinnedOrder: newOrder } : p);
-                    globalCachedPhotos = newPhotos;
+                    globalCachedPhotos[userUid || "anonymous_demo"] = newPhotos;
                     return newPhotos;
                 });
                 
@@ -523,14 +500,14 @@ const handleSaveObra = async () => {
                     const newPhotoRef = await addDoc(collection(db, 'photos'), {
                         ...updatedData,
                         originalFallbackId: editingPhoto.id,
-                        createdBy: localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'anonymous_demo',
+                        createdBy: localStorage.getItem('demoUserId') || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                         createdAt: serverTimestamp()
                     });
                     
-                    const newPhoto = { id: newPhotoRef.id, originalFallbackId: editingPhoto.id, ...updatedData, createdBy: localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'anonymous_demo' };
+                    const newPhoto = { id: newPhotoRef.id, originalFallbackId: editingPhoto.id, ...updatedData, createdBy: localStorage.getItem('demoUserId') || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo' };
                     setExistingPhotos(prev => {
                         const newPhotos = prev.map(p => p.id === editingPhoto.id ? newPhoto : p);
-                        globalCachedPhotos = newPhotos;
+                        globalCachedPhotos[userUid || "anonymous_demo"] = newPhotos;
                         return newPhotos;
                     });
                 } else {
@@ -538,7 +515,7 @@ const handleSaveObra = async () => {
                     await updateDoc(docRef, updatedData);
                     setExistingPhotos(prev => {
                         const newPhotos = prev.map(p => p.id === editingPhoto.id ? { ...p, ...updatedData } : p);
-                        globalCachedPhotos = newPhotos;
+                        globalCachedPhotos[userUid || "anonymous_demo"] = newPhotos;
                         return newPhotos;
                     });
                 }
@@ -564,7 +541,7 @@ const handleSaveObra = async () => {
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
                     filters: imageFilters,
-                    createdBy: localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'anonymous_demo',
+                    createdBy: localStorage.getItem('demoUserId') || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                     createdAt: serverTimestamp()
                 });
 
@@ -579,12 +556,12 @@ const handleSaveObra = async () => {
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
                     filters: imageFilters,
-                    createdBy: localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'anonymous_demo',
+                    createdBy: localStorage.getItem('demoUserId') || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                 };
                 
                 setExistingPhotos(prev => {
                     const newPhotos = [newPhoto, ...prev];
-                    globalCachedPhotos = newPhotos;
+                    globalCachedPhotos[userUid || "anonymous_demo"] = newPhotos;
                     return newPhotos;
                 });
 
