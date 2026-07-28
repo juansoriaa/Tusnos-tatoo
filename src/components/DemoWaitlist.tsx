@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
 import { db, auth, onAuthStateChanged } from '../firebase';
 
 export default function DemoWaitlist() {
+    const { id } = useParams();
     const navigate = useNavigate();
     const [selectedMessage, setSelectedMessage] = useState<any>(null);
     const [workModalData, setWorkModalData] = useState<any>(null);
@@ -60,32 +61,60 @@ export default function DemoWaitlist() {
     };
 
     const [waitlistMessages, setWaitlistMessages] = useState<any[]>([]);
-    
+    const [targetUserId, setTargetUserId] = useState<string | null>(null);
+
+    React.useEffect(() => {
+        let authUnsub = () => {};
+        const localUid = localStorage.getItem('demoUserId');
+        if (localUid) {
+            setTargetUserId(localUid);
+        } else {
+            import('../firebase').then(({ auth, onAuthStateChanged }) => {
+                authUnsub = onAuthStateChanged(auth, (user) => {
+                    if (user) setTargetUserId(user.uid);
+                    else setTargetUserId('demo');
+                });
+            });
+        }
+        return () => authUnsub();
+    }, [id]);
+
     React.useEffect(() => {
         let unsubscribe = () => {};
-        const load = async () => {
-            const { collection, onSnapshot, query, orderBy } = await import('firebase/firestore');
-            const demoUserId = auth.currentUser?.uid;
-            if (demoUserId) {
-                const q = query(collection(db, 'users', demoUserId, 'waitlist'), orderBy('createdAt', 'desc'));
+        if (targetUserId) {
+            const load = async () => {
+                const { collection, onSnapshot, query, orderBy } = await import('firebase/firestore');
+                const q = query(collection(db, 'users', targetUserId, 'waitlist'));
                 unsubscribe = onSnapshot(q, (snapshot) => {
-                    const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    let messages = snapshot.docs.map(doc => ({ ...doc.data(), id: String(doc.id) }));
+                    messages.sort((a, b) => {
+                        const dateA = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.time || 0).getTime();
+                        const dateB = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.time || 0).getTime();
+                        return dateB - dateA;
+                    });
                     setWaitlistMessages(messages as any);
                 });
-            }
-        };
-        load();
+            };
+            load();
+        }
         return () => unsubscribe();
-    }, []);
+    }, [targetUserId]);
 
     const openMessageModal = (data: any) => {
         setSelectedMessage(data);
         if (data.read === false) {
-            const updatedMessages = waitlistMessages.map(msg => 
-                msg.id === data.id ? { ...msg, read: true } : msg
-            );
-            setWaitlistMessages(updatedMessages);
-            localStorage.setItem('demoWaitlistMessages_' + (auth.currentUser?.uid || 'anonymous_demo'), JSON.stringify(updatedMessages));
+            const targetId = localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo';
+            if (targetId && targetId !== 'demo') {
+                import('firebase/firestore').then(({ doc, updateDoc }) => {
+                    updateDoc(doc(db, 'users', targetId, 'waitlist', String(data.id)), { read: true }).catch(console.error);
+                });
+            } else {
+                const updatedMessages = waitlistMessages.map(msg => 
+                    msg.id === data.id ? { ...msg, read: true } : msg
+                );
+                setWaitlistMessages(updatedMessages);
+                localStorage.setItem('demoWaitlistMessages_' + targetId, JSON.stringify(updatedMessages));
+            }
             window.dispatchEvent(new CustomEvent('newWaitlistMessage'));
         }
     };

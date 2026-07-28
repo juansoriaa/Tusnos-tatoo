@@ -26,9 +26,18 @@ export default function DemoLayout
     useEffect(() => {
         let unsubscribe = () => {};
         const load = async () => {
-            const demoUserId = authUid;
+            const demoUserId = authUid || localStorage.getItem('demoUserId');
             if (demoUserId) {
-                const { collection, onSnapshot, query, where } = await import('firebase/firestore');
+                const { collection, onSnapshot, query, where, doc, getDoc } = await import('firebase/firestore');
+                
+                getDoc(doc(db, 'users', demoUserId)).then(userDoc => {
+                    if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        setTurnosLlenos(data.isAvailable === false);
+                        if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);
+                    }
+                }).catch(e => console.error(e));
+
                 const q = query(collection(db, 'users', demoUserId, 'waitlist'), where('read', '==', false));
                 unsubscribe = onSnapshot(q, (snapshot) => {
                     setWaitlistCount(snapshot.docs.length);
@@ -55,7 +64,7 @@ export default function DemoLayout
                     setAuthUid(user.uid);
                     setIsAuthChecking(false);
                 } else {
-                    navigate('/');
+                    navigate('/?login=true');
                 }
             });
         }
@@ -68,6 +77,7 @@ export default function DemoLayout
     const [configEmail, setConfigEmail] = useState('');
     const [currentUserTag, setCurrentUserTag] = useState('');
     const [configPassword, setConfigPassword] = useState('');
+    const [showConfigPassword, setShowConfigPassword] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<any>(null);
@@ -80,7 +90,7 @@ export default function DemoLayout
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 const notifs: any[] = [];
                 snapshot.forEach((doc) => {
-                    notifs.push({ id: doc.id, ...doc.data() });
+                    notifs.push({ ...doc.data(), id: String(doc.id) });
                 });
                 setNotifications(notifs);
             }, (error) => {
@@ -210,7 +220,7 @@ export default function DemoLayout
             import('../lib/cache').then((m) => {
                 for (let key in m.globalPreloadCache) delete m.globalPreloadCache[key];
             });
-            localStorage.removeItem('demoUserId'); import('../firebase').then(({ auth }) => auth.signOut()); navigate('/');
+            localStorage.removeItem('demoUserId'); import('../firebase').then(({ auth }) => auth.signOut()); navigate('/?login=true');
             return;
         }
         
@@ -283,9 +293,7 @@ export default function DemoLayout
                     </h1>
                     <p className="font-label-md text-on-surface-variant">Perfil del Artista</p>
                 </div>
-                <button className="w-full bg-emerald-accent text-on-surface py-2.5 rounded mb-8 font-label-md hover:brightness-110 transition-all duration-200" style={{backgroundColor: '#054d44', color: '#e5e2e1'}}>
-                    Nuevo Turno
-                </button>
+                
                 <ul className="flex-grow space-y-2">
                     <li>
                         <a className={`flex items-center font-medium pl-4 transition-all duration-200 group py-2 active:scale-95 ${activeTab === 'dashboard' ? 'text-primary border-l-2 border-primary bg-surface-elevation/20 font-bold' : 'text-on-surface-variant hover:text-primary'}`} href="#" onClick={(e) => { e.preventDefault(); handleNav('/demo/dashboard'); }} style={activeTab === 'dashboard' ? {color: '#95d2c6', borderLeftColor: '#95d2c6'} : {}}>
@@ -319,17 +327,14 @@ export default function DemoLayout
                         </a>
                     </li>
                     <li>
-                        <a className="flex items-center text-on-surface-variant font-medium pl-4 hover:text-primary transition-all duration-200 group py-2 active:scale-95" href="#" onClick={(e) => e.preventDefault()}>
+                        <a className="flex items-center text-on-surface-variant font-medium pl-4 hover:text-primary transition-all duration-200 group py-2 active:scale-95" href="#" onClick={(e) => { e.preventDefault(); setIsConfigModalOpen(true); }}>
                             <span className="material-symbols-outlined mr-3 text-on-surface-variant group-hover:text-primary transition-colors">settings</span>
                             <span className="font-label-md">Configuración</span>
                         </a>
                     </li>
                 </ul>
                 <div className="mt-auto border-t border-border-muted pt-6 space-y-2" style={{borderColor: '#353434'}}>
-                    <a className="flex items-center text-on-surface-variant font-medium pl-4 hover:text-primary transition-all duration-200 group py-2 active:scale-95" href="#" onClick={(e) => e.preventDefault()}>
-                        <span className="material-symbols-outlined mr-3">help</span>
-                        <span className="font-label-md">Soporte</span>
-                    </a>
+                    
                     <a className="flex items-center text-on-surface-variant font-medium pl-4 hover:text-primary transition-all duration-200 group py-2 active:scale-95" href="#" onClick={(e) => { e.preventDefault(); handleNav('/'); }}>
                         <span className="material-symbols-outlined mr-3">logout</span>
                         <span className="font-label-md">Cerrar sesión</span>
@@ -364,14 +369,14 @@ export default function DemoLayout
             {/* Main Content Area */}
             <main className="md:ml-64 flex-1 h-[100dvh] overflow-y-auto bg-deep-black pt-16 md:pt-0 pb-24 md:pb-12 custom-scrollbar" style={{backgroundColor: '#050505'}}>
                 {/* TopAppBar Desktop */}
-                <header className="hidden md:flex h-16 justify-between items-center px-8 bg-surface-elevation/80 backdrop-blur-md sticky top-0 z-40 border-b border-border-muted" style={{backgroundColor: 'rgba(20, 19, 19, 0.8)', borderColor: '#353434'}}>
-                    <div>
-                        <h2 className="font-headline-md text-on-surface hidden">Turnos Tattoo</h2>
-                    </div>
-                    <div className="flex items-center space-x-6">
-                        <button onClick={() => handleNav(currentUserTag ? '/' + (currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag) : '/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-4 py-2 rounded-full hover:text-primary border border-outline-variant/30 transition-all">
+                <header className="hidden md:flex h-16 items-center px-8 bg-surface-elevation/80 backdrop-blur-md sticky top-0 z-40 border-b border-border-muted" style={{backgroundColor: 'rgba(20, 19, 19, 0.8)', borderColor: '#353434'}}>
+                    <div className="flex-1"></div>
+                    <div className="flex-shrink-0 flex items-center justify-center">
+                        <button onClick={() => handleNav(currentUserTag ? '/' + (currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag) : '/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-emerald-accent bg-surface-variant px-6 py-2 rounded-full hover:bg-emerald-accent/10 border border-emerald-accent transition-all shadow-[0_0_15px_rgba(5,77,68,0.2)]" style={{borderColor: '#054d44', color: '#054d44'}}>
                             Ver Perfil
                         </button>
+                    </div>
+                    <div className="flex-1 flex items-center justify-end space-x-6">
                         <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">
                             <span className="material-symbols-outlined">palette</span>
                         </button>
@@ -383,12 +388,6 @@ export default function DemoLayout
                                 </span>
                             )}
                         </button>
-                        <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95">
-                            <span className="material-symbols-outlined">dark_mode</span>
-                        </button>
-                        <div className="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-border-muted" style={{borderColor: '#353434'}}>
-                            <img alt="Artist Avatar" className="w-full h-full object-cover" src={avatarUrl} />
-                        </div>
                     </div>
                 </header>
 
@@ -443,7 +442,7 @@ export default function DemoLayout
                 <div className="fixed inset-0 z-[200] flex items-start justify-end bg-black/60 backdrop-blur-sm p-4 pt-16" onClick={() => setIsMenuModalOpen(false)}>
                     <div className="bg-surface-container w-56 rounded-lg border border-outline-variant/30 overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-4" onClick={(e) => e.stopPropagation()}>
                         <button 
-                            className="w-full px-4 py-4 text-left font-label-md text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors flex items-center gap-3"
+                            className="w-full px-4 py-4 text-left font-label-md text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors flex items-center gap-3 border-b border-outline-variant/30"
                             onClick={() => {
                                 setIsMenuModalOpen(false);
                                 setIsConfigModalOpen(true);
@@ -451,6 +450,16 @@ export default function DemoLayout
                         >
                             <span className="material-symbols-outlined text-[20px]">settings</span>
                             Configuración personal
+                        </button>
+                        <button 
+                            className="w-full px-4 py-4 text-left font-label-md text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors flex items-center gap-3"
+                            onClick={() => {
+                                setIsMenuModalOpen(false);
+                                handleNav('/');
+                            }}
+                        >
+                            <span className="material-symbols-outlined text-[20px]">logout</span>
+                            Cerrar sesión
                         </button>
                     </div>
                 </div>
@@ -489,13 +498,24 @@ export default function DemoLayout
 
                             <div className="flex flex-col gap-1">
                                 <label className="font-label-sm text-[10px] text-secondary uppercase tracking-widest">Nueva Contraseña</label>
-                                <input 
-                                    type="password" 
-                                    value={configPassword}
-                                    onChange={(e) => setConfigPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="w-full bg-surface-container-lowest border border-outline-variant/30 p-3 text-sm text-on-surface focus:border-primary focus:ring-0 outline-none transition-colors rounded"
-                                />
+                                <div className="relative">
+                                    <input 
+                                        type={showConfigPassword ? "text" : "password"} 
+                                        value={configPassword}
+                                        onChange={(e) => setConfigPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        className="w-full bg-surface-container-lowest border border-outline-variant/30 p-3 pr-10 text-sm text-on-surface focus:border-primary focus:ring-0 outline-none transition-colors rounded"
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowConfigPassword(!showConfigPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-silver-text transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">
+                                            {showConfigPassword ? 'visibility_off' : 'visibility'}
+                                        </span>
+                                    </button>
+                                </div>
                                 <p className="text-[10px] text-on-surface-variant/70 mt-1 leading-tight">Cambia tu contraseña por defecto para mayor seguridad.</p>
                             </div>
                         </div>

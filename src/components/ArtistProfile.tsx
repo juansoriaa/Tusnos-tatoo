@@ -468,9 +468,9 @@ export default function Profile() {
       if (vIndex !== -1) {
         if (!modalOpen || activeTattooIndex !== vIndex) {
           setActiveTattooIndex(vIndex);
+          trackMetric('photoClicks', photoId);
           if (!modalOpen) {
             setModalOpen(true);
-            trackMetric('photoClicks', photoId);
             document.body.classList.add('overflow-hidden');
           }
         }
@@ -554,7 +554,7 @@ export default function Profile() {
         <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
       <main className="pb-8 md:pb-16">
-        <div className="top-0 left-0 z-40 px-3 py-1.5 bg-black/60 backdrop-blur-md fixed cursor-pointer" onClick={() => navigate(-1)}>
+        <div className="top-0 left-0 z-40 px-3 py-1.5 bg-black/60 backdrop-blur-md fixed">
           <span className="font-label-md text-label-md font-extrabold text-on-surface uppercase tracking-tighter">Turnos <span className="text-primary">Tattoo</span></span>
         </div>
         {/* Banner Section */}
@@ -1146,8 +1146,8 @@ Perfil: ${profileUrl}`;
                   title: waitlistForm.type === 'consulta' ? 'Consulta general' : 'Idea de tatuaje',
                   text: waitlistForm.description || 'Sin descripción',
                   hasImage: !!waitlistForm.referenceImage,
-                  referenceImage: waitlistForm.referenceImage,
-                  referenceTitle: waitlistForm.referenceImage ? (allTattoos.find(t => t.src === waitlistForm.referenceImage)?.title || 'Imagen adjuntada') : undefined,
+                  referenceImage: waitlistForm.referenceImage || null,
+                  referenceTitle: waitlistForm.referenceImage ? (allTattoos.find(t => t.src === waitlistForm.referenceImage)?.title || 'Imagen adjuntada') : null,
                   tags: [
                     waitlistForm.type === 'consulta' ? 'Consulta' : 'Idea',
                     ...(waitlistForm.referenceImage ? [allTattoos.find(t => t.src === waitlistForm.referenceImage) ? 'Refe. del portafolio' : 'Refe. del usuario'] : [])

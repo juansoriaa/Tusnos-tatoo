@@ -26,7 +26,7 @@ export default function DemoMetrics() {
     useEffect(() => {
         const loadMetrics = async () => {
             let parsed = null;
-            const demoUserId = auth.currentUser?.uid;
+            const demoUserId = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
             if (demoUserId) {
                 try {
                     const docSnap = await getDoc(doc(db, 'users', demoUserId));
@@ -35,7 +35,6 @@ export default function DemoMetrics() {
                         if (true) {
                             parsed = {
                                 views: data.views || 0,
-                                photoClicks: data.photoClicks || 0,
                                 whatsappClicks: data.whatsappClicks || 0,
                                 agendaClicks: data.agendaClicks || 0
                             };
@@ -51,7 +50,7 @@ export default function DemoMetrics() {
                             setAnimating(true);
                             setTimeout(() => setAnimating(false), 1000);
                         }
-                        return parsed;
+                        return { ...prev, ...parsed };
                     });
                 } catch (e) {}
             }
@@ -78,12 +77,11 @@ export default function DemoMetrics() {
     useEffect(() => {
         const loadPhotos = async () => {
             try {
-                const demoUserId = auth.currentUser?.uid;
-                const q = demoUserId 
-                    ? query(collection(db, 'photos'), where('createdBy', '==', demoUserId))
-                    : query(collection(db, 'photos'), orderBy('createdAt', 'desc'));
+                const demoUserId = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+                if (!demoUserId) { setTopPhotos([]); return; }
+                const q = query(collection(db, 'photos'), where('createdBy', '==', demoUserId));
                 const snapshot = await getDocs(q);
-                let dbPhotos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+                let dbPhotos = snapshot.docs.map(doc => ({ ...doc.data(), id: String(doc.id) } as any));
                 
 
                 let isDemoUser = false;
@@ -171,13 +169,33 @@ export default function DemoMetrics() {
                     }
                 ];
 
-                let finalPhotos = dbPhotos.map(p => ({
-                    id: p.id,
-                    imageUrl: p.imageUrl || p.src,
-                    title: p.title || p.tags?.[0] || 'Foto de Tatuaje',
-                    category: p.category || p.tags?.[0] || 'Portfolio',
-                    clicks: p.clicks || 0
-                }));
+                let totalPhotoClicks = 0;
+                let finalPhotos = dbPhotos.map(p => {
+                    const clicks = p.clicks || 0;
+                    totalPhotoClicks += clicks;
+                    return {
+                        id: p.id,
+                        imageUrl: p.imageUrl || p.src,
+                        title: p.title || p.tags?.[0] || 'Foto de Tatuaje',
+                        category: p.category || p.tags?.[0] || 'Portfolio',
+                        clicks: clicks,
+                        originalFallbackId: p.originalFallbackId
+                    };
+                });
+                setMetrics(prev => ({ ...prev, photoClicks: totalPhotoClicks }));
+                
+                if (isDemoUser) {
+                    const limitedFallback = fallback.slice(0, 5);
+                    const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
+                    const filteredFallback = limitedFallback.filter(f => !dbPhotos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id));
+                    finalPhotos = [...finalPhotos, ...filteredFallback.map(f => ({
+                        id: f.id,
+                        imageUrl: f.imageUrl,
+                        title: f.title,
+                        category: f.category,
+                        clicks: 0
+                    }))];
+                }
                 finalPhotos.sort((a, b) => b.clicks - a.clicks);
                 setTopPhotos(finalPhotos.slice(0, 10));
 
@@ -330,7 +348,15 @@ export default function DemoMetrics() {
                     {/* Waiting List */}
                     <div className="bg-surface-elevation border border-border-muted p-3 flex flex-col justify-between hover:border-primary-container transition-colors duration-300" style={{backgroundColor: '#141313', borderColor: '#353434'}}>
                         <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-[10px]">Agenda</h3>
+                            <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-[10px] flex items-center gap-1">
+                                Agenda
+                                <div className="group relative inline-block">
+                                    <span className="material-symbols-outlined text-[12px] text-on-surface-variant/50 hover:text-on-surface-variant cursor-help transition-colors">info</span>
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-surface-container-high border border-border-muted text-[10px] text-silver-text rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 pointer-events-none text-center leading-tight normal-case font-normal" style={{backgroundColor: '#232222', borderColor: '#353434'}}>
+                                        Usuarios que se agendaron exitosamente cuando la lista estaba llena.
+                                    </div>
+                                </div>
+                            </h3>
                             <span className="material-symbols-outlined text-primary-container text-[18px]" style={{color: '#054d44'}}>queue</span>
                         </div>
                         <div>
@@ -349,7 +375,15 @@ export default function DemoMetrics() {
                     <div className="bg-surface-elevation border border-primary-container p-3 flex flex-col justify-between relative overflow-hidden col-span-2" style={{backgroundColor: '#141313', borderColor: '#054d44'}}>
                         <div className="absolute top-0 right-0 w-12 h-12 bg-primary-container/10 -mr-6 -mt-6 rotate-45 border-l border-b border-primary-container/30" style={{backgroundColor: 'rgba(5, 77, 68, 0.1)', borderColor: 'rgba(5, 77, 68, 0.3)'}}></div>
                         <div className="flex justify-between items-start mb-2 relative z-10">
-                            <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-[10px]">Tasa Conversión</h3>
+                            <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-[10px] flex items-center gap-1">
+                                Tasa Conversión
+                                <div className="group relative inline-block">
+                                    <span className="material-symbols-outlined text-[12px] text-on-surface-variant/50 hover:text-on-surface-variant cursor-help transition-colors">info</span>
+                                    <div className="absolute bottom-full left-0 mb-2 w-56 p-2 bg-surface-container-high border border-border-muted text-[10px] text-silver-text rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 pointer-events-none text-left leading-tight normal-case font-normal" style={{backgroundColor: '#232222', borderColor: '#353434'}}>
+                                        Porcentaje de visitas al perfil que concretaron contacto por WhatsApp o enviaron solicitud por Lista de Espera.
+                                    </div>
+                                </div>
+                            </h3>
                             <span className="material-symbols-outlined text-primary-container text-[18px]" style={{color: '#054d44'}}>analytics</span>
                         </div>
                         <div className="relative z-10">
@@ -503,7 +537,7 @@ export default function DemoMetrics() {
 
             {showRankingModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-surface-elevation border border-border-muted w-full max-w-md max-h-[85vh] flex flex-col relative" style={{backgroundColor: '#141313', borderColor: '#353434'}}>
+                    <div className="bg-surface-elevation border border-border-muted w-full max-w-md max-h-[85vh] flex flex-col relative overflow-hidden" style={{backgroundColor: '#141313', borderColor: '#353434'}}>
                         <div className="flex justify-between items-center p-5 border-b border-border-muted sticky top-0 bg-surface-elevation z-10" style={{borderColor: '#353434', backgroundColor: '#141313'}}>
                             <div>
                                 <h2 className="font-headline-md text-xl font-bold text-silver-text">Top 10 Fotos</h2>
@@ -517,7 +551,7 @@ export default function DemoMetrics() {
                             </button>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto p-5 hide-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
                             <div className="flex flex-col">
                                 {topPhotos.map((photo, index) => (
                                     <React.Fragment key={photo.id}>

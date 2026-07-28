@@ -69,6 +69,11 @@ export default function Landing() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('login') === 'true') {
+        setIsRegister(false);
+        setShowLoginModal(true);
+    }
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });

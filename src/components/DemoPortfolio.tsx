@@ -189,7 +189,7 @@ export default function DemoPortfolio() {
                     orderBy('createdAt', 'desc')
                 );
                 const snapshot = await getDocs(q);
-                const photos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+                const photos = snapshot.docs.map(doc => ({ ...doc.data(), id: String(doc.id) } as any));
 
                 let isDemoUser = false;
                 if (artistUid) {
