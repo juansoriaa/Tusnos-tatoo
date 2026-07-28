@@ -21,7 +21,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (shouldPreload) {
-      navigate(id ? '/demo/preload/' + id : '/demo/preload', { replace: true });
+      navigate(id ? '/turnos-tatoo/' + id + '/preload' : '/demo/preload', { replace: true });
     }
   }, [navigate, id, shouldPreload]);
 
@@ -501,10 +501,10 @@ export default function Profile() {
   }
   
   // Create safe fallbacks based on target
-  const defaultName = isExplicitDemoTarget ? "Victor Ink" : (artistData ? "" : "Cargando...");
-  const defaultBio = isExplicitDemoTarget ? "Conoce a este increíble artista del tatuaje y explora su portafolio en Turnos Tattoo." : (artistData ? "" : "Cargando...");
-  const defaultBg = isExplicitDemoTarget ? "https://lh3.googleusercontent.com/aida-public/AB6AXuBiWtwSf0Fh3AWm01LAlMfj3JGoOdHldaVkVIRDRpbavMRKQEt_SI7cvqZB7R56dQt7nuInHJM7V0a74racFxJT0E12v57KMBnC09rQOtg5YVpvOdglwy8KnhHl1H0tFedvuBum6LD2ADyKGFqdnQ3lUJqIhOZj6bJPzlLI4S7L2n9tqn9wZ6t8smG60s2wvnHM3NabsjD_rMrUmix943Tdd_CAZDTFaQeq5FEq8IXpsVkSLkJ24K0VpV9R4GRF2SDH8cwWPwwNjXI" : (artistData?.backgroundPhotos?.[0] || "");
-  const defaultAvatar = isExplicitDemoTarget ? "https://lh3.googleusercontent.com/aida-public/AB6AXuC_KPGqcJA_LhFIZepjSW5Tf7MtTYEc4iRE4J7SbB3ZSPxSwnEhyd39Iptl8UJFQS6m269Hwwx2KZd5ywVY5a6mTaGP0eKxhhFlOChAey3A8OvJ2X43uTD6BH3bkh9AjFk_ged61veFwFc7XeGxUyraAjawtpIIQxmkRhrpbijpEFfFKyxzuCj7Ltek0mSl4QQtognkqRBrsSC25geKA2JCuif3FBQ8nEvcajl0_fkXLSakiANOEXbVDwi9vnMRrjEXDcc5_qMFBm0" : (artistData?.profilePhotoUrl || "");
+  const defaultName = artistData?.displayName || (isExplicitDemoTarget ? "Victor Ink" : "Cargando...");
+  const defaultBio = artistData?.bio || (isExplicitDemoTarget ? "Conoce a este increíble artista del tatuaje y explora su portafolio en Turnos Tattoo." : "Cargando...");
+  const defaultBg = artistData?.backgroundPhotos?.[0] || "https://lh3.googleusercontent.com/aida-public/AB6AXuBiWtwSf0Fh3AWm01LAlMfj3JGoOdHldaVkVIRDRpbavMRKQEt_SI7cvqZB7R56dQt7nuInHJM7V0a74racFxJT0E12v57KMBnC09rQOtg5YVpvOdglwy8KnhHl1H0tFedvuBum6LD2ADyKGFqdnQ3lUJqIhOZj6bJPzlLI4S7L2n9tqn9wZ6t8smG60s2wvnHM3NabsjD_rMrUmix943Tdd_CAZDTFaQeq5FEq8IXpsVkSLkJ24K0VpV9R4GRF2SDH8cwWPwwNjXI";
+  const defaultAvatar = artistData?.profilePhotoUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuC_KPGqcJA_LhFIZepjSW5Tf7MtTYEc4iRE4J7SbB3ZSPxSwnEhyd39Iptl8UJFQS6m269Hwwx2KZd5ywVY5a6mTaGP0eKxhhFlOChAey3A8OvJ2X43uTD6BH3bkh9AjFk_ged61veFwFc7XeGxUyraAjawtpIIQxmkRhrpbijpEFfFKyxzuCj7Ltek0mSl4QQtognkqRBrsSC25geKA2JCuif3FBQ8nEvcajl0_fkXLSakiANOEXbVDwi9vnMRrjEXDcc5_qMFBm0";
 
 
   

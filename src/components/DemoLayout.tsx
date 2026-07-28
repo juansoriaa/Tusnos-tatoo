@@ -327,7 +327,7 @@ export default function DemoLayout
             <header className="md:hidden fixed top-0 w-full h-16 bg-surface-elevation/80 backdrop-blur-md border-b border-border-muted z-50 flex justify-between items-center px-4" style={{backgroundColor: 'rgba(20, 19, 19, 0.8)', borderColor: '#353434'}}>
                 <h1 className="font-headline-md text-on-surface font-bold text-lg uppercase tracking-tighter">Turnos <span className="text-emerald-accent" style={{color: '#054d44'}}>Tattoo</span></h1>
                 <div className="flex gap-3 items-center">
-                    <button onClick={() => handleNav(currentUserTag ? '/artist/' + currentUserTag : '/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-2 py-1.5 rounded hover:text-primary border border-outline-variant/30 transition-all mr-1">
+                    <button onClick={() => handleNav(currentUserTag ? '/turnos-tatoo/' + currentUserTag : '/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-2 py-1.5 rounded hover:text-primary border border-outline-variant/30 transition-all mr-1">
                         Ver Perfil
                     </button>
                     <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">
@@ -355,7 +355,7 @@ export default function DemoLayout
                         <h2 className="font-headline-md text-on-surface hidden">Turnos Tattoo</h2>
                     </div>
                     <div className="flex items-center space-x-6">
-                        <button onClick={() => handleNav(currentUserTag ? '/artist/' + currentUserTag : '/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-4 py-2 rounded-full hover:text-primary border border-outline-variant/30 transition-all">
+                        <button onClick={() => handleNav(currentUserTag ? '/turnos-tatoo/' + currentUserTag : '/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-4 py-2 rounded-full hover:text-primary border border-outline-variant/30 transition-all">
                             Ver Perfil
                         </button>
                         <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">

@@ -1381,7 +1381,7 @@ export default function SuperAdmin() {
             
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-4">
-                <img alt="Artista Avatar" className="w-16 h-16 rounded bg-surface object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setDetailsModalUser(null); navigate(`/artist/${(detailsModalUser.userTag || detailsModalUser.uid).replace('@', '')}`); }} src={detailsModalUser.profilePhotoUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuBBMNHOgO0BFPGX5cKluHezzRBDPJueLyUUOSVbMZdAJNASP32jgHA4OlyC47sQI2OSfmnfWWJhsXilZEsOSBqjgJZonLj5pT-FxqVdN9wf0qc9xnw47B_mrLf_EJOGsPCFdm0ezBohArgfCnAGkL4nmXJbY4CXUXnPHC5HN5i25dYpUqlmKCy9E-GOy0FViiulx7v565DyOKMgONwgdsmF5EhQ9sYDmp7SshK7ecWSiMfVG7yXfsm_Dm9BxUhg4h5sZ-clTBdjYBLi"}/>
+                <img alt="Artista Avatar" className="w-16 h-16 rounded bg-surface object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setDetailsModalUser(null); navigate(`/turnos-tatoo/${(detailsModalUser.userTag || detailsModalUser.uid).replace('@', '')}`); }} src={detailsModalUser.profilePhotoUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuBBMNHOgO0BFPGX5cKluHezzRBDPJueLyUUOSVbMZdAJNASP32jgHA4OlyC47sQI2OSfmnfWWJhsXilZEsOSBqjgJZonLj5pT-FxqVdN9wf0qc9xnw47B_mrLf_EJOGsPCFdm0ezBohArgfCnAGkL4nmXJbY4CXUXnPHC5HN5i25dYpUqlmKCy9E-GOy0FViiulx7v565DyOKMgONwgdsmF5EhQ9sYDmp7SshK7ecWSiMfVG7yXfsm_Dm9BxUhg4h5sZ-clTBdjYBLi"}/>
                 <div>
                   <div className="text-on-surface font-bold text-lg">{detailsModalUser.displayName || detailsModalUser.email}</div>
                   <div className="text-secondary text-sm">{detailsModalUser.userTag}</div>
