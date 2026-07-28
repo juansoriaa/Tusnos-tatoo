@@ -24,9 +24,13 @@ export default function App() {
           <Route path="/:id/preload" element={<Preload />} />
           <Route path="/superadmin" element={<SuperAdmin />} />
           <Route path="/demo/dashboard" element={<DemoDashboard />} />
+          <Route path="/:id/dashboard" element={<DemoDashboard />} />
           <Route path="/demo/portfolio" element={<DemoPortfolio />} />
+          <Route path="/:id/portfolio" element={<DemoPortfolio />} />
           <Route path="/demo/waitlist" element={<DemoWaitlist />} />
+          <Route path="/:id/waitlist" element={<DemoWaitlist />} />
           <Route path="/demo/metrics" element={<DemoMetrics />} />
+          <Route path="/:id/metrics" element={<DemoMetrics />} />
         </Routes>
       </BrowserRouter>
     </HelmetProvider>

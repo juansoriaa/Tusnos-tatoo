@@ -116,7 +116,14 @@ export default function DemoLayout
                     const docSnap = await getDoc(doc(db, 'users', demoUserId));
                     if (docSnap.exists()) {
                         setConfigEmail(docSnap.data().email || '');
-                        setCurrentUserTag(docSnap.data().userTag || '');
+                        const uTag = docSnap.data().userTag || '';
+                        setCurrentUserTag(uTag);
+                        
+                        if (uTag && window.location.pathname.startsWith('/demo/') && !window.location.pathname.includes('/demo/profile') && !window.location.pathname.includes('/demo/preload')) {
+                            const formattedTag = uTag.startsWith('@') ? uTag : '@' + uTag;
+                            const newPath = window.location.pathname.replace('/demo/', `/${formattedTag}/`);
+                            navigate(newPath, { replace: true });
+                        }
                     }
                 } catch (e) {
                     console.error("Error fetching demo user config", e);
@@ -124,7 +131,7 @@ export default function DemoLayout
             }
         };
         fetchDemoUser();
-    }, []);
+    }, [authUid, navigate]);
 
     const handleSaveConfig = async () => {
         const demoUserId = authUid;
@@ -204,7 +211,14 @@ export default function DemoLayout
                 for (let key in m.globalPreloadCache) delete m.globalPreloadCache[key];
             });
             localStorage.removeItem('demoUserId'); import('../firebase').then(({ auth }) => auth.signOut()); navigate('/');
+            return;
         }
+        
+        if (path.startsWith('/demo/') && path !== '/demo/profile' && path !== '/demo/preload' && currentUserTag) {
+            const utag = currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag;
+            path = path.replace('/demo/', '/' + utag + '/');
+        }
+        
         if (onNavigate) {
             onNavigate(path);
         } else {

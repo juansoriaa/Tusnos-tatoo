@@ -543,7 +543,7 @@ export default function Profile() {
         <meta property="og:image" content={artistData?.profilePhotoUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo'} />
         <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
-      <main className="pb-8 md:pb-32">
+      <main className="pb-8 md:pb-16">
         <div className="top-0 left-0 z-40 px-3 py-1.5 bg-black/60 backdrop-blur-md fixed cursor-pointer" onClick={() => navigate(-1)}>
           <span className="font-label-md text-label-md font-extrabold text-on-surface uppercase tracking-tighter">Turnos <span className="text-primary">Tattoo</span></span>
         </div>
@@ -618,16 +618,16 @@ export default function Profile() {
                     if (navigator.share) {
                       await navigator.share({
                         title: artistData?.displayName || 'Perfil de Artista',
-                        url: window.location.href
+                        url: (id ? window.location.href : (artistData?.userTag ? window.location.origin + '/' + (artistData.userTag.startsWith('@') ? artistData.userTag : '@' + artistData.userTag) : window.location.href))
                       });
                     } else {
-                      await navigator.clipboard.writeText(window.location.href);
+                      await navigator.clipboard.writeText((id ? window.location.href : (artistData?.userTag ? window.location.origin + '/' + (artistData.userTag.startsWith('@') ? artistData.userTag : '@' + artistData.userTag) : window.location.href)));
                       alert('URL copiada al portapapeles');
                     }
                   } catch (err: any) {
                     if (err.name !== 'AbortError' && !err.message?.includes('canceled') && err.name !== 'NotAllowedError') {
                       try {
-                        await navigator.clipboard.writeText(window.location.href);
+                        await navigator.clipboard.writeText((id ? window.location.href : (artistData?.userTag ? window.location.origin + '/' + (artistData.userTag.startsWith('@') ? artistData.userTag : '@' + artistData.userTag) : window.location.href)));
                         alert('URL copiada al portapapeles');
                       } catch (fallbackErr) {
                          console.log('Compartir cancelado o no disponible.');
@@ -672,7 +672,7 @@ export default function Profile() {
           </button>
         </div>
 
-        <section className="mt-12 px-gutter max-w-container-max mx-auto -mt-16 md:-mt-24">
+        <section className="mt-12 px-gutter max-w-container-max mx-auto ">
           {/* Filter Tags */}
           <div className="relative mb-12">
             <div className="flex items-center justify-start md:justify-center gap-2 overflow-x-auto hide-scrollbar pb-4 border-b border-outline-variant/10 pr-12 md:pr-0">
@@ -731,7 +731,7 @@ export default function Profile() {
 
         {/* Studio Location Section */}
         {artistData?.hasPhysicalStudio !== false && (
-          <section className="mt-section-gap px-gutter max-w-container-max mx-auto -mt-16 md:-mt-24">
+          <section className="mt-section-gap px-gutter max-w-container-max mx-auto ">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="text-left">
                 <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4 font-bold uppercase tracking-tight">{artistData?.studioName || "El Estudio"}</h2>
@@ -771,7 +771,7 @@ export default function Profile() {
           </section>
         )}
 
-        <section className="mt-section-gap mb-section-gap px-gutter max-w-container-max mx-auto -mt-16 md:-mt-24">
+        <section className="mt-section-gap mb-section-gap px-gutter max-w-container-max mx-auto ">
           <div className="bg-surface-container p-8 border border-outline-variant/20 flex flex-col gap-8 items-center text-center">
             <img className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-primary shrink-0" alt={artistData?.displayName || "Artist"} src={defaultAvatar} />
             <div>
@@ -782,7 +782,7 @@ export default function Profile() {
         </section>
 
         {/* FAQ Section */}
-        <section className="mt-section-gap px-gutter max-w-container-max mx-auto -mt-16 md:-mt-24">
+        <section className="mt-section-gap px-gutter max-w-container-max mx-auto ">
           <h2 className="font-headline-lg text-headline-lg text-on-surface mb-8 font-bold uppercase tracking-tight text-center">Preguntas Frecuentes</h2>
           <div className="max-w-2xl mx-auto space-y-4">
             {(artistData?.faqs || defaultFaqs).map((faq: any, index: number) => (
@@ -801,7 +801,7 @@ export default function Profile() {
 
         </main>
       {/* Footer */}
-      <footer className="w-full py-16 px-gutter flex flex-col items-center gap-8 text-center bg-surface-container-lowest border-t border-outline-variant/10 mt-8 md:mt-section-gap">
+      <footer className="w-full py-16 px-gutter flex flex-col items-center gap-8 text-center bg-surface-container-lowest border-t border-outline-variant/10 mt-8">
         <div className="flex flex-col md:flex-row items-center gap-6">
           <span className="font-headline-sm text-headline-sm text-on-surface font-extrabold uppercase tracking-tighter">Turnos <span className="text-primary">Tattoo</span></span>
           <button 
@@ -823,19 +823,6 @@ export default function Profile() {
           <button className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setTermsModalOpen(true)}>Términos</button>
           <button className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setPrivacyModalOpen(true)}>Privacidad</button>
           <button className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setContactModalOpen(true)}>Contacto</button>
-          
-
-          {(artistData?.instagram || isDemoProfile) && (
-             <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href={artistData?.instagram || "https://instagram.com"} target="_blank" rel="noopener noreferrer">Instagram</a>
-          )}
-          {(artistData?.facebook || isDemoProfile) && (
-             <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href={artistData?.facebook || "https://facebook.com"} target="_blank" rel="noopener noreferrer">Facebook</a>
-          )}
-          {(artistData?.tiktok || isDemoProfile) && (
-             <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" href={artistData?.tiktok || "https://tiktok.com"} target="_blank" rel="noopener noreferrer">TikTok</a>
-          )}
-
-
         </div>
         <p className="font-caption text-caption uppercase tracking-widest text-on-surface-variant opacity-60">© 2026 Turnos Tattoo. All rights reserved.</p>
       </footer>
@@ -890,8 +877,8 @@ export default function Profile() {
               </div>
 
               <div className="w-full md:w-1/3 p-4 md:p-6 flex flex-col flex-1 border-l border-outline-variant/10 overflow-y-auto touch-pan-y overscroll-contain">
-                <div className="flex flex-col h-full">
-                  <div className="flex-1 flex flex-col justify-start space-y-4 md:mt-4">
+                <div className="flex flex-col h-full md:h-auto min-h-full">
+                  <div className="flex flex-col justify-start space-y-4 md:mt-4 shrink-0">
                     <div className="text-center md:text-left flex flex-col items-center md:items-start w-full">
                       <div className="relative flex items-center justify-center md:justify-start w-full min-h-[32px] mb-4">
                         <button 
@@ -928,12 +915,12 @@ export default function Profile() {
                       </div>
                     </div>
                     
-                    <div className="overflow-y-auto hide-scrollbar max-h-[15vh] md:max-h-[35vh]">
+                    <div className="mt-2 md:mt-4">
                       <p className="text-center md:text-left text-on-surface-variant text-xs md:text-sm leading-relaxed">{visibleTattoos[activeTattooIndex].alt}</p>
                     </div>
                   </div>
 
-                  <div className="mt-auto pt-4 md:pt-10 flex flex-col gap-4 md:gap-8">
+                  <div className="mt-auto pt-4 md:pt-10 flex flex-col gap-4 md:gap-8 shrink-0">
                     {(visibleTattoos[activeTattooIndex].hours || visibleTattoos[activeTattooIndex].sessions || visibleTattoos[activeTattooIndex].size) && (
                       <div className="flex justify-center md:justify-start flex-wrap gap-4 md:gap-6 w-full border-t border-outline-variant/10 pt-4 md:pt-6">
                         {visibleTattoos[activeTattooIndex].hours && (
