@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth, onAuthStateChanged } from '../firebase';
 import { globalPreloadCache } from '../lib/cache';
 
 
@@ -17,7 +17,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [shouldPreload] = useState(() => !sessionStorage.getItem('preloaded_' + (id || 'demo')));
+  const [shouldPreload] = useState(() => !sessionStorage.getItem('preloaded_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo')));
 
   useEffect(() => {
     if (shouldPreload) {
@@ -25,15 +25,17 @@ export default function Profile() {
     }
   }, [navigate, id, shouldPreload]);
 
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [artistData, setArtistData] = useState<any>(() => {
     try {
-        let savedData = globalPreloadCache[id || 'demo']?.artistData;
+        const targetId = id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo';
+        let savedData = globalPreloadCache[targetId]?.artistData;
         if (!savedData) {
-            const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
+            const saved = localStorage.getItem('demoArtistData_' + targetId);
             if (saved) savedData = JSON.parse(saved);
         }
         if (savedData) {
-            globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], artistData: savedData };
+            globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'] = { ...globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'], artistData: savedData };
             return savedData;
         }
     } catch(e) {}
@@ -41,12 +43,23 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    const fetchArtist = async () => {
+    let unsubscribe = () => {};
+    const localUid = localStorage.getItem('demoUserId');
+    if (localUid) {
+        fetchArtist({uid: localUid});
+    } else {
+        unsubscribe = onAuthStateChanged(auth, (user) => {
+            fetchArtist(user);
+        });
+    }
+    
+    async function fetchArtist(user?: any) {
       let targetId = id;
       if (!targetId) {
-          targetId = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+          targetId = user?.uid;
       }
       if (targetId) {
+        setIsProfileLoading(true);
         const docRef = doc(db, 'users', targetId);
         let docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
@@ -74,12 +87,16 @@ export default function Profile() {
             } catch (e) {}
         }
       }
+      setIsProfileLoading(false);
     };
     fetchArtist();
     
-    window.addEventListener('profileDataChanged', fetchArtist);
+    const handleProfileDataChanged = () => fetchArtist({uid: localStorage.getItem('demoUserId') || auth.currentUser?.uid});
+    window.addEventListener('profileDataChanged', handleProfileDataChanged);
     return () => {
-        window.removeEventListener('profileDataChanged', fetchArtist);
+        unsubscribe();
+        window.removeEventListener("profileDataChanged", handleProfileDataChanged);
+        
     };
   }, [id]);
 
@@ -133,7 +150,8 @@ export default function Profile() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [allTattoos, setAllTattoos] = useState<any[]>(() => {
       try {
-          const saved = localStorage.getItem('demoAllTattoos_' + (id || 'demo'));
+          const targetId = id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo';
+          const saved = localStorage.getItem('demoAllTattoos_' + targetId);
           if (saved) return JSON.parse(saved);
       } catch(e) {}
       return [];
@@ -145,7 +163,8 @@ export default function Profile() {
   const [contactSuccess, setContactSuccess] = useState(false);
 
   useEffect(() => {
-    const fetchTattoos = async () => {
+    let authUnsub = () => {};
+    const fetchTattoos = async (authUid: string | undefined) => {
         let artistUid = id;
         
         // Resolve tag to UID if needed
@@ -159,7 +178,7 @@ export default function Profile() {
         }
         
         if (!artistUid) {
-            artistUid = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+            artistUid = authUid;
         }
         if (!artistUid) {
             artistUid = 'anonymous_demo';
@@ -341,19 +360,29 @@ export default function Profile() {
             console.error("Error fetching tattoos", error);
         }
     };
-    fetchTattoos();
+    
+    const localUid = localStorage.getItem('demoUserId');
+    if (localUid) {
+        fetchTattoos(localUid);
+    } else {
+        authUnsub = onAuthStateChanged(auth, (user) => {
+            fetchTattoos(user?.uid);
+        });
+    }
 
     const handleProfileDataChanged = () => {
-        fetchTattoos();
+        const uid = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+        fetchTattoos(uid);
     };
 
     window.addEventListener('profileDataChanged', handleProfileDataChanged);
     return () => {
-        window.removeEventListener('profileDataChanged', handleProfileDataChanged);
+        window.removeEventListener("profileDataChanged", handleProfileDataChanged);
+        
     };
   }, [id]);
 
-  const filterCategories = Array.from(new Set(["All", ...((artistData?.specialtyTags && artistData.specialtyTags.length > 0) ? artistData.specialtyTags : ["Realismo", "Minimalista", "Tradicional", "Blackwork"])]));
+  const filterCategories = Array.from(new Set(["All", ...((artistData?.customCategories && artistData.customCategories.length > 0) ? artistData.customCategories : ["Realismo", "Minimalista", "Tradicional", "Blackwork"])]));
 
   const getFilterStr = (filters: any) => {
     let filterStr = '';
@@ -465,16 +494,50 @@ export default function Profile() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  let isDemoProfile = false;
-  if (artistData && (artistData.userTag === '@demo' || artistData.userTag === '@victor_ink' || artistData.userTag === 'victor_ink' || artistData.userTag === 'demo' || !id || id === 'demo' || id === 'victor_ink' || id === '@victor_ink')) {
+  let isExplicitDemoTarget = !id || id === 'demo' || id === 'victor_ink' || id === '@victor_ink';
+  let isDemoProfile = isExplicitDemoTarget;
+  if (artistData && (artistData.userTag === '@demo' || artistData.userTag === '@victor_ink' || artistData.userTag === 'victor_ink' || artistData.userTag === 'demo')) {
       isDemoProfile = true;
+  }
+  
+  // Create safe fallbacks based on target
+  const defaultName = isExplicitDemoTarget ? "Victor Ink" : (artistData ? "" : "Cargando...");
+  const defaultBio = isExplicitDemoTarget ? "Conoce a este increíble artista del tatuaje y explora su portafolio en Turnos Tattoo." : (artistData ? "" : "Cargando...");
+  const defaultBg = isExplicitDemoTarget ? "https://lh3.googleusercontent.com/aida-public/AB6AXuBiWtwSf0Fh3AWm01LAlMfj3JGoOdHldaVkVIRDRpbavMRKQEt_SI7cvqZB7R56dQt7nuInHJM7V0a74racFxJT0E12v57KMBnC09rQOtg5YVpvOdglwy8KnhHl1H0tFedvuBum6LD2ADyKGFqdnQ3lUJqIhOZj6bJPzlLI4S7L2n9tqn9wZ6t8smG60s2wvnHM3NabsjD_rMrUmix943Tdd_CAZDTFaQeq5FEq8IXpsVkSLkJ24K0VpV9R4GRF2SDH8cwWPwwNjXI" : (artistData?.backgroundPhotos?.[0] || "");
+  const defaultAvatar = isExplicitDemoTarget ? "https://lh3.googleusercontent.com/aida-public/AB6AXuC_KPGqcJA_LhFIZepjSW5Tf7MtTYEc4iRE4J7SbB3ZSPxSwnEhyd39Iptl8UJFQS6m269Hwwx2KZd5ywVY5a6mTaGP0eKxhhFlOChAey3A8OvJ2X43uTD6BH3bkh9AjFk_ged61veFwFc7XeGxUyraAjawtpIIQxmkRhrpbijpEFfFKyxzuCj7Ltek0mSl4QQtognkqRBrsSC25geKA2JCuif3FBQ8nEvcajl0_fkXLSakiANOEXbVDwi9vnMRrjEXDcc5_qMFBm0" : (artistData?.profilePhotoUrl || "");
+
+
+  
+  if (isProfileLoading) {
+    return (
+      <div className="bg-background min-h-screen flex flex-col animate-pulse">
+        <div className="h-[30vh] md:h-[40vh] bg-surface-variant w-full" />
+        <div className="max-w-screen-xl mx-auto px-4 w-full -mt-20 md:-mt-24 flex flex-col items-center">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-surface-container border-4 border-background mb-4" />
+            <div className="h-8 bg-surface-container rounded w-64 mb-4" />
+            <div className="flex gap-4 mb-4">
+                <div className="h-6 bg-surface-container rounded w-24" />
+                <div className="h-6 bg-surface-container rounded w-24" />
+            </div>
+            <div className="h-16 bg-surface-container rounded w-full max-w-2xl mb-8" />
+            <div className="h-12 bg-surface-container rounded w-48 mb-12" />
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 w-full">
+                <div className="aspect-[4/5] bg-surface-container" />
+                <div className="aspect-[4/5] bg-surface-container" />
+                <div className="aspect-[4/5] bg-surface-container" />
+                <div className="aspect-[4/5] bg-surface-container hidden md:block" />
+            </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="bg-background text-on-background font-body-md selection:bg-primary selection:text-on-primary min-h-screen">
       <Helmet>
         <title>{artistData?.displayName ? `${artistData.displayName} - Turnos Tattoo` : 'Perfil de Artista - Turnos Tattoo'}</title>
-        <meta name="description" content={artistData?.bio || 'Conoce a este increíble artista del tatuaje y explora su portafolio en Turnos Tattoo.'} />
+        <meta name="description" content={artistData?.bio || defaultBio} />
         <meta property="og:title" content={artistData?.displayName ? `${artistData.displayName} - Portafolio de Tatuajes` : 'Perfil de Artista - Turnos Tattoo'} />
         <meta property="og:description" content={artistData?.bio || 'Explora el portafolio y reserva tu turno.'} />
         <meta property="og:image" content={artistData?.profilePhotoUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo'} />
@@ -486,7 +549,7 @@ export default function Profile() {
         </div>
         {/* Banner Section */}
         <section className="relative w-full h-64 md:h-96 overflow-hidden">
-          <div className="w-full h-full bg-cover bg-center transition-transform duration-1000 hover:scale-105" style={{ backgroundImage: `url('${artistData?.backgroundPhotos?.[0] || "https://lh3.googleusercontent.com/aida-public/AB6AXuBiWtwSf0Fh3AWm01LAlMfj3JGoOdHldaVkVIRDRpbavMRKQEt_SI7cvqZB7R56dQt7nuInHJM7V0a74racFxJT0E12v57KMBnC09rQOtg5YVpvOdglwy8KnhHl1H0tFedvuBum6LD2ADyKGFqdnQ3lUJqIhOZj6bJPzlLI4S7L2n9tqn9wZ6t8smG60s2wvnHM3NabsjD_rMrUmix943Tdd_CAZDTFaQeq5FEq8IXpsVkSLkJ24K0VpV9R4GRF2SDH8cwWPwwNjXI" }')` }}></div>
+          <div className="w-full h-full bg-cover bg-center transition-transform duration-1000 hover:scale-105" style={{ backgroundImage: `url('${defaultBg}')` }}></div>
           {/* Filtro oscuro para no perder la estética con fotos claras */}
           <div className="absolute inset-0 bg-black/40"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-background via-black/50 to-transparent"></div>
@@ -497,14 +560,14 @@ export default function Profile() {
           {/* Profile Photo */}
           <div className="relative p-1 bg-background rounded-full mb-2">
             <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-primary">
-              <img className="w-full h-full object-cover" alt="Artist profile" src={artistData?.profilePhotoUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuC_KPGqcJA_LhFIZepjSW5Tf7MtTYEc4iRE4J7SbB3ZSPxSwnEhyd39Iptl8UJFQS6m269Hwwx2KZd5ywVY5a6mTaGP0eKxhhFlOChAey3A8OvJ2X43uTD6BH3bkh9AjFk_ged61veFwFc7XeGxUyraAjawtpIIQxmkRhrpbijpEFfFKyxzuCj7Ltek0mSl4QQtognkqRBrsSC25geKA2JCuif3FBQ8nEvcajl0_fkXLSakiANOEXbVDwi9vnMRrjEXDcc5_qMFBm0"} />
+              <img className="w-full h-full object-cover" alt="Artist profile" src={defaultAvatar} />
             </div>
           </div>
 
           {/* Artist Info */}
-          <h1 className="font-headline-lg text-headline-lg text-on-surface font-extrabold uppercase tracking-tight text-3xl mb-4">{artistData?.displayName || "Victor Ink"}</h1>
+          <h1 className="font-headline-lg text-headline-lg text-on-surface font-extrabold uppercase tracking-tight text-3xl mb-4">{artistData?.displayName || defaultName}</h1>
           {(() => {
-            const tags = (artistData?.specialtyTags && artistData.specialtyTags.length > 0) ? artistData.specialtyTags : ['Realismo', 'Black & Grey'];
+            const tags = ((artistData?.specialtyTags && artistData.specialtyTags.length > 0) ? artistData.specialtyTags : ['Realismo', 'Black & Grey']).slice(0, 3);
             const count = tags.length;
             let containerClass = "flex justify-center mb-4 w-full px-2 md:px-4 ";
             if (count === 1) containerClass += "gap-2";
@@ -710,7 +773,7 @@ export default function Profile() {
 
         <section className="mt-section-gap mb-section-gap px-gutter max-w-container-max mx-auto -mt-16 md:-mt-24">
           <div className="bg-surface-container p-8 border border-outline-variant/20 flex flex-col gap-8 items-center text-center">
-            <img className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-primary shrink-0" alt={artistData?.displayName || "Artist"} src={artistData?.profilePhotoUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuC_KPGqcJA_LhFIZepjSW5Tf7MtTYEc4iRE4J7SbB3ZSPxSwnEhyd39Iptl8UJFQS6m269Hwwx2KZd5ywVY5a6mTaGP0eKxhhFlOChAey3A8OvJ2X43uTD6BH3bkh9AjFk_ged61veFwFc7XeGxUyraAjawtpIIQxmkRhrpbijpEFfFKyxzuCj7Ltek0mSl4QQtognkqRBrsSC25geKA2JCuif3FBQ8nEvcajl0_fkXLSakiANOEXbVDwi9vnMRrjEXDcc5_qMFBm0"} />
+            <img className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-primary shrink-0" alt={artistData?.displayName || "Artist"} src={defaultAvatar} />
             <div>
               <h2 className="font-headline-md text-headline-md text-on-surface mb-4 font-bold uppercase tracking-tight">Sobre Mí</h2>
               <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">{artistData?.bio || "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente."}</p>

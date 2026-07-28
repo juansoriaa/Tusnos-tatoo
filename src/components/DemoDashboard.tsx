@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
-import { db } from '../firebase';
+import { db, auth, onAuthStateChanged } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 
@@ -25,8 +25,16 @@ const defaultFaqs = [
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        const loadData = async () => {
-            const demoUserId = localStorage.getItem('demoUserId');
+        let unsubscribe = () => {};
+        const localUid = localStorage.getItem('demoUserId');
+        if (localUid) {
+            loadData(localUid);
+        } else {
+            unsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) loadData(user.uid);
+            });
+        }
+        async function loadData(demoUserId: string) {
             let data = null;
             if (demoUserId) {
                 try {
@@ -112,8 +120,7 @@ const defaultFaqs = [
             }));
         }
         };
-        loadData();
-    }, []);
+    }, []); // Subscribe to auth changes instead of manual call
 
     const [name, setName] = useState('Victor Ink');
     const [bio, setBio] = useState('Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.');
@@ -175,9 +182,26 @@ const defaultFaqs = [
             backgroundPhotos: [bannerUrl],
             faqs: faqs
         };
-        localStorage.setItem('demoArtistData_demo', JSON.stringify(demoData));
-        const demoUserId = localStorage.getItem('demoUserId');
-        if (demoUserId) {
+        
+        const demoUserId = (localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo');
+        const cacheKey = 'demoArtistData_' + demoUserId;
+        try {
+            const existingCache = localStorage.getItem(cacheKey);
+            let mergedData = demoData;
+            if (existingCache) {
+                mergedData = { ...JSON.parse(existingCache), ...demoData };
+            }
+            localStorage.setItem(cacheKey, JSON.stringify(mergedData));
+            // Also update the generic demo cache for backward compatibility
+            const existingDemo = localStorage.getItem('demoArtistData_demo');
+            let mergedDemo = demoData;
+            if (existingDemo) {
+                mergedDemo = { ...JSON.parse(existingDemo), ...demoData };
+            }
+            localStorage.setItem('demoArtistData_demo', JSON.stringify(mergedDemo));
+        } catch(e) {}
+
+        if (demoUserId && demoUserId !== 'demo') {
             updateDoc(doc(db, 'users', demoUserId), demoData).catch(e => console.error("Error saving to Firestore", e));
         }
         window.dispatchEvent(new CustomEvent('profileDataChanged'));
@@ -210,9 +234,17 @@ const defaultFaqs = [
     const periodLabels = { day: 'Hoy', week: 'Esta sem', month: 'Este mes' };
         
     useEffect(() => {
-        const loadMetrics = async () => {
+        let unsubscribe = () => {};
+        const localUid = localStorage.getItem('demoUserId');
+        if (localUid) {
+            loadMetrics(localUid);
+        } else {
+            unsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) loadMetrics(user.uid);
+            });
+        }
+        async function loadMetrics(demoUserId?: string) {
             let parsed = null;
-            const demoUserId = localStorage.getItem('demoUserId');
             if (demoUserId) {
                 try {
                     const { doc, getDoc } = await import('firebase/firestore');
@@ -249,9 +281,9 @@ const defaultFaqs = [
                 } catch (e) {}
             }
         };
-        loadMetrics();
-        window.addEventListener('demoMetricsUpdated', loadMetrics);
-        return () => window.removeEventListener('demoMetricsUpdated', loadMetrics);
+        loadMetrics(localStorage.getItem('demoUserId') || undefined);
+        const handleMetrics = () => loadMetrics(localStorage.getItem('demoUserId') || undefined); window.addEventListener('demoMetricsUpdated', handleMetrics);
+        return () => window.removeEventListener('demoMetricsUpdated', handleMetrics);
     }, []);
 
     useEffect(() => {
@@ -368,7 +400,7 @@ const defaultFaqs = [
         let data = saved ? JSON.parse(saved) : {};
         data.isAvailable = newIsAvailable;
         localStorage.setItem('demoArtistData_demo', JSON.stringify(data));
-        const demoUserId = localStorage.getItem('demoUserId');
+        const demoUserId = (localStorage.getItem('demoUserId') || auth.currentUser?.uid);
         if (demoUserId) {
             updateDoc(doc(db, 'users', demoUserId), { isAvailable: newIsAvailable }).catch(e => console.error(e));
         }

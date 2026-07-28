@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-import { db } from '../firebase';
+import { db, auth, onAuthStateChanged } from '../firebase';
 import { collection, getDocs, query, orderBy, doc, getDoc, where } from 'firebase/firestore';
 
 
@@ -26,7 +26,7 @@ export default function DemoMetrics() {
     useEffect(() => {
         const loadMetrics = async () => {
             let parsed = null;
-            const demoUserId = localStorage.getItem('demoUserId');
+            const demoUserId = auth.currentUser?.uid;
             if (demoUserId) {
                 try {
                     const docSnap = await getDoc(doc(db, 'users', demoUserId));
@@ -85,7 +85,7 @@ export default function DemoMetrics() {
     useEffect(() => {
         const loadPhotos = async () => {
             try {
-                const demoUserId = localStorage.getItem('demoUserId');
+                const demoUserId = auth.currentUser?.uid;
                 const q = demoUserId 
                     ? query(collection(db, 'photos'), where('createdBy', '==', demoUserId))
                     : query(collection(db, 'photos'), orderBy('createdAt', 'desc'));

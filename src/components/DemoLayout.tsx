@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth, onAuthStateChanged } from '../firebase';
 
 interface DemoLayoutProps {
     children: React.ReactNode;
@@ -16,12 +16,17 @@ interface DemoLayoutProps {
 
 export default function DemoLayout
 ({ children, activeTab, titlePrefix, titleAccent, description, onNavigate }: DemoLayoutProps) {
+    const navigate = useNavigate();
+    const [authUid, setAuthUid] = useState<string | null>(null);
+    const [isAuthChecking, setIsAuthChecking] = useState(true);
+    const [animateHighlight, setAnimateHighlight] = useState(false);
+
     const [waitlistCount, setWaitlistCount] = useState(3);
 
     useEffect(() => {
         let unsubscribe = () => {};
         const load = async () => {
-            const demoUserId = localStorage.getItem('demoUserId');
+            const demoUserId = authUid;
             if (demoUserId) {
                 const { collection, onSnapshot, query, where } = await import('firebase/firestore');
                 const q = query(collection(db, 'users', demoUserId, 'waitlist'), where('read', '==', false));
@@ -32,10 +37,31 @@ export default function DemoLayout
         };
         load();
         return () => unsubscribe();
-    }, []);
+    }, [authUid]);
         const [avatarUrl, setAvatarUrl] = useState('https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo');
     const [turnosLlenos, setTurnosLlenos] = useState(false);
-    const [animateHighlight, setAnimateHighlight] = useState(false);
+
+
+    useEffect(() => {
+        let authUnsubscribe = () => {};
+        
+        const localUid = localStorage.getItem('demoUserId');
+        if (localUid) {
+            setAuthUid(localUid);
+            setIsAuthChecking(false);
+        } else {
+            authUnsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    setAuthUid(user.uid);
+                    setIsAuthChecking(false);
+                } else {
+                    navigate('/');
+                }
+            });
+        }
+        return () => authUnsubscribe();
+    }, [navigate]);
+
 
     const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
@@ -48,7 +74,7 @@ export default function DemoLayout
 
 
     useEffect(() => {
-        const demoUserId = localStorage.getItem('demoUserId');
+        const demoUserId = authUid;
         if (demoUserId) {
             const q = query(collection(db, 'users', demoUserId, 'notifications'), orderBy('date', 'desc'));
             const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -62,14 +88,14 @@ export default function DemoLayout
             });
             return () => unsubscribe();
         }
-    }, []);
+    }, [authUid]);
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
     const handleReadNotification = async (notif: any) => {
         setSelectedNotification(notif);
         if (!notif.read) {
-            const demoUserId = localStorage.getItem('demoUserId');
+            const demoUserId = authUid;
             if (demoUserId) {
                 try {
                     await updateDoc(doc(db, 'users', demoUserId, 'notifications', notif.id), {
@@ -84,7 +110,7 @@ export default function DemoLayout
 
     useEffect(() => {
         const fetchDemoUser = async () => {
-            const demoUserId = localStorage.getItem('demoUserId');
+            const demoUserId = authUid;
             if (demoUserId) {
                 try {
                     const docSnap = await getDoc(doc(db, 'users', demoUserId));
@@ -101,7 +127,7 @@ export default function DemoLayout
     }, []);
 
     const handleSaveConfig = async () => {
-        const demoUserId = localStorage.getItem('demoUserId');
+        const demoUserId = authUid;
         if (!demoUserId) {
             alert('No se pudo identificar el usuario de la demo.');
             return;
@@ -169,12 +195,15 @@ export default function DemoLayout
         };
     }, []);
 
-    const navigate = useNavigate();
+    
 
     const handleNav = (path: string) => {
         if (path === '/') {
-            localStorage.removeItem('demoUserId');
-            import('../firebase').then(({ auth }) => auth.signOut());
+            localStorage.clear(); // Clear all cached data
+            import('../lib/cache').then((m) => {
+                for (let key in m.globalPreloadCache) delete m.globalPreloadCache[key];
+            });
+            localStorage.removeItem('demoUserId'); import('../firebase').then(({ auth }) => auth.signOut()); navigate('/');
         }
         if (onNavigate) {
             onNavigate(path);
@@ -182,6 +211,10 @@ export default function DemoLayout
             navigate(path);
         }
     };
+
+    if (isAuthChecking) {
+        return <div className="min-h-screen bg-deep-black flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
+    }
 
     return (
         <div className="bg-deep-black text-silver-text font-body-md h-[100dvh] overflow-hidden flex text-[#e5e2e1] bg-[#050505]">

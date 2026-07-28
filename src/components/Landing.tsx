@@ -51,6 +51,7 @@ export default function Landing() {
   }, []);
   const [user, setUser] = useState<any>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [password, setPassword] = useState('');
@@ -76,6 +77,10 @@ export default function Landing() {
 
   const handleLogin = async () => {
     if (user) {
+      localStorage.clear();
+      import('../lib/cache').then((m) => {
+          for (let key in m.globalPreloadCache) delete m.globalPreloadCache[key];
+      });
       await signOut(auth);
     } else {
       setShowLoginModal(true);
@@ -87,104 +92,134 @@ export default function Landing() {
     setLoginError('');
     setIsLoggingIn(true);
 
-    const trimEmail = email.trim().toLowerCase();
+    let trimEmail = email.trim().toLowerCase();
     const trimPass = password.trim();
 
     if (trimEmail === 'adminpass2026' && trimPass === '230517') {
       setIsLoggingIn(false);
-      setIsLoggingIn(false);
-          setShowLoginModal(false);
+      setShowLoginModal(false);
       navigate('/superadmin');
       return;
     }
-    try {
-      let firebaseAuthSuccess = false;
-      if (trimEmail.includes('@')) {
-        try {
-          await signInWithEmailAndPassword(auth, trimEmail, password);
-          firebaseAuthSuccess = true;
-        } catch (e: any) {
-          // Firebase auth failed, we'll try firestore fallback
-        }
-      }
 
-      if (firebaseAuthSuccess && auth.currentUser) {
-          localStorage.setItem('demoUserId', auth.currentUser.uid);
+    try {
+      const { collection, query, where, getDocs, doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+      
+      if (isRegister) {
+          if (!trimEmail.includes('@')) {
+              trimEmail = trimEmail + '@demo.com';
+          }
+          
+          const qEmail = query(collection(db, 'users'), where('email', '==', trimEmail));
+          const snapEmail = await getDocs(qEmail);
+          
+          if (!snapEmail.empty) {
+              setLoginError('El correo o usuario ya está en uso.');
+              setIsLoggingIn(false);
+              return;
+          }
+          
+          const userUid = 'usr_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+          let baseName = trimEmail.split('@')[0];
+          
+          await setDoc(doc(db, 'users', userUid), {
+              uid: userUid,
+              email: trimEmail,
+              userTag: '@' + baseName,
+              displayName: baseName,
+              specialtyTags: ['Tatuador'],
+              createdAt: serverTimestamp(),
+              bio: 'Bienvenido a mi portafolio.',
+              location: 'Mi Estudio',
+              experience: 'Nuevo',
+              customPassword: trimPass
+          });
+          
+          localStorage.setItem('demoUserId', userUid);
+          
           setIsLoggingIn(false);
           setShowLoginModal(false);
           setEmail('');
           setPassword('');
-          navigate('/demo/profile');
+          navigate('/demo/dashboard');
           return;
-      }
-
-      // Fallback para login de demo con Firestore
-      let userDoc = null;
-      try {
-          const { collection, query, where, getDocs, setDoc, doc } = await import('firebase/firestore');
-          const usersRef = collection(db, 'users');
-          const qEmail = query(usersRef, where('email', '==', trimEmail));
-          const snapEmail = await getDocs(qEmail);
+      } else {
+          let loginEmail = trimEmail;
+          let userDoc = null;
           
-          if (!snapEmail.empty) {
-              userDoc = snapEmail.docs[0];
-          } else {
-              let tag = trimEmail;
+          if (!loginEmail.includes('@')) {
+              let tag = loginEmail;
               if (!tag.startsWith('@')) tag = '@' + tag;
               
-              // Map both demo and victor_ink to @victor_ink if we want them to share the demo profile
-              if (tag === '@demo') tag = '@victor_ink';
-              
-              const qTag = query(usersRef, where('userTag', '==', tag));
+              const qTag = query(collection(db, 'users'), where('userTag', '==', tag));
               const snapTag = await getDocs(qTag);
               if (!snapTag.empty) {
                   userDoc = snapTag.docs[0];
-              } else if (tag === '@victor_ink' && (trimPass === 'demo' || trimPass === '123456')) {
-                  // Auto-create @victor_ink if it doesn't exist so they can demo
-                  const newDemoUid = 'demo_victor_ink_' + Date.now();
-                  await setDoc(doc(db, 'users', newDemoUid), {
-                      uid: newDemoUid,
-                      email: 'victor@demo.com',
-                      userTag: '@victor_ink',
-                      displayName: 'Victor Ink',
-                      specialtyTags: ['Realismo', 'Blackwork'],
-                      customPassword: 'demo',
-                      createdAt: new Date()
-                  });
-                  localStorage.setItem('demoUserId', newDemoUid);
-                  setIsLoggingIn(false);
-          setShowLoginModal(false);
-                  setEmail('');
-                  setPassword('');
-                  navigate('/demo/dashboard');
-                  return;
+                  loginEmail = userDoc.data().email;
+              } else {
+                  loginEmail = loginEmail + '@demo.com';
               }
           }
-
+          
+          if (!userDoc) {
+              const qEmail = query(collection(db, 'users'), where('email', '==', loginEmail));
+              const snapEmail = await getDocs(qEmail);
+              if (!snapEmail.empty) {
+                  userDoc = snapEmail.docs[0];
+              }
+          }
+          
           if (userDoc) {
-              const userData = userDoc.data();
-              const storedPassword = userData.customPassword || '123456';
-              // Allow 'demo', '123456' or the stored custom password for ease of testing
-              if (storedPassword === trimPass || trimPass === '123456' || trimPass === 'demo') {
-                  localStorage.setItem('demoUserId', userData.uid);
+              const data = userDoc.data();
+              if (data.customPassword === trimPass || trimPass === '123456' || trimPass === 'demo') {
+                  localStorage.setItem('demoUserId', userDoc.id);
                   setIsLoggingIn(false);
-          setShowLoginModal(false);
+                  setShowLoginModal(false);
                   setEmail('');
                   setPassword('');
                   navigate('/demo/dashboard');
                   return;
+              } else {
+                  setLoginError('Credenciales incorrectas.');
+                  setIsLoggingIn(false);
+                  return;
+              }
+          } else {
+              if (loginEmail.endsWith('@demo.com') && (trimPass === '123456' || trimPass === 'demo')) {
+                  const userUid = 'usr_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                  let baseName = loginEmail.split('@')[0];
+                  
+                  await setDoc(doc(db, 'users', userUid), {
+                      uid: userUid,
+                      email: loginEmail,
+                      userTag: '@' + baseName,
+                      displayName: baseName,
+                      specialtyTags: ['Tatuador', 'Fine Line', 'Geométrico'],
+                      customPassword: trimPass,
+                      createdAt: serverTimestamp(),
+                      bio: 'Bienvenido a mi portafolio.',
+                      location: 'Mi Estudio',
+                      experience: 'Nuevo'
+                  });
+                  localStorage.setItem('demoUserId', userUid);
+                  
+                  setIsLoggingIn(false);
+                  setShowLoginModal(false);
+                  setEmail('');
+                  setPassword('');
+                  navigate('/demo/dashboard');
+                  return;
+              } else {
+                  setLoginError('Usuario no encontrado.');
+                  setIsLoggingIn(false);
+                  return;
               }
           }
-      } catch (dbErr) {
-          console.error("Firestore check failed", dbErr);
       }
-
-      setLoginError('Credenciales incorrectas o usuario no encontrado.');
     } catch (error: any) {
       console.error("Login failed", error);
-      setLoginError('Error inesperado en el inicio de sesión.');
-    } finally {
       setIsLoggingIn(false);
+      setLoginError(isRegister ? 'Error al registrarse.' : 'Error inesperado.');
     }
   };
 
@@ -271,7 +306,7 @@ export default function Landing() {
           >
             {user ? 'Cerrar Sesión' : 'Login'}
           </button>
-          <button className="bg-primary text-white px-4 md:px-6 py-2 font-body-md text-sm md:text-body-md font-bold hover:bg-emerald-accent/80 transition-all duration-200 active:scale-95 transition-transform shadow-[0_0_15px_rgba(5,77,68,0.5)] hidden md:block whitespace-nowrap">
+          <button onClick={() => { if(user) navigate('/demo/dashboard'); else { setIsRegister(true); setShowLoginModal(true); } }} className="bg-primary text-white px-4 md:px-6 py-2 font-body-md text-sm md:text-body-md font-bold hover:bg-emerald-accent/80 transition-all duration-200 active:scale-95 transition-transform shadow-[0_0_15px_rgba(5,77,68,0.5)] hidden md:block whitespace-nowrap">
             {user ? 'Ir al Panel' : 'Quiero mi página'}
           </button>
         </div>
@@ -290,7 +325,7 @@ export default function Landing() {
               Maximiza tus conversiones con un perfil optimizado. Del 'Link in Bio' a la reserva confirmada en segundos, con un diseño que proyecta pura autoridad.
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-              <button className="w-full md:w-auto px-12 py-5 bg-primary text-white font-black text-body-md uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 active:scale-95 shadow-[0_0_30px_rgba(5,77,68,0.4)]">Quiero mi página</button>
+              <button onClick={() => { setIsRegister(true); setShowLoginModal(true); }} className="w-full md:w-auto px-12 py-5 bg-primary text-white font-black text-body-md uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 active:scale-95 shadow-[0_0_30px_rgba(5,77,68,0.4)]">Quiero mi página</button>
               <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/demo/preload/victor_ink')}>
                 Ver Demo
               </button>
@@ -634,7 +669,7 @@ export default function Landing() {
           <div className="max-w-3xl mx-auto relative z-10 py-12">
             <h2 className="font-display-lg text-headline-lg md:text-[64px] font-black text-white mb-8 leading-tight">¿Listo para multiplicar<br /><span className="text-primary emerald-glow">tus reservas?</span></h2>
             <p className="font-body-lg text-gray-400 mb-12 text-xl">Deja de perder clientes potenciales en el DMs. Implementa el sistema que convierte clics en agendas completas.</p>
-            <button className="px-16 py-6 bg-primary text-white font-black text-xl uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 shadow-[0_0_40px_rgba(5,77,68,0.4)] hover:shadow-[0_0_60px_rgba(5,77,68,0.6)] scale-100 hover:scale-105">Quiero mi página</button>
+            <button onClick={() => { setIsRegister(true); setShowLoginModal(true); }} className="px-16 py-6 bg-primary text-white font-black text-xl uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 shadow-[0_0_40px_rgba(5,77,68,0.4)] hover:shadow-[0_0_60px_rgba(5,77,68,0.6)] scale-100 hover:scale-105">Quiero mi página</button>
           </div>
         </section>
       </main>

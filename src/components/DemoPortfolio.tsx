@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
 import PhotoUploader, { ImageFilters } from './PhotoUploader';
-import { db, storage, auth } from '../firebase';
+import { db, storage, auth, onAuthStateChanged } from '../firebase';
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, where, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createThumbnail } from '../lib/imageUtils';
@@ -140,8 +140,20 @@ export default function DemoPortfolio() {
     };
 
     useEffect(() => {
+        let unsubscribe = () => {};
+        const localUid = localStorage.getItem('demoUserId');
+        if (localUid) {
+            fetchPhotos(localUid);
+        } else {
+            unsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    fetchPhotos(user.uid);
+                }
+            });
+        }
+        
         // Fetch existing photos when component mounts
-    const fetchPhotos = async (userUid: string) => {
+    async function fetchPhotos(userUid: string) {
             let artistUid = userUid || 'anonymous_demo';
             // Resolve tag to actual uid if it's a tag
             if (typeof artistUid === 'string' && artistUid.startsWith('@')) {
@@ -151,6 +163,18 @@ export default function DemoPortfolio() {
                     const snap = await getDocs(q);
                     if (!snap.empty) {
                         artistUid = snap.docs[0].id;
+                    }
+                } catch(e) {}
+            }
+            if (artistUid) {
+                try {
+                    const { doc, getDoc } = await import('firebase/firestore');
+                    const uSnap = await getDoc(doc(db, 'users', artistUid));
+                    if (uSnap.exists() && uSnap.data().customCategories) {
+                        setCategories(uSnap.data().customCategories);
+                    } else if (artistUid === 'anonymous_demo') {
+                        const saved = localStorage.getItem('anonymous_categories');
+                        if (saved) setCategories(JSON.parse(saved));
                     }
                 } catch(e) {}
             }
@@ -312,14 +336,18 @@ export default function DemoPortfolio() {
                 ];
 
                 let finalPhotos = photos.map(p => ({
+                    ...p,
                     id: p.id,
-                    src: p.imageUrl || p.src,
-                    alt: p.alt || p.title || 'Foto de Tatuaje',
+                    src: p.url || p.imageUrl || p.src,
+                    thumbnailUrl: p.thumbnailUrl || p.url || p.imageUrl || p.src,
+                    alt: p.alt || p.title || p.info || 'Foto de Tatuaje',
                     title: p.title || 'Foto de Tatuaje',
                     tags: p.tags || p.categories || ['Portfolio'],
+                    info: p.info || p.alt || '',
                     hours: p.hours,
                     sessions: p.sessions,
-                    size: p.size
+                    size: p.size,
+                    filters: p.filters || null
                 }));
                 
                 if (isDemoUser) {
@@ -373,10 +401,6 @@ export default function DemoPortfolio() {
                 console.error("Error fetching photos", error);
             }
         };
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-            const demoUserId = localStorage.getItem('demoUserId');
-            fetchPhotos(demoUserId || user?.uid || '');
-        });
         return () => unsubscribe();
     }, []);
 
@@ -523,11 +547,11 @@ const handleSaveObra = async () => {
                     const newPhotoRef = await addDoc(collection(db, 'photos'), {
                         ...updatedData,
                         originalFallbackId: editingPhoto.id,
-                        createdBy: localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'anonymous_demo',
+                        createdBy: (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                         createdAt: serverTimestamp()
                     });
                     
-                    const newPhoto = { id: newPhotoRef.id, originalFallbackId: editingPhoto.id, ...updatedData, createdBy: localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'anonymous_demo' };
+                    const newPhoto = { id: newPhotoRef.id, originalFallbackId: editingPhoto.id, ...updatedData, createdBy: (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo' };
                     setExistingPhotos(prev => {
                         const newPhotos = prev.map(p => p.id === editingPhoto.id ? newPhoto : p);
                         globalCachedPhotos = newPhotos;
@@ -564,7 +588,7 @@ const handleSaveObra = async () => {
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
                     filters: imageFilters,
-                    createdBy: localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'anonymous_demo',
+                    createdBy: (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                     createdAt: serverTimestamp()
                 });
 
@@ -579,7 +603,7 @@ const handleSaveObra = async () => {
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
                     filters: imageFilters,
-                    createdBy: localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'anonymous_demo',
+                    createdBy: (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                 };
                 
                 setExistingPhotos(prev => {
@@ -603,15 +627,46 @@ const handleSaveObra = async () => {
         }
     };
 
+    const syncCategories = async (newCats) => {
+        const uid = (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || (localStorage.getItem('demoUserId') || auth.currentUser?.uid);
+        if (uid) {
+            try {
+                const { doc, updateDoc } = await import('firebase/firestore');
+                await updateDoc(doc(db, 'users', uid), { customCategories: newCats });
+                window.dispatchEvent(new CustomEvent('profileDataChanged'));
+                
+                // Update local caches
+                const cacheKey = 'demoArtistData_' + uid;
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    parsed.customCategories = newCats;
+                    localStorage.setItem(cacheKey, JSON.stringify(parsed));
+                }
+                import('../lib/cache').then(({ globalPreloadCache }) => {
+                    if (globalPreloadCache[uid]?.artistData) {
+                        globalPreloadCache[uid].artistData.customCategories = newCats;
+                    }
+                });
+            } catch(e) {}
+        } else {
+            localStorage.setItem('anonymous_categories', JSON.stringify(newCats));
+        }
+    };
+
     const handleAddCategory = () => {
         if (newCategory.trim() && !categories.map(c => c.toLowerCase()).includes(newCategory.trim().toLowerCase())) {
-            setCategories([...categories, newCategory.trim()]);
+            const newCats = [...categories, newCategory.trim()];
+            setCategories(newCats);
+            syncCategories(newCats);
             setNewCategory('');
         }
     };
 
     const handleRemoveCategory = (catToRemove: string) => {
-        setCategories(categories.filter(c => c !== catToRemove));
+        const newCats = categories.filter(c => c !== catToRemove);
+        setCategories(newCats);
+        syncCategories(newCats);
         setSelectedCategories(selectedCategories.filter(c => c !== catToRemove));
     };
 
@@ -878,8 +933,8 @@ const handleSaveObra = async () => {
                     >
                         <img 
                             alt={photo.title} 
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100 grayscale hover:grayscale-0" 
-                            src={photo.thumbnailUrl || photo.url} 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100" 
+                            src={photo.thumbnailUrl || photo.url || photo.src} 
                             style={{ filter: filterStr.trim() }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-deep-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
-import { db } from '../firebase';
+import { db, auth, onAuthStateChanged } from '../firebase';
 
 export default function DemoWaitlist() {
     const navigate = useNavigate();
@@ -65,7 +65,7 @@ export default function DemoWaitlist() {
         let unsubscribe = () => {};
         const load = async () => {
             const { collection, onSnapshot, query, orderBy } = await import('firebase/firestore');
-            const demoUserId = localStorage.getItem('demoUserId');
+            const demoUserId = auth.currentUser?.uid;
             if (demoUserId) {
                 const q = query(collection(db, 'users', demoUserId, 'waitlist'), orderBy('createdAt', 'desc'));
                 unsubscribe = onSnapshot(q, (snapshot) => {
@@ -85,7 +85,7 @@ export default function DemoWaitlist() {
                 msg.id === data.id ? { ...msg, read: true } : msg
             );
             setWaitlistMessages(updatedMessages);
-            localStorage.setItem('demoWaitlistMessages_' + (localStorage.getItem('demoUserId') || 'anonymous_demo'), JSON.stringify(updatedMessages));
+            localStorage.setItem('demoWaitlistMessages_' + (auth.currentUser?.uid || 'anonymous_demo'), JSON.stringify(updatedMessages));
             window.dispatchEvent(new CustomEvent('newWaitlistMessage'));
         }
     };

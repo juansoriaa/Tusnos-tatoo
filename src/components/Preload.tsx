@@ -10,31 +10,31 @@ export default function Preload() {
   const navigate = useNavigate();
 
   const [artistName, setArtistName] = useState(() => {
-    if (globalPreloadCache[id || 'demo']?.artistName) return globalPreloadCache[id || 'demo'].artistName;
+    if (globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo']?.artistName) return globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'].artistName;
     try {
-      const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
+      const saved = localStorage.getItem('demoArtistData_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'));
       if (saved) {
         const data = JSON.parse(saved);
         if (data.displayName) return data.displayName;
       }
     } catch(e) {}
-    return 'Victor Ink';
+    return id ? (id.startsWith('@') ? id : '@' + id) : 'Victor Ink';
   });
   const [specialties, setSpecialties] = useState<string[]>(() => {
-    if (globalPreloadCache[id || 'demo']?.specialties) return globalPreloadCache[id || 'demo'].specialties;
+    if (globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo']?.specialties) return globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'].specialties;
     try {
-      const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
+      const saved = localStorage.getItem('demoArtistData_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'));
       if (saved) {
         const data = JSON.parse(saved);
         if (data.specialtyTags && data.specialtyTags.length > 0) return data.specialtyTags;
       }
     } catch(e) {}
-    return ['Realismo', 'Black & Grey'];
+    return id ? [] : ['Realismo', 'Black & Grey'];
   });
   const [profilePhotoUrl, setProfilePhotoUrl] = useState(() => {
-    if (globalPreloadCache[id || 'demo']?.profilePhotoUrl) return globalPreloadCache[id || 'demo'].profilePhotoUrl;
+    if (globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo']?.profilePhotoUrl) return globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'].profilePhotoUrl;
     try {
-      const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
+      const saved = localStorage.getItem('demoArtistData_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'));
       if (saved) {
         const data = JSON.parse(saved);
         if (data.profilePhotoUrl) return data.profilePhotoUrl;
@@ -44,9 +44,9 @@ export default function Preload() {
   });
   
   const [bgPhotos, setBgPhotos] = useState<string[]>(() => {
-    if (globalPreloadCache[id || 'demo']?.bgPhotos) return globalPreloadCache[id || 'demo'].bgPhotos;
+    if (globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo']?.bgPhotos) return globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'].bgPhotos;
     try {
-      const savedBg = localStorage.getItem('demoBgPhotos_' + (id || 'demo'));
+      const savedBg = localStorage.getItem('demoBgPhotos_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'));
       if (savedBg) {
         const parsed = JSON.parse(savedBg);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -57,13 +57,13 @@ export default function Preload() {
 
   useEffect(() => {
     const loadData = () => {
-      const saved = localStorage.getItem('demoArtistData_' + (id || 'demo'));
+      const saved = localStorage.getItem('demoArtistData_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'));
       if (saved) {
         try {
           const data = JSON.parse(saved);
-          if (data.displayName) { setArtistName(data.displayName); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], artistName: data.displayName }; }
-          if (data.specialtyTags && data.specialtyTags.length > 0) { setSpecialties(data.specialtyTags); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], specialties: data.specialtyTags }; }
-          if (data.profilePhotoUrl) { setProfilePhotoUrl(data.profilePhotoUrl); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], profilePhotoUrl: data.profilePhotoUrl }; }
+          if (data.displayName) { setArtistName(data.displayName); globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'] = { ...globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'], artistName: data.displayName }; }
+          if (data.specialtyTags && data.specialtyTags.length > 0) { setSpecialties(data.specialtyTags); globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'] = { ...globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'], specialties: data.specialtyTags }; }
+          if (data.profilePhotoUrl) { setProfilePhotoUrl(data.profilePhotoUrl); globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'] = { ...globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'], profilePhotoUrl: data.profilePhotoUrl }; }
         } catch(e) {}
       }
 
@@ -82,7 +82,7 @@ export default function Preload() {
 
     const navigateToProfile = () => {
       if (isMounted && minTimePassed && dataLoaded) {
-        sessionStorage.setItem('preloaded_' + (id || 'demo'), 'true');
+        sessionStorage.setItem('preloaded_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'), 'true');
         navigate(id ? '/artist/' + id : '/demo/profile', { replace: true });
       }
     };
@@ -92,11 +92,11 @@ export default function Preload() {
       navigateToProfile();
     }, 2000);
 
-    const preloadImages = async () => {
+    const preloadImages = async (uidToUse?: string) => {
       try {
         let artistUid = id;
         if (!artistUid) {
-            artistUid = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+            artistUid = uidToUse;
         }
         if (!artistUid) {
             artistUid = 'anonymous_demo';
@@ -123,14 +123,13 @@ export default function Preload() {
            
            if (userDoc && userDoc.exists()) {
                const data = userDoc.data();
-               if (data.displayName) { setArtistName(data.displayName); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], artistName: data.displayName }; }
-               if (data.specialtyTags && data.specialtyTags.length > 0) { setSpecialties(data.specialtyTags); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], specialties: data.specialtyTags }; }
-               if (data.profilePhotoUrl) { setProfilePhotoUrl(data.profilePhotoUrl); globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], profilePhotoUrl: data.profilePhotoUrl }; }
-               localStorage.setItem('demoArtistData_' + (id || 'demo'), JSON.stringify(data));
+               if (data.displayName) { setArtistName(data.displayName); globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'] = { ...globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'], artistName: data.displayName }; }
+               if (data.specialtyTags && data.specialtyTags.length > 0) { setSpecialties(data.specialtyTags); globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'] = { ...globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'], specialties: data.specialtyTags }; }
+               if (data.profilePhotoUrl) { setProfilePhotoUrl(data.profilePhotoUrl); globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'] = { ...globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'], profilePhotoUrl: data.profilePhotoUrl }; }
+               localStorage.setItem('demoArtistData_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'), JSON.stringify(data));
                
                if (id) {
-                   localStorage.setItem('demoUserId', userDoc.id);
-               }
+                                  }
            }
         }
 
@@ -158,7 +157,7 @@ export default function Preload() {
                 originalFallbackId: data.originalFallbackId
             };
         });
-        localStorage.setItem('demoAllTattoos_' + (id || 'demo'), JSON.stringify(mappedPhotos));
+        localStorage.setItem('demoAllTattoos_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'), JSON.stringify(mappedPhotos));
         
         mappedPhotos.sort((a, b) => {
            const aPinned = a.pinned === true;
@@ -201,12 +200,12 @@ export default function Preload() {
         }));
 
         if (bg4.length > 0) {
-            localStorage.setItem('demoBgPhotos_' + (id || 'demo'), JSON.stringify(bg4));
+            localStorage.setItem('demoBgPhotos_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'), JSON.stringify(bg4));
             setBgPhotos(prev => {
               if (JSON.stringify(prev) !== JSON.stringify(bg4)) {
                 // To avoid animation jump, we could only update if prev is empty, 
                 // but if we want perfect sync we update it here since they are now loaded.
-                globalPreloadCache[id || 'demo'] = { ...globalPreloadCache[id || 'demo'], bgPhotos: bg4 };
+                globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'] = { ...globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'], bgPhotos: bg4 };
                 return bg4;
               }
               return prev;
@@ -220,7 +219,8 @@ export default function Preload() {
       }
     };
 
-    preloadImages();
+    const localUid = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+    preloadImages(localUid || undefined);
 
     return () => {
       isMounted = false;
@@ -301,7 +301,8 @@ export default function Preload() {
 
           {/* Specialty Tags relocated close to name */}
           {(() => {
-            const count = specialties.length;
+            const displaySpecialties = specialties.slice(0, 3);
+            const count = displaySpecialties.length;
             let containerClass = "flex justify-center mt-4 md:mt-12 w-full max-w-lg px-2 md:px-4 ";
             if (count === 1) containerClass += "gap-2";
             else if (count === 2) containerClass += "gap-6 md:gap-8";
@@ -309,7 +310,7 @@ export default function Preload() {
             
             return (
               <div className={containerClass}>
-                {specialties.map((tag, index) => (
+                {displaySpecialties.map((tag, index) => (
                   <span key={index} className="text-[10px] md:text-sm tracking-[0.2em] text-white border border-primary px-2 py-1 md:px-4 md:py-2 rounded-full uppercase transition-all flex items-center justify-center whitespace-nowrap truncate max-w-[32%] md:max-w-none flex-1 md:flex-none">
                     {tag}
                   </span>
