@@ -83,7 +83,7 @@ export default function Preload() {
     const navigateToProfile = () => {
       if (isMounted && minTimePassed && dataLoaded) {
         sessionStorage.setItem('preloaded_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'), 'true');
-        navigate(id ? '/turnos-tatoo/' + id : '/demo/profile', { replace: true });
+        navigate(id ? '/' + (id.startsWith('@') ? id : '@' + id) : '/demo/profile', { replace: true });
       }
     };
 

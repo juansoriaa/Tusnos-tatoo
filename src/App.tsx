@@ -20,8 +20,8 @@ export default function App() {
           <Route path="/demo/preload/:id" element={<Preload />} />
           <Route path="/demo/profile" element={<ArtistProfile />} />
           <Route path="/artist/:id" element={<ArtistProfile />} />
-          <Route path="/turnos-tatoo/:id" element={<ArtistProfile />} />
-          <Route path="/turnos-tatoo/:id/preload" element={<Preload />} />
+          <Route path="/:id" element={<ArtistProfile />} />
+          <Route path="/:id/preload" element={<Preload />} />
           <Route path="/superadmin" element={<SuperAdmin />} />
           <Route path="/demo/dashboard" element={<DemoDashboard />} />
           <Route path="/demo/portfolio" element={<DemoPortfolio />} />

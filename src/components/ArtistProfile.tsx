@@ -21,7 +21,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (shouldPreload) {
-      navigate(id ? '/turnos-tatoo/' + id + '/preload' : '/demo/preload', { replace: true });
+      navigate(id ? '/' + (id.startsWith('@') ? id : '@' + id) + '/preload' : '/demo/preload', { replace: true });
     }
   }, [navigate, id, shouldPreload]);
 

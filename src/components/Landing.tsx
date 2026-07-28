@@ -326,7 +326,7 @@ export default function Landing() {
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-6">
               <button onClick={() => { setIsRegister(true); setShowLoginModal(true); }} className="w-full md:w-auto px-12 py-5 bg-primary text-white font-black text-body-md uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 active:scale-95 shadow-[0_0_30px_rgba(5,77,68,0.4)]">Quiero mi página</button>
-              <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/turnos-tatoo/victor_ink/preload')}>
+              <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/@victor_ink/preload')}>
                 Ver Demo
               </button>
             </div>
