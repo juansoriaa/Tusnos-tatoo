@@ -102,7 +102,7 @@ export default function Profile() {
 
   const [modalOpen, setModalOpen] = useState(false);
 
-  const trackMetric = async (metricKey: 'views' | 'photoClicks' | 'whatsappClicks' | 'agendaClicks') => {
+  const trackMetric = async (metricKey: 'views' | 'photoClicks' | 'whatsappClicks' | 'agendaClicks', photoId?: string) => {
       try {
           // If we have artistUid, increment in Firestore
           let targetUid = id;
@@ -118,6 +118,11 @@ export default function Profile() {
                   [metricKey]: increment(1)
               });
               window.dispatchEvent(new CustomEvent('demoMetricsUpdated'));
+              if (photoId) {
+                  try {
+                      await updateDoc(doc(db, 'photos', photoId), { clicks: increment(1) });
+                  } catch (e) { console.error("Error updating photo clicks", e); }
+              }
           } else {
               // try by resolving
               const { collection, query, where, getDocs, doc, updateDoc, increment } = await import('firebase/firestore');
@@ -130,6 +135,11 @@ export default function Profile() {
                       [metricKey]: increment(1)
                   });
                   window.dispatchEvent(new CustomEvent('demoMetricsUpdated'));
+                  if (photoId) {
+                      try {
+                          await updateDoc(doc(db, 'photos', photoId), { clicks: increment(1) });
+                      } catch (e) { console.error("Error updating photo clicks", e); }
+                  }
               }
           }
       } catch(e) {}
@@ -413,7 +423,7 @@ export default function Profile() {
     } else {
       setActiveTattooIndex(index);
       setModalOpen(true);
-      trackMetric('photoClicks');
+      trackMetric('photoClicks', photoId);
       document.body.classList.add('overflow-hidden');
     }
   };
@@ -460,7 +470,7 @@ export default function Profile() {
           setActiveTattooIndex(vIndex);
           if (!modalOpen) {
             setModalOpen(true);
-            trackMetric('photoClicks');
+            trackMetric('photoClicks', photoId);
             document.body.classList.add('overflow-hidden');
           }
         }
@@ -656,7 +666,6 @@ export default function Profile() {
                   window.open(`https://wa.me/549${num}?text=${encodeURIComponent(message)}`, '_blank');
                 }
               } else {
-                trackMetric('agendaClicks');
                 setWaitlistModalOpen(true);
               }
             }}
@@ -879,8 +888,8 @@ export default function Profile() {
               <div className="w-full md:w-1/3 p-4 md:p-6 flex flex-col flex-1 border-l border-outline-variant/10 overflow-y-auto touch-pan-y overscroll-contain">
                 <div className="flex flex-col h-full md:h-auto min-h-full">
                   <div className="flex flex-col justify-start space-y-4 md:mt-4 shrink-0">
-                    <div className="text-center md:text-left flex flex-col items-center md:items-start w-full">
-                      <div className="relative flex items-center justify-center md:justify-start w-full min-h-[32px] mb-4">
+                    <div className="text-center flex flex-col items-center w-full">
+                      <div className="relative flex items-center justify-center w-full min-h-[32px] mb-4">
                         <button 
                           className="absolute left-0 top-1/2 -translate-y-1/2 md:hidden flex-shrink-0 flex items-center justify-center w-8 h-8 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-full transition-colors" 
                           onClick={prevPhoto}
@@ -888,9 +897,9 @@ export default function Profile() {
                           <span className="material-symbols-outlined text-xl">chevron_left</span>
                         </button>
                         
-                        <div className={`w-full px-10 md:px-0 ${visibleTattoos[activeTattooIndex].categories.length === 2 ? 'grid grid-cols-2 gap-6 md:flex md:flex-wrap md:items-center md:justify-start md:gap-4' : 'flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4'}`}>
-                          {visibleTattoos[activeTattooIndex].categories.map((cat, idx, arr) => (
-                            <div key={idx} className={`flex ${arr.length === 2 ? (idx === 0 ? 'justify-end md:justify-start' : 'justify-start') : ''}`}>
+                        <div className="w-full px-10 md:px-0 flex flex-wrap items-center justify-center gap-3 md:gap-4">
+                          {visibleTattoos[activeTattooIndex].categories.map((cat, idx) => (
+                            <div key={idx} className="flex justify-center">
                               <span className="inline-flex items-center justify-center px-4 py-1.5 min-h-[28px] text-[10px] md:text-xs font-bold bg-primary/20 text-primary border border-primary/30 rounded uppercase tracking-widest text-center whitespace-nowrap">
                                 {cat}
                               </span>
@@ -908,21 +917,21 @@ export default function Profile() {
                       
                       <h2 className="text-lg md:text-xl font-bold uppercase tracking-tight text-on-surface mb-3">{visibleTattoos[activeTattooIndex].title}</h2>
                       
-                      <div className="w-full flex items-center justify-center md:justify-start mb-6 opacity-90 px-4 md:px-0">
-                        <div className="h-[3px] flex-1 w-full max-w-[200px] md:max-w-none bg-gradient-to-r from-transparent via-primary/60 to-primary md:from-primary/10 md:to-primary rounded-full"></div>
+                      <div className="w-full flex items-center justify-center mb-6 opacity-90 px-4 md:px-0">
+                        <div className="h-[3px] flex-1 w-full max-w-[200px] bg-gradient-to-r from-transparent via-primary/60 to-primary rounded-full"></div>
                         <div className="mx-4 w-2.5 h-2.5 rotate-45 border-[1.5px] border-primary bg-primary/20 flex-shrink-0"></div>
-                        <div className="h-[3px] flex-1 w-full max-w-[200px] md:max-w-none bg-gradient-to-l from-transparent via-primary/60 to-primary md:bg-gradient-to-r md:from-primary md:to-transparent rounded-full"></div>
+                        <div className="h-[3px] flex-1 w-full max-w-[200px] bg-gradient-to-l from-transparent via-primary/60 to-primary rounded-full"></div>
                       </div>
                     </div>
                     
                     <div className="mt-2 md:mt-4">
-                      <p className="text-center md:text-left text-on-surface-variant text-xs md:text-sm leading-relaxed">{visibleTattoos[activeTattooIndex].alt}</p>
+                      <p className="text-center text-on-surface-variant text-xs md:text-sm leading-relaxed">{visibleTattoos[activeTattooIndex].alt}</p>
                     </div>
                   </div>
 
                   <div className="mt-auto pt-4 md:pt-10 flex flex-col gap-4 md:gap-8 shrink-0">
                     {(visibleTattoos[activeTattooIndex].hours || visibleTattoos[activeTattooIndex].sessions || visibleTattoos[activeTattooIndex].size) && (
-                      <div className="flex justify-center md:justify-start flex-wrap gap-4 md:gap-6 w-full border-t border-outline-variant/10 pt-4 md:pt-6">
+                      <div className="flex justify-center md:justify-center flex-wrap gap-4 md:gap-6 w-full border-t border-outline-variant/10 pt-4 md:pt-6">
                         {visibleTattoos[activeTattooIndex].hours && (
                           <div className="flex flex-col items-center justify-center text-center py-1.5 px-2 md:px-4 border border-outline-variant/10 bg-surface-container-high rounded-lg transition-colors hover:bg-surface-container-highest min-w-[80px] md:min-w-[95px]">
                             <span className="material-symbols-outlined text-primary mb-0.5 text-base">schedule</span>
@@ -972,8 +981,7 @@ Perfil: ${profileUrl}`;
                                  description: '',
                                  referenceImage: visibleTattoos[activeTattooIndex].src
                                });
-                               trackMetric('agendaClicks');
-                setWaitlistModalOpen(true);
+                               setWaitlistModalOpen(true);
                            }
                         }}
                       >
@@ -1155,6 +1163,7 @@ Perfil: ${profileUrl}`;
                     createdAt: serverTimestamp()
                 });
                 
+                trackMetric('agendaClicks');
                 setWaitlistSuccess(true);
                 setTimeout(() => {
                   setWaitlistModalOpen(false);

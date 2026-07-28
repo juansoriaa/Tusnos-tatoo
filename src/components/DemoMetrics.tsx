@@ -32,14 +32,7 @@ export default function DemoMetrics() {
                     const docSnap = await getDoc(doc(db, 'users', demoUserId));
                     if (docSnap.exists()) {
                         const data = docSnap.data();
-                        if (data.userTag === '@demo' || data.userTag === '@victor_ink' || data.userTag === 'victor_ink' || data.userTag === 'demo') {
-                            parsed = {
-                                views: 12400,
-                                photoClicks: 1200,
-                                whatsappClicks: 856,
-                                agendaClicks: 48
-                            };
-                        } else {
+                        if (true) {
                             parsed = {
                                 views: data.views || 0,
                                 photoClicks: data.photoClicks || 0,
@@ -182,24 +175,11 @@ export default function DemoMetrics() {
                     id: p.id,
                     imageUrl: p.imageUrl || p.src,
                     title: p.title || p.tags?.[0] || 'Foto de Tatuaje',
-                    category: p.category || p.tags?.[0] || 'Portfolio'
+                    category: p.category || p.tags?.[0] || 'Portfolio',
+                    clicks: p.clicks || 0
                 }));
-                
-                if (isDemoUser) {
-                    const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
-                    const filteredFallback = fallback.filter(f => !dbPhotos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id));
-                    finalPhotos = [...finalPhotos, ...filteredFallback];
-                }
-
-                const stats = JSON.parse(localStorage.getItem('photoStats') || '{}');
-                
-                const photosWithStats = finalPhotos.map(photo => ({
-                    ...photo,
-                    clicks: stats[photo.id] || 0 // No mock clicks if no real stats yet
-                }));
-
-                photosWithStats.sort((a, b) => b.clicks - a.clicks);
-                setTopPhotos(photosWithStats.slice(0, 10));
+                finalPhotos.sort((a, b) => b.clicks - a.clicks);
+                setTopPhotos(finalPhotos.slice(0, 10));
 
             } catch (e) {
                 console.error(e);
@@ -373,10 +353,10 @@ export default function DemoMetrics() {
                             <span className="material-symbols-outlined text-primary-container text-[18px]" style={{color: '#054d44'}}>analytics</span>
                         </div>
                         <div className="relative z-10">
-                            <p className="font-headline-md text-headline-md text-silver-text text-2xl font-bold">{isDemoAccount ? '24.5%' : '0%'}</p>
+                            <p className="font-headline-md text-headline-md text-silver-text text-2xl font-bold">{metrics.views > 0 ? ((metrics.whatsappClicks + metrics.agendaClicks) / metrics.views * 100).toFixed(1) + '%' : '0%'}</p>
                             <p className={`font-caption text-caption text-primary flex items-center gap-1 mt-0.5 text-[12px] transition-all duration-500 ${animating ? 'scale-110 text-emerald-accent' : ''}`} style={{color: '#95d2c6'}}>
                                 <span className="material-symbols-outlined text-[12px]">arrow_upward</span>
-                                <span className="transition-all duration-500 animate-fade-in" key={currentPeriod}>{isDemoAccount ? calcIncrease(24.5, currentPeriod, 'conversion') : '0.0%'}</span>
+                                <span className="transition-all duration-500 animate-fade-in" key={currentPeriod}>{metrics.views > 0 ? calcIncrease(((metrics.whatsappClicks + metrics.agendaClicks) / metrics.views * 100), currentPeriod, 'conversion') : '0.0%'}</span>
                                 <span className="text-[9px] text-on-surface-variant ml-1 transition-all duration-500 animate-fade-in" key={`label-${currentPeriod}`}>{periodLabels[currentPeriod]}</span>
                             </p>
                         </div>
@@ -520,51 +500,6 @@ export default function DemoMetrics() {
                     </div>
                 </section>
             
-
-            {showRankingModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-surface-elevation border border-border-muted w-full max-w-md max-h-[85vh] flex flex-col relative" style={{backgroundColor: '#141313', borderColor: '#353434'}}>
-                        <div className="flex justify-between items-center p-5 border-b border-border-muted sticky top-0 bg-surface-elevation z-10" style={{borderColor: '#353434', backgroundColor: '#141313'}}>
-                            <div>
-                                <h2 className="font-headline-md text-xl font-bold text-silver-text">Top 10 Fotos</h2>
-                                <p className="text-xs text-on-surface-variant mt-1">Más vistas y clics</p>
-                            </div>
-                            <button 
-                                onClick={() => setShowRankingModal(false)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high text-on-surface-variant transition-colors"
-                            >
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto p-5 hide-scrollbar">
-                            <div className="flex flex-col">
-                                {topPhotos.map((photo, index) => (
-                                    <React.Fragment key={photo.id}>
-                                        <div className="flex items-center gap-4 hover:bg-surface-container-high transition-all py-3 px-2 rounded-sm cursor-pointer group">
-                                            <div className={`font-label-md text-lg w-6 text-center font-bold ${index < 3 ? 'text-primary-container' : 'text-on-surface-variant/50'}`}>
-                                                {index + 1}
-                                            </div>
-                                            <div className="w-16 h-16 border border-border-muted flex-shrink-0 relative overflow-hidden" style={{borderColor: '#353434'}}>
-                                                <img className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt={photo.title} src={photo.imageUrl}/>
-                                            </div>
-                                            <div className="flex-grow">
-                                                <h4 className="font-body-md text-silver-text text-sm font-medium">{photo.title}</h4>
-                                                <p className="font-caption text-on-surface-variant line-clamp-1 text-xs mt-0.5">{photo.category}</p>
-                                            </div>
-                                            <div className="text-right flex flex-col items-end">
-                                                <span className="font-label-md text-silver-text text-sm font-bold">{formatNumber(photo.clicks)}</span>
-                                                <span className="text-[10px] uppercase text-on-surface-variant/60 tracking-wider">Clics</span>
-                                            </div>
-                                        </div>
-                                        {index < topPhotos.length - 1 && <div className="h-[1px] w-full bg-border-muted/30 my-1" style={{backgroundColor: 'rgba(53, 52, 52, 0.3)'}}></div>}
-                                    </React.Fragment>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {showRankingModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
