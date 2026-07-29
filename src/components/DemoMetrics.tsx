@@ -175,7 +175,7 @@ export default function DemoMetrics() {
                     totalPhotoClicks += clicks;
                     return {
                         id: p.id,
-                        imageUrl: p.imageUrl || p.src,
+                        imageUrl: p.thumbnailUrl || p.url || p.imageUrl || p.src,
                         title: p.title || p.tags?.[0] || 'Foto de Tatuaje',
                         category: p.category || p.tags?.[0] || 'Portfolio',
                         clicks: clicks,

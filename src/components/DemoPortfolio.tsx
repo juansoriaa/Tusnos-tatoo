@@ -431,73 +431,46 @@ export default function DemoPortfolio() {
     const handleTogglePin = async (photo: any, e: React.MouseEvent) => {
         e.stopPropagation();
         
-        const currentPinned = existingPhotos.filter(p => typeof p.pinnedOrder === 'number' && p.pinnedOrder > 0).sort((a, b) => a.pinnedOrder - b.pinnedOrder);
-        
         try {
-            if (typeof photo.pinnedOrder === 'number' && photo.pinnedOrder > 0) {
-                // Unpinning
-                const updatedPinned = currentPinned.filter(p => p.id !== photo.id);
-                const batch = writeBatch(db);
-                if (!photo.id.startsWith('fallback_')) {
-                    batch.update(doc(db, 'photos', photo.id), { pinnedOrder: null });
-                }
-                updatedPinned.forEach((p, index) => {
+            const batch = writeBatch(db);
+            const pinnedFallbacks = JSON.parse(localStorage.getItem('pinnedFallbacks') || '{}');
+            let isUnpinning = typeof photo.pinnedOrder === 'number' && photo.pinnedOrder > 0;
+            
+            // Unpin all currently pinned photos
+            existingPhotos.forEach(p => {
+                if (typeof p.pinnedOrder === 'number' && p.pinnedOrder > 0) {
                     if (!p.id.startsWith('fallback_')) {
-                        batch.update(doc(db, 'photos', p.id), { pinnedOrder: index + 1 });
+                        batch.update(doc(db, 'photos', p.id), { pinnedOrder: null });
                     }
-                });
-                if (!photo.id.startsWith('fallback_') || updatedPinned.some(p => !p.id.startsWith('fallback_'))) {
-                     await batch.commit();
+                    delete pinnedFallbacks[p.id];
                 }
-                
-                setExistingPhotos(prev => {
-                    const newPhotos = prev.map(p => {
-                        if (p.id === photo.id) return { ...p, pinnedOrder: null };
-                        const pinnedIndex = updatedPinned.findIndex(up => up.id === p.id);
-                        if (pinnedIndex !== -1) return { ...p, pinnedOrder: pinnedIndex + 1 };
-                        return p;
-                    });
-                    globalCachedPhotos = newPhotos;
-                    return newPhotos;
-                });
-                
-                if (photo.id.startsWith('fallback_')) {
-                    const pinnedFallbacks = JSON.parse(localStorage.getItem('pinnedFallbacks') || '{}');
-                    delete pinnedFallbacks[photo.id];
-                    
-                    updatedPinned.forEach((p, index) => {
-                        if (p.id.startsWith('fallback_')) {
-                            pinnedFallbacks[p.id] = index + 1;
-                        }
-                    });
-                    localStorage.setItem('pinnedFallbacks', JSON.stringify(pinnedFallbacks));
-                }
-                
-                window.dispatchEvent(new CustomEvent('profileDataChanged'));
-            } else {
-                // Pinning
-                if (currentPinned.length >= 6) {
-                    alert('Puedes destacar un máximo de 6 fotos.');
-                    return;
-                }
-                const newOrder = currentPinned.length + 1;
+            });
+
+            if (!isUnpinning) {
+                // Pin the new one
                 if (!photo.id.startsWith('fallback_')) {
-                    await updateDoc(doc(db, 'photos', photo.id), { pinnedOrder: newOrder });
+                    batch.update(doc(db, 'photos', photo.id), { pinnedOrder: 1 });
                 }
-                setExistingPhotos(prev => {
-                    const newPhotos = prev.map(p => p.id === photo.id ? { ...p, pinnedOrder: newOrder } : p);
-                    globalCachedPhotos = newPhotos;
-                    return newPhotos;
-                });
-                
-                if (photo.id.startsWith('fallback_')) {
-                    const pinnedFallbacks = JSON.parse(localStorage.getItem('pinnedFallbacks') || '{}');
-                    pinnedFallbacks[photo.id] = newOrder;
-                    localStorage.setItem('pinnedFallbacks', JSON.stringify(pinnedFallbacks));
-                }
-                
-                window.dispatchEvent(new CustomEvent('profileDataChanged'));
+                pinnedFallbacks[photo.id] = 1;
             }
+
+            // Commit batch if there's any non-fallback to update
+            if (existingPhotos.some(p => !p.id.startsWith('fallback_') && typeof p.pinnedOrder === 'number' && p.pinnedOrder > 0) || (!isUnpinning && !photo.id.startsWith('fallback_'))) {
+                await batch.commit();
+            }
+            
+            localStorage.setItem('pinnedFallbacks', JSON.stringify(pinnedFallbacks));
+            
+            setExistingPhotos(prev => {
+                const newPhotos = prev.map(p => {
+                    if (isUnpinning && p.id === photo.id) return { ...p, pinnedOrder: null };
+                    if (!isUnpinning && p.id === photo.id) return { ...p, pinnedOrder: 1 };
+                    return { ...p, pinnedOrder: null };
+                });
+                globalCachedPhotos = newPhotos;
+                return newPhotos;
+            });
+            
         } catch (error) {
             console.error("Error toggling pin", error);
         }
@@ -941,8 +914,8 @@ const handleSaveObra = async () => {
                         
                         {/* Indicador de destacado en la galería (solo visual) */}
                         {photo.pinnedOrder && (
-                            <div className="absolute top-1 left-1 bg-surface-elevation/80 backdrop-blur-sm border border-emerald-accent rounded-full w-6 h-6 flex items-center justify-center z-10" style={{backgroundColor: 'rgba(20,19,19,0.8)'}}>
-                                <span className="font-label-sm text-[10px] font-bold text-emerald-accent">{photo.pinnedOrder}</span>
+                            <div className="absolute top-2 left-2 bg-emerald-accent rounded-full w-6 h-6 flex items-center justify-center z-10 shadow-lg" style={{backgroundColor: '#054d44'}}>
+                                <span className="material-symbols-outlined text-[14px] text-white">star</span>
                             </div>
                         )}
 

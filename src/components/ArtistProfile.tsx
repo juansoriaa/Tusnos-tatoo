@@ -17,13 +17,9 @@ export default function Profile() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [shouldPreload] = useState(() => !sessionStorage.getItem('preloaded_' + (id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo')));
+  
 
-  useEffect(() => {
-    if (shouldPreload) {
-      navigate(id ? '/' + (id.startsWith('@') ? id : '@' + id) + '/preload' : '/demo/preload', { replace: true });
-    }
-  }, [navigate, id, shouldPreload]);
+  
 
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [artistData, setArtistData] = useState<any>(() => {
@@ -392,7 +388,14 @@ export default function Profile() {
     };
   }, [id]);
 
-  const filterCategories = Array.from(new Set(["All", ...((artistData?.customCategories && artistData.customCategories.length > 0) ? artistData.customCategories : ["Realismo", "Minimalista", "Tradicional", "Blackwork"])]));
+  const categoryCounts = allTattoos.reduce((acc, tattoo) => {
+    (tattoo.categories || []).forEach((cat) => {
+      acc[cat] = (acc[cat] || 0) + 1;
+    });
+    return acc;
+  }, {});
+  const sortedCategories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
+  const filterCategories = ["All", ...sortedCategories];
 
   const getFilterStr = (filters: any) => {
     let filterStr = '';
