@@ -1028,8 +1028,8 @@ const handleSaveObra = async () => {
                                 className="flex flex-col items-center justify-center p-3 rounded-lg bg-surface-elevation hover:bg-white/5 transition-colors border border-border-muted hover:border-emerald-accent group"
                                 style={{backgroundColor: 'rgba(30,30,30,0.5)', borderColor: '#353434'}}
                             >
-                                <span className={`material-symbols-outlined mb-1 text-[20px] transition-colors ${selectedGalleryPhoto.pinnedOrder ? 'text-emerald-accent' : 'text-silver-text group-hover:text-white'}`}>push_pin</span>
-                                <span className="font-label-sm text-[10px] text-silver-text">{selectedGalleryPhoto.pinnedOrder ? 'Quitar Pin' : 'Destacar'}</span>
+                                <span className={`material-symbols-outlined mb-1 text-[20px] transition-colors ${selectedGalleryPhoto.pinnedOrder ? 'text-emerald-accent' : 'text-silver-text group-hover:text-white'}`}>star</span>
+                                <span className="font-label-sm text-[10px] text-silver-text">{selectedGalleryPhoto.pinnedOrder ? 'Quitar Destacado' : 'Destacar'}</span>
                             </button>
                             
                             <button 

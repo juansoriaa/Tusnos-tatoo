@@ -21,7 +21,14 @@ export default function Profile() {
 
   
 
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(() => {
+        try {
+            const targetId = id || localStorage.getItem('demoUserId') || 'demo';
+            if (globalPreloadCache[targetId]?.artistData) return false;
+            if (localStorage.getItem('demoArtistData_' + targetId)) return false;
+        } catch(e) {}
+        return true;
+    });
   const [artistData, setArtistData] = useState<any>(() => {
     try {
         const targetId = id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo';
@@ -54,8 +61,9 @@ export default function Profile() {
       if (!targetId) {
           targetId = user?.uid;
       }
+      try {
       if (targetId) {
-        setIsProfileLoading(true);
+        if (!artistData) setIsProfileLoading(true);
         const docRef = doc(db, 'users', targetId);
         let docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
@@ -83,10 +91,10 @@ export default function Profile() {
             } catch (e) {}
         }
       }
+    } catch(e) { console.error(e); } finally {
       setIsProfileLoading(false);
+    }
     };
-    fetchArtist();
-    
     const handleProfileDataChanged = () => fetchArtist({uid: localStorage.getItem('demoUserId') || auth.currentUser?.uid});
     window.addEventListener('profileDataChanged', handleProfileDataChanged);
     return () => {
