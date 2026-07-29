@@ -368,9 +368,9 @@ export default function DemoMetrics() {
                         <div className="flex justify-between items-start mb-2">
                             <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-[10px] flex items-center gap-1">
                                 Agenda
-                                <div className="group relative inline-block">
+                                <div className="group relative inline-block" tabIndex={0}>
                                     <span className="material-symbols-outlined text-[12px] text-on-surface-variant/50 hover:text-on-surface-variant cursor-help transition-colors">info</span>
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-surface-container-high border border-border-muted text-[10px] text-silver-text rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 pointer-events-none text-center leading-tight normal-case font-normal" style={{backgroundColor: '#232222', borderColor: '#353434'}}>
+                                    <div className="absolute bottom-full right-0 md:left-1/2 md:-translate-x-1/2 mb-2 w-48 p-2 bg-surface-container-high border border-border-muted text-[10px] text-silver-text rounded shadow-xl opacity-0 invisible group-focus:opacity-100 group-focus:visible group-hover:opacity-100 group-hover:visible transition-all z-20 pointer-events-none text-left md:text-center leading-tight normal-case font-normal" style={{backgroundColor: '#232222', borderColor: '#353434'}}>
                                         Usuarios que se agendaron exitosamente cuando la lista estaba llena.
                                     </div>
                                 </div>
@@ -390,14 +390,14 @@ export default function DemoMetrics() {
                     </div>
 
                     {/* Conversion Rate */}
-                    <div className="bg-surface-elevation border border-primary-container p-3 flex flex-col justify-between relative overflow-hidden col-span-2" style={{backgroundColor: '#141313', borderColor: '#054d44'}}>
-                        <div className="absolute top-0 right-0 w-12 h-12 bg-primary-container/10 -mr-6 -mt-6 rotate-45 border-l border-b border-primary-container/30" style={{backgroundColor: 'rgba(5, 77, 68, 0.1)', borderColor: 'rgba(5, 77, 68, 0.3)'}}></div>
+                    <div className="bg-surface-elevation border border-primary-container p-3 flex flex-col justify-between relative col-span-2" style={{backgroundColor: '#141313', borderColor: '#054d44'}}>
+                        <div className="absolute inset-0 overflow-hidden pointer-events-none rounded"><div className="absolute top-0 right-0 w-12 h-12 bg-primary-container/10 -mr-6 -mt-6 rotate-45 border-l border-b border-primary-container/30" style={{backgroundColor: 'rgba(5, 77, 68, 0.1)', borderColor: 'rgba(5, 77, 68, 0.3)'}}></div></div>
                         <div className="flex justify-between items-start mb-2 relative z-10">
                             <h3 className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest text-[10px] flex items-center gap-1">
                                 Tasa Conversión
-                                <div className="group relative inline-block">
+                                <div className="group relative inline-block" tabIndex={0}>
                                     <span className="material-symbols-outlined text-[12px] text-on-surface-variant/50 hover:text-on-surface-variant cursor-help transition-colors">info</span>
-                                    <div className="absolute bottom-full left-0 mb-2 w-56 p-2 bg-surface-container-high border border-border-muted text-[10px] text-silver-text rounded shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 pointer-events-none text-left leading-tight normal-case font-normal" style={{backgroundColor: '#232222', borderColor: '#353434'}}>
+                                    <div className="absolute bottom-full left-0 mb-2 w-[calc(100vw-3rem)] max-w-[280px] sm:w-56 p-2 bg-surface-container-high border border-border-muted text-[10px] text-silver-text rounded shadow-xl opacity-0 invisible group-focus:opacity-100 group-focus:visible group-hover:opacity-100 group-hover:visible transition-all z-20 pointer-events-none text-left leading-tight normal-case font-normal" style={{backgroundColor: '#232222', borderColor: '#353434'}}>
                                         Porcentaje de visitas al perfil que concretaron contacto por WhatsApp o enviaron solicitud por Lista de Espera.
                                     </div>
                                 </div>
@@ -529,7 +529,7 @@ export default function DemoMetrics() {
                                     <div className="flex items-center gap-3 active:bg-surface-container-high active:scale-95 transition-all py-3 cursor-pointer">
                                         <div className="font-label-md text-label-md text-on-surface-variant w-4">0{index + 1}</div>
                                         <div className="w-12 h-12 border border-border-muted flex-shrink-0 relative overflow-hidden" style={{borderColor: '#353434'}}>
-                                            <img className="w-full h-full object-cover grayscale" alt={photo.title} src={photo.imageUrl}/>
+                                            <img className="w-full h-full object-cover" alt={photo.title} src={photo.imageUrl}/>
                                         </div>
                                         <div className="flex-grow">
                                             <h4 className="font-body-md text-body-md text-silver-text text-sm">{photo.title}</h4>
@@ -578,7 +578,7 @@ export default function DemoMetrics() {
                                                 {index + 1}
                                             </div>
                                             <div className="w-16 h-16 border border-border-muted flex-shrink-0 relative overflow-hidden" style={{borderColor: '#353434'}}>
-                                                <img className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt={photo.title} src={photo.imageUrl}/>
+                                                <img className="w-full h-full object-cover transition-all duration-500" alt={photo.title} src={photo.imageUrl}/>
                                             </div>
                                             <div className="flex-grow">
                                                 <h4 className="font-body-md text-silver-text text-sm font-medium">{photo.title}</h4>

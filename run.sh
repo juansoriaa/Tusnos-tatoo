@@ -1,1 +1,1 @@
-sed -n '190,210p' src/components/ArtistProfile.tsx
+sed -n '430,520p' src/components/Landing.tsx
