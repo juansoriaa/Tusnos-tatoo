@@ -604,7 +604,7 @@ export default function Landing() {
             </div>
             
             {/* Featured Spotlight */}
-            <div className="w-full bg-surface-variant rounded-2xl overflow-hidden neon-border mb-8 flex flex-col md:flex-row group cursor-pointer" onClick={() => navigate('/demo/profile')}>
+            <div className="w-full bg-surface-variant rounded-2xl overflow-hidden neon-border mb-8 flex flex-col md:flex-row group cursor-pointer" onClick={() => navigate('/@victor_ink')}>
               <div className="w-full md:w-2/3 h-[500px] relative overflow-hidden">
                 <img alt="Victor Ink" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTy79SDu2NnHX_tAaMxoahcDiJ4pf7_nJmr7uTAAHM8nxqhJff5IC5kw81q-uy-DejCNoslPvxIxRoAS0kmUW2rRVGPoXENl4-mG4KeSHwaVkHpwH697MHIwve1I-TOLV4QpKI1kNS0rrInl2u5PHFRbN-LoP9GV-4VLjLN1CD4iioFFwkH1q7TvXKkvqwEs1r2ziFSscHLtIk_MG7mMjY-BXTPPEyDPKgvKExhYN8hJQbmQ4f_-PDUbakN5_n7OX29L7XqCB9a0E" />
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-surface-variant hidden md:block"></div>

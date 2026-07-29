@@ -21,6 +21,14 @@ export default function Profile() {
 
   
 
+  const [isTattoosLoading, setIsTattoosLoading] = useState(() => {
+        try {
+            const targetId = id || localStorage.getItem('demoUserId') || 'demo';
+            if (globalPreloadCache[targetId]?.allTattoos) return false;
+            if (localStorage.getItem('demoAllTattoos_' + targetId)) return false;
+        } catch(e) {}
+        return true;
+    });
   const [isProfileLoading, setIsProfileLoading] = useState(() => {
         try {
             const targetId = id || localStorage.getItem('demoUserId') || 'demo';
@@ -224,10 +232,10 @@ export default function Profile() {
             });
             
             let isDemoUser = false;
+            if (artistUid === '@victor_ink' || artistUid === 'victor_ink' || artistUid === 'demo' || artistUid === '@demo' || artistUid === 'anonymous_demo') isDemoUser = true;
             if (artistData && (artistData.userTag === '@demo' || artistData.userTag === '@victor_ink' || artistData.userTag === 'victor_ink' || artistData.userTag === 'demo')) {
                 isDemoUser = true;
             }
-            if (artistUid === 'anonymous_demo') isDemoUser = true;
 
             if (isDemoUser) {
                 const fallback = [
@@ -370,6 +378,7 @@ export default function Profile() {
                 return 0; // fallback to original order (which is desc createdAt)
             });
             setAllTattoos(finalPhotos);
+            setIsTattoosLoading(false);
         } catch (error) {
             console.error("Error fetching tattoos", error);
         }
@@ -529,7 +538,7 @@ export default function Profile() {
 
 
   
-  if (isProfileLoading) {
+  if (isProfileLoading || isTattoosLoading) {
     return (
       <div className="bg-background min-h-screen flex flex-col animate-pulse">
         <div className="h-[30vh] md:h-[40vh] bg-surface-variant w-full" />

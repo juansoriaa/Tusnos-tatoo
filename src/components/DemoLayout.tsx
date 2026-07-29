@@ -129,7 +129,7 @@ export default function DemoLayout
                         const uTag = docSnap.data().userTag || '';
                         setCurrentUserTag(uTag);
                         
-                        if (uTag && window.location.pathname.startsWith('/demo/') && !window.location.pathname.includes('/demo/profile') && !window.location.pathname.includes('/demo/preload')) {
+                        if (uTag && window.location.pathname.startsWith('/demo/') && !window.location.pathname.includes('/@victor_ink') && !window.location.pathname.includes('/demo/preload')) {
                             const formattedTag = uTag.startsWith('@') ? uTag : '@' + uTag;
                             const newPath = window.location.pathname.replace('/demo/', `/${formattedTag}/`);
                             navigate(newPath, { replace: true });
@@ -224,7 +224,7 @@ export default function DemoLayout
             return;
         }
         
-        if (path.startsWith('/demo/') && path !== '/demo/profile' && path !== '/demo/preload' && currentUserTag) {
+        if (path.startsWith('/demo/') && path !== '/@victor_ink' && path !== '/demo/preload' && currentUserTag) {
             const utag = currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag;
             path = path.replace('/demo/', '/' + utag + '/');
         }
@@ -346,7 +346,7 @@ export default function DemoLayout
             <header className="md:hidden fixed top-0 w-full h-16 bg-surface-elevation/80 backdrop-blur-md border-b border-border-muted z-50 flex justify-between items-center px-4" style={{backgroundColor: 'rgba(20, 19, 19, 0.8)', borderColor: '#353434'}}>
                 <h1 className="font-headline-md text-on-surface font-bold text-lg uppercase tracking-tighter">Turnos <span className="text-emerald-accent" style={{color: '#054d44'}}>Tattoo</span></h1>
                 <div className="flex gap-3 items-center">
-                    <button onClick={() => handleNav(currentUserTag ? '/' + (currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag) : '/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-2 py-1.5 rounded hover:text-primary border border-outline-variant/30 transition-all mr-1">
+                    <button onClick={() => handleNav(currentUserTag ? '/' + (currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag) : '/@victor_ink')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-2 py-1.5 rounded hover:text-primary border border-outline-variant/30 transition-all mr-1">
                         Ver Perfil
                     </button>
                     <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">
@@ -372,7 +372,7 @@ export default function DemoLayout
                 <header className="hidden md:flex h-16 items-center px-8 bg-surface-elevation/80 backdrop-blur-md sticky top-0 z-40 border-b border-border-muted" style={{backgroundColor: 'rgba(20, 19, 19, 0.8)', borderColor: '#353434'}}>
                     <div className="flex-1"></div>
                     <div className="flex-shrink-0 flex items-center justify-center">
-                        <button onClick={() => handleNav(currentUserTag ? '/' + (currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag) : '/demo/profile')} className="text-[10px] font-bold uppercase tracking-widest text-emerald-accent bg-surface-variant px-6 py-2 rounded-full hover:bg-emerald-accent/10 border border-emerald-accent transition-all shadow-[0_0_15px_rgba(5,77,68,0.2)]" style={{borderColor: '#054d44', color: '#054d44'}}>
+                        <button onClick={() => handleNav(currentUserTag ? '/' + (currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag) : '/@victor_ink')} className="text-[10px] font-bold uppercase tracking-widest text-emerald-accent bg-surface-variant px-6 py-2 rounded-full hover:bg-emerald-accent/10 border border-emerald-accent transition-all shadow-[0_0_15px_rgba(5,77,68,0.2)]" style={{borderColor: '#054d44', color: '#054d44'}}>
                             Ver Perfil
                         </button>
                     </div>

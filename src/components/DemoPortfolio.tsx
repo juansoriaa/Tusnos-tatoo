@@ -32,6 +32,16 @@ export default function DemoPortfolio() {
     const [initialFormState, setInitialFormState] = useState<any>(null);
     const [resetUploader, setResetUploader] = useState(0);
     const [existingPhotos, setExistingPhotos] = useState<any[]>([]);
+    
+    useEffect(() => {
+        if (existingPhotos.length > 0) {
+            const uid = (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'demo';
+            localStorage.setItem('demoAllTattoos_' + uid, JSON.stringify(existingPhotos));
+            import('../lib/cache').then(({ globalPreloadCache }) => {
+                globalPreloadCache[uid] = { ...globalPreloadCache[uid], allTattoos: existingPhotos };
+            });
+        }
+    }, [existingPhotos]);
     const [filterCategory, setFilterCategory] = useState('all');
 
     const trackPhotoClick = (photoId: string) => {
