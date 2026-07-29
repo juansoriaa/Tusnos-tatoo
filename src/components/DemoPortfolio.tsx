@@ -31,7 +31,16 @@ export default function DemoPortfolio() {
     const [showHint, setShowHint] = useState(true);
     const [initialFormState, setInitialFormState] = useState<any>(null);
     const [resetUploader, setResetUploader] = useState(0);
-    const [existingPhotos, setExistingPhotos] = useState<any[]>([]);
+    const [existingPhotos, setExistingPhotos] = useState<any[]>(() => {
+        try {
+            const uid = localStorage.getItem('demoUserId');
+            if (uid) {
+                const cacheStr = localStorage.getItem('demoAllTattoos_' + uid);
+                if (cacheStr) return JSON.parse(cacheStr);
+            }
+        } catch(e) {}
+        return [];
+    });
     
     useEffect(() => {
         if (existingPhotos.length > 0) {

@@ -1,16 +1,49 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/components/DemoMetrics.tsx', 'utf8');
 
-// 1. Remove mocked metrics for @demo
 code = code.replace(
-    /if \(data\.userTag === '@demo'.*?\{.*?parsed = \{.*?views: 12400.*?photoClicks: 1200.*?whatsappClicks: 856.*?agendaClicks: 48.*?};.*?\} else \{/s,
-    'if (true) {'
+    /let parsed = null;\s*const demoUserId = localStorage\.getItem\('demoUserId'\) \|\| auth\.currentUser\?\.uid;\s*if \(demoUserId\) \{\s*try \{\s*const docSnap = await getDoc/,
+    `let parsed = null;
+            const demoUserId = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+            if (demoUserId) {
+                try {
+                    let data = null;
+                    const cacheStr = localStorage.getItem('demoArtistData_' + demoUserId);
+                    if (cacheStr) {
+                        data = JSON.parse(cacheStr);
+                    }
+                    if (!data) {
+                        const docSnap = await getDoc`
+);
+code = code.replace(
+    /if \(docSnap\.exists\(\)\) \{\s*const data = docSnap\.data\(\);/,
+    `if (docSnap.exists()) {
+                            data = docSnap.data();
+                        }
+                    }
+                    if (data) {`
 );
 
-// 2. Remove fallback photo appending
 code = code.replace(
-    /if \(isDemoUser\) \{\s*const deletedFallbacks = JSON\.parse\(localStorage\.getItem\('deletedFallbacks'\) \|\| '\[\]'\);\s*const filteredFallback = fallback\.filter\(f => !dbPhotos\.some\(p => p\.originalFallbackId === f\.id\) && !deletedFallbacks\.includes\(f\.id\)\);\s*finalPhotos = \[\.\.\.finalPhotos, \.\.\.filteredFallback\];\s*\}/s,
-    ''
+    /let isDemoUser = false;\s*if \(demoUserId\) \{\s*const \{ doc, getDoc \} = await import\('firebase\/firestore'\);\s*const userSnap = await getDoc/,
+    `let isDemoUser = false;
+                if (demoUserId) {
+                    let userTag = null;
+                    const cacheStr = localStorage.getItem('demoArtistData_' + demoUserId);
+                    if (cacheStr) {
+                        userTag = JSON.parse(cacheStr).userTag;
+                    } else {
+                        const { doc, getDoc } = await import('firebase/firestore');
+                        const userSnap = await getDoc`
+);
+code = code.replace(
+    /if \(userSnap\.exists\(\)\) \{\s*const tag = userSnap\.data\(\)\.userTag;/,
+    `if (userSnap.exists()) {
+                            userTag = userSnap.data().userTag;
+                        }
+                    }
+                    if (userTag) {
+                        const tag = userTag;`
 );
 
 fs.writeFileSync('src/components/DemoMetrics.tsx', code);

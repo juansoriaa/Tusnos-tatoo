@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth, onAuthStateChanged } from '../firebase';
+import { preloadDashboardData, clearDashboardPreload } from '../lib/dashboardPreloader';
 
 interface DemoLayoutProps {
     children: React.ReactNode;
@@ -58,11 +59,13 @@ export default function DemoLayout
         if (localUid) {
             setAuthUid(localUid);
             setIsAuthChecking(false);
+            preloadDashboardData(localUid);
         } else {
             authUnsubscribe = onAuthStateChanged(auth, (user) => {
                 if (user) {
                     setAuthUid(user.uid);
                     setIsAuthChecking(false);
+                    preloadDashboardData(user.uid);
                 } else {
                     navigate('/?login=true');
                 }
@@ -216,6 +219,7 @@ export default function DemoLayout
 
     const handleNav = (path: string) => {
         if (path === '/') {
+            clearDashboardPreload();
             localStorage.clear(); // Clear all cached data
             import('../lib/cache').then((m) => {
                 for (let key in m.globalPreloadCache) delete m.globalPreloadCache[key];

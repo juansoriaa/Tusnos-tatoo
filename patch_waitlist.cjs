@@ -2,19 +2,17 @@ const fs = require('fs');
 let code = fs.readFileSync('src/components/DemoWaitlist.tsx', 'utf8');
 
 code = code.replace(
-    /import \{ useNavigate \} from 'react-router-dom';/,
-    `import { useNavigate, useParams } from 'react-router-dom';`
-);
-
-code = code.replace(
-    /export default function DemoWaitlist\(\) \{/,
-    `export default function DemoWaitlist() {
-    const { id } = useParams();`
-);
-
-code = code.replace(
-    /const demoUserId = auth\.currentUser\?\.uid;/,
-    `const demoUserId = id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo';`
+    /const \[waitlistMessages, setWaitlistMessages\] = useState<any\[\]>\(\[\]\);/,
+    `const [waitlistMessages, setWaitlistMessages] = useState<any[]>(() => {
+        try {
+            const uid = localStorage.getItem('demoUserId');
+            if (uid) {
+                const cacheStr = localStorage.getItem('demoWaitlist_' + uid);
+                if (cacheStr) return JSON.parse(cacheStr);
+            }
+        } catch(e) {}
+        return [];
+    });`
 );
 
 fs.writeFileSync('src/components/DemoWaitlist.tsx', code);

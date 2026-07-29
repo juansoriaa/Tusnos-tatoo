@@ -60,7 +60,16 @@ export default function DemoWaitlist() {
         }
     };
 
-    const [waitlistMessages, setWaitlistMessages] = useState<any[]>([]);
+    const [waitlistMessages, setWaitlistMessages] = useState<any[]>(() => {
+        try {
+            const uid = localStorage.getItem('demoUserId');
+            if (uid) {
+                const cacheStr = localStorage.getItem('demoWaitlist_' + uid);
+                if (cacheStr) return JSON.parse(cacheStr);
+            }
+        } catch(e) {}
+        return [];
+    });
     const [targetUserId, setTargetUserId] = useState<string | null>(null);
 
     React.useEffect(() => {

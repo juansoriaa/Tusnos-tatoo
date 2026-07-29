@@ -38,9 +38,20 @@ const defaultFaqs = [
             let data = null;
             if (demoUserId) {
                 try {
-                    const docSnap = await getDoc(doc(db, 'users', demoUserId));
+                    const cacheStr = localStorage.getItem('demoArtistData_' + demoUserId);
+                    if (cacheStr) {
+                        data = JSON.parse(cacheStr);
+                    } else {
+                        const { globalPreloadCache } = await import('../lib/cache');
+                        if (globalPreloadCache[demoUserId]?.artistData) {
+                            data = globalPreloadCache[demoUserId].artistData;
+                        }
+                    }
+                    if (!data) {
+                        const docSnap = await getDoc(doc(db, 'users', demoUserId));
                     if (docSnap.exists()) {
-                        data = docSnap.data();
+                            data = docSnap.data();
+                        }
                     }
                 } catch (e) {
                     console.error("Error loading from Firestore", e);

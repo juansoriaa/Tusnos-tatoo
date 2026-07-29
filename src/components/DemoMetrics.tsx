@@ -29,9 +29,18 @@ export default function DemoMetrics() {
             const demoUserId = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
             if (demoUserId) {
                 try {
-                    const docSnap = await getDoc(doc(db, 'users', demoUserId));
+                    let data = null;
+                    const cacheStr = localStorage.getItem('demoArtistData_' + demoUserId);
+                    if (cacheStr) {
+                        data = JSON.parse(cacheStr);
+                    }
+                    if (!data) {
+                        const docSnap = await getDoc(doc(db, 'users', demoUserId));
                     if (docSnap.exists()) {
-                        const data = docSnap.data();
+                            data = docSnap.data();
+                        }
+                    }
+                    if (data) {
                         if (true) {
                             parsed = {
                                 views: data.views || 0,
@@ -86,10 +95,19 @@ export default function DemoMetrics() {
 
                 let isDemoUser = false;
                 if (demoUserId) {
-                    const { doc, getDoc } = await import('firebase/firestore');
-                    const userSnap = await getDoc(doc(db, 'users', demoUserId));
+                    let userTag = null;
+                    const cacheStr = localStorage.getItem('demoArtistData_' + demoUserId);
+                    if (cacheStr) {
+                        userTag = JSON.parse(cacheStr).userTag;
+                    } else {
+                        const { doc, getDoc } = await import('firebase/firestore');
+                        const userSnap = await getDoc(doc(db, 'users', demoUserId));
                     if (userSnap.exists()) {
-                        const tag = userSnap.data().userTag;
+                            userTag = userSnap.data().userTag;
+                        }
+                    }
+                    if (userTag) {
+                        const tag = userTag;
                         if (tag === '@demo' || tag === '@victor_ink' || tag === 'victor_ink' || tag === 'demo') {
                             isDemoUser = true;
                         }
