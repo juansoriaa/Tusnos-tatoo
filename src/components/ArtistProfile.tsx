@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { ProgressiveImage } from './ProgressiveImage';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db, auth, onAuthStateChanged } from '../firebase';
 import { globalPreloadCache } from '../lib/cache';
 
@@ -16,6 +17,25 @@ const defaultFaqs = [
 export default function Profile() {
   const navigate = useNavigate();
   const { id } = useParams();
+  
+  const resolveTargetId = () => {
+        let targetId = id || localStorage.getItem('demoUserId') || 'demo';
+        if (id && id.startsWith('@')) {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('demoArtistData_')) {
+                    try {
+                        const cached = JSON.parse(localStorage.getItem(key) || '{}');
+                        if (cached.userTag === id || cached.userTag === '@' + id || '@' + cached.userTag === id) {
+                            targetId = cached.uid || key.replace('demoArtistData_', '');
+                            break;
+                        }
+                    } catch(e) {}
+                }
+            }
+        }
+        return targetId;
+  };
   const [searchParams, setSearchParams] = useSearchParams();
   
 
@@ -23,7 +43,7 @@ export default function Profile() {
 
   const [isTattoosLoading, setIsTattoosLoading] = useState(() => {
         try {
-            const targetId = id || localStorage.getItem('demoUserId') || 'demo';
+            const targetId = resolveTargetId();
             if (globalPreloadCache[targetId]?.allTattoos) return false;
             if (localStorage.getItem('demoAllTattoos_' + targetId)) return false;
         } catch(e) {}
@@ -31,7 +51,7 @@ export default function Profile() {
     });
   const [isProfileLoading, setIsProfileLoading] = useState(() => {
         try {
-            const targetId = id || localStorage.getItem('demoUserId') || 'demo';
+            const targetId = resolveTargetId();
             if (globalPreloadCache[targetId]?.artistData) return false;
             if (localStorage.getItem('demoArtistData_' + targetId)) return false;
         } catch(e) {}
@@ -39,14 +59,14 @@ export default function Profile() {
     });
   const [artistData, setArtistData] = useState<any>(() => {
     try {
-        const targetId = id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo';
+        const targetId = resolveTargetId();
         let savedData = globalPreloadCache[targetId]?.artistData;
         if (!savedData) {
             const saved = localStorage.getItem('demoArtistData_' + targetId);
             if (saved) savedData = JSON.parse(saved);
         }
         if (savedData) {
-            globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'] = { ...globalPreloadCache[id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo'], artistData: savedData };
+            globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], artistData: savedData };
             return savedData;
         }
     } catch(e) {}
@@ -172,7 +192,7 @@ export default function Profile() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [allTattoos, setAllTattoos] = useState<any[]>(() => {
       try {
-          const targetId = id || localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo';
+          const targetId = resolveTargetId();
           const saved = localStorage.getItem('demoAllTattoos_' + targetId);
           if (saved) return JSON.parse(saved);
       } catch(e) {}
@@ -210,7 +230,8 @@ export default function Profile() {
             const q = query(
                 collection(db, 'photos'),
                 where('createdBy', '==', artistUid),
-                orderBy('createdAt', 'desc')
+                orderBy('createdAt', 'desc'),
+                limit(20)
             );
             const snapshot = await getDocs(q);
             let finalPhotos: any[] = snapshot.docs.map(doc => {
@@ -435,6 +456,26 @@ export default function Profile() {
 
   const filteredTattoos = allTattoos.filter(t => activeCategory === "All" || t.categories.includes(activeCategory));
   const visibleTattoos = showMore ? filteredTattoos : filteredTattoos.slice(0, 9);
+  
+  useEffect(() => {
+    if (!showMore && filteredTattoos.length > 9) {
+      // Preload the next images in background
+      const hiddenTattoos = filteredTattoos.slice(9);
+      const timer = setTimeout(() => {
+        hiddenTattoos.forEach(tattoo => {
+            if (tattoo.thumbnailUrl) {
+                const imgThumb = new Image();
+                imgThumb.src = tattoo.thumbnailUrl;
+            }
+            if (tattoo.src) {
+                const imgFull = new Image();
+                imgFull.src = tattoo.src;
+            }
+        });
+      }, 1000); // Wait 1 second after initial render to avoid stealing bandwidth
+      return () => clearTimeout(timer);
+    }
+  }, [filteredTattoos, showMore]);
 
   const openModal = (index: number) => {
     const photoId = visibleTattoos[index]?.id;
@@ -524,7 +565,7 @@ export default function Profile() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  let isExplicitDemoTarget = !id || id === 'demo' || id === 'victor_ink' || id === '@victor_ink';
+  let isExplicitDemoTarget = false;
   let isDemoProfile = isExplicitDemoTarget;
   if (artistData && (artistData.userTag === '@demo' || artistData.userTag === '@victor_ink' || artistData.userTag === 'victor_ink' || artistData.userTag === 'demo')) {
       isDemoProfile = true;
@@ -729,11 +770,12 @@ export default function Profile() {
           <div className="grid grid-cols-3 gap-2">
             {visibleTattoos.map((tattoo, index) => (
               <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 ${index === 0 ? 'interactive-cue' : ''}`}>
-                <img 
+                <ProgressiveImage 
                   className="w-full h-full grayscale hover:grayscale-0 transition-all duration-700 cursor-pointer object-cover aspect-square" 
                   alt={tattoo.alt} 
                   onClick={() => openModal(index)} 
-                  src={tattoo.thumbnailUrl || tattoo.src} 
+                  thumbnailUrl={tattoo.thumbnailUrl}
+                  highResUrl={tattoo.src || tattoo.thumbnailUrl} 
                   style={{ filter: getFilterStr(tattoo.filters) }}
                 />
                 {index === 0 && (
