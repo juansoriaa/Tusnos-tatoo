@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged, db } from '../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
 
 const fallbackPhotos = [
@@ -58,6 +58,38 @@ export default function Landing() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [activeSlide, setActiveSlide] = useState(0);
+  const [landingImages, setLandingImages] = useState<any>({
+    waitlist: 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png',
+    metrics: 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg',
+    design: 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png'
+  });
+
+  useEffect(() => {
+    const fetchLandingConfig = async () => {
+      try {
+        const docRef = doc(db, 'config', 'main');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists() && docSnap.data().landingImages) {
+          const dbImages = docSnap.data().landingImages || {};
+          const cleanUrl = (url, defaultUrl) => {
+            if (!url) return defaultUrl;
+            if (url.includes('lh3.googleusercontent.com') || url === '/waitlist-mobile.png' || url.includes('AB6AXu')) return defaultUrl;
+            return url;
+          };
+  
+          setLandingImages((prev: any) => ({
+            ...prev,
+            waitlist: cleanUrl(dbImages.waitlist, prev.waitlist),
+            metrics: cleanUrl(dbImages.metrics, prev.metrics),
+            design: cleanUrl(dbImages.design, prev.design)
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching landing config:", err);
+      }
+    };
+    fetchLandingConfig();
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -405,11 +437,11 @@ export default function Landing() {
 
                   {/* Grid */}
                   <div className="grid grid-cols-3 gap-1 w-full px-4 overflow-hidden">
-                    <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" className="w-full h-full object-cover grayscale" alt=""/></div>
+                    <div className="aspect-square bg-surface-container"><img src={landingImages.design} className="w-full h-full object-cover grayscale" alt=""/></div>
                     <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHwNb_MhbHOaP6c0Rl1EqFCiTHvx3OrwkHec41w-pIzdVOr7fsJR6seTV1H8FzBJ3iiQ-niPppsHlussWManmq3_37uMTyIRgGyAfz38023h98-mc7TXCSIobUFesaE9i91952TUovITXSuF_0DHR_r_6GS38wv-AYSWni62vZFkiIacuuAHSHqUBld76UFh-NsXjsIcZg-h_Vn10CGZcp3HYUtlUEeh82negXGsgP2u_nBmavAlj48S7v5uf-_qARYs4xf7o9gE8" className="w-full h-full object-cover grayscale" alt=""/></div>
                     <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBExqvT9llX2D0HY5gXD0pgutK1YUyCLP8CEJNM8DIVtN8ENfn13RmMA5bovsMB-J8PbQROw4rmvLORq0cF06c0VBS-zmh5vwUl_NjO2286Jnxr4srgoffNsb3K-JLYcCnNu81k1Cr-NYP_zhnNCtodbCXfKdcnq642dwIfs68cY47x8J7t7YsfjcAGo0eHcF5dfZEsWIDrYHtHIcbUkCn02Aho6E_OGQH6HdhW0i8n5qmt9rh0jY2uJWH3_qIzu7GXxNkfS-jybkg" className="w-full h-full object-cover grayscale" alt=""/></div>
                     <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuASHOMWeKVAQxGeWzc3sI2E5n8qAgw4P6xBLVnmV7EZhijxL5vffctyZq054C_Kcef9vYXNrqjJGHNeLW-lkEWK9KyQkyhnDLgXzLHPBh6ptgR6rrfFHCLKGzn4OJ7orZ8TZRua_YRLRwa5zhHRlFw8fZZurBfewtZA7Y2irrPpphi6K9XRUng_BiIaoMKAeAhG1-E8Re72e3sJpdd-7sZHmafVRKt2n5usQT048dwPRTpveoXDEmTg8JVskpX5GowUCm2MaHCDMnw" className="w-full h-full object-cover grayscale" alt=""/></div>
-                    <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" className="w-full h-full object-cover grayscale" alt=""/></div>
+                    <div className="aspect-square bg-surface-container"><img src={landingImages.design} className="w-full h-full object-cover grayscale" alt=""/></div>
                     <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHwNb_MhbHOaP6c0Rl1EqFCiTHvx3OrwkHec41w-pIzdVOr7fsJR6seTV1H8FzBJ3iiQ-niPppsHlussWManmq3_37uMTyIRgGyAfz38023h98-mc7TXCSIobUFesaE9i91952TUovITXSuF_0DHR_r_6GS38wv-AYSWni62vZFkiIacuuAHSHqUBld76UFh-NsXjsIcZg-h_Vn10CGZcp3HYUtlUEeh82negXGsgP2u_nBmavAlj48S7v5uf-_qARYs4xf7o9gE8" className="w-full h-full object-cover grayscale" alt=""/></div>
                   </div>
                 </div>
@@ -433,7 +465,7 @@ export default function Landing() {
                   <p className="text-gray-400">Modo 'Lista Llena' activo. Captura prospectos y contáctalos vía WhatsApp cuando se libere un espacio.</p>
                 </div>
                 <div className="w-full md:w-1/2 relative p-6 flex items-center justify-center">
-                                    <img src="/waitlist-mobile.png" alt="Lista de Espera" className="w-full max-w-sm h-auto object-contain rounded-lg shadow-2xl group-hover:scale-105 transition-transform duration-500 origin-center mx-auto" />
+                                    <img src={landingImages.waitlist} alt="Lista de Espera" className="w-full max-w-sm h-auto object-contain rounded-lg shadow-2xl group-hover:scale-105 transition-transform duration-500 origin-center mx-auto" />
                 </div>
               </div>
               <div className="md:col-span-4 bg-surface-variant rounded-2xl neon-border p-10 flex flex-col group">
@@ -441,59 +473,15 @@ export default function Landing() {
                 <h3 className="text-2xl font-bold text-white mb-4">Métricas Avanzadas</h3>
                 <p className="text-gray-400 mb-8">Descubre qué tatuajes tienen más interacción con datos en tiempo real.</p>
                 <div className="mt-auto overflow-hidden rounded-xl">
-                  <img alt="Vistas Totales y Clicks" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA4BVdUbKryLe6JGKvjji5DWM5QwUCLuyT7Rozf7K63R_EQrG1a0pUqjRFZBwtA0GjQIqjRhallrMYgEZc5XkxqYnbRY6XyMki7t-62lX9Bb9Sa3s7HwcbuYAG4VmpkjGAF7TMYg8iwo1Q2WEKxPHdJJIBmMgpZXV3lvkRdYNF_I9a4t-Qovf4Q6G9Ahyg3lKWRUh4cVur34l-0e4rvOxlNThSxhYiSEoMEkyB1iZ_4Zh-wVcSTydWWBex_Erpg5RfitXyzDoEUw4" />
+                  <img alt="Vistas Totales y Clicks" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src={landingImages.metrics} />
                 </div>
               </div>
               <div className="md:col-span-5 bg-surface-variant rounded-2xl neon-border p-10 flex flex-col group">
                 <span className="material-symbols-outlined text-4xl text-primary mb-6">gallery_thumbnail</span>
                 <h3 className="text-2xl font-bold text-white mb-4">Diseño Inteligente</h3>
                 <p className="text-gray-400 mb-8">Ahorra tiempo a tus clientes permitiéndoles elegir diseños específicos del catálogo.</p>
-                <div className="mt-auto relative rounded-xl overflow-hidden aspect-square bg-surface-container border border-outline-variant/20 shadow-2xl flex flex-col pointer-events-none group-hover:scale-105 transition-transform duration-500 select-none">
-                  {/* Pseudo Modal */}
-                  <div className="absolute top-2 right-2 z-20 p-1 text-on-surface bg-surface/50 backdrop-blur-sm rounded-full">
-                    <span className="material-symbols-outlined text-xs">close</span>
-                  </div>
-                  
-                  {/* Image section */}
-                  <div className="w-full h-1/2 bg-black flex flex-col items-center justify-center p-2 relative overflow-hidden shrink-0">
-                    <div className="absolute inset-0 z-0 flex items-center justify-center opacity-25 blur-xl scale-110 pointer-events-none">
-                      <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" className="w-full h-full object-cover opacity-50" alt="" />
-                    </div>
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" className="max-w-full max-h-full object-contain relative z-10 shadow-2xl" alt="" />
-                  </div>
-                  
-                  {/* Details section */}
-                  <div className="w-full h-1/2 p-3 sm:p-4 flex flex-col border-t border-outline-variant/10 bg-surface-container overflow-hidden">
-                    <div className="flex flex-wrap items-center gap-1.5 mb-1.5 justify-center">
-                       <span className="px-1.5 py-0.5 border border-primary text-[6px] font-bold tracking-widest text-primary uppercase bg-primary/5">Realismo</span>
-                    </div>
-                    <h2 className="text-[10px] sm:text-xs font-bold uppercase tracking-tight text-on-surface mb-1 text-center">Retrato Surrealista</h2>
-                    
-                    <div className="flex justify-between w-full border-t border-outline-variant/10 pt-2 mt-auto mb-2">
-                      <div className="flex flex-col items-center justify-center text-center py-1 px-1 border border-outline-variant/10 bg-surface-container-high rounded transition-colors flex-1 mx-0.5">
-                        <span className="material-symbols-outlined text-primary text-[10px]">schedule</span>
-                        <span className="text-[5px] sm:text-[6px] font-bold tracking-widest text-on-surface-variant/70 uppercase">Horas</span>
-                        <span className="font-bold text-on-surface text-[7px] sm:text-[8px]">12h</span>
-                      </div>
-                      <div className="flex flex-col items-center justify-center text-center py-1 px-1 border border-outline-variant/10 bg-surface-container-high rounded transition-colors flex-1 mx-0.5">
-                        <span className="material-symbols-outlined text-primary text-[10px]">layers</span>
-                        <span className="text-[5px] sm:text-[6px] font-bold tracking-widest text-on-surface-variant/70 uppercase">Sesiones</span>
-                        <span className="font-bold text-on-surface text-[7px] sm:text-[8px]">3</span>
-                      </div>
-                      <div className="flex flex-col items-center justify-center text-center py-1 px-1 border border-outline-variant/10 bg-surface-container-high rounded transition-colors flex-1 mx-0.5">
-                        <span className="material-symbols-outlined text-primary text-[10px]">straighten</span>
-                        <span className="text-[5px] sm:text-[6px] font-bold tracking-widest text-on-surface-variant/70 uppercase">Tamaño</span>
-                        <span className="font-bold text-on-surface text-[7px] sm:text-[8px]">25cm</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-auto shrink-0">
-                      <button className="w-full py-1.5 bg-primary text-on-primary font-bold uppercase tracking-widest text-[7px] sm:text-[8px] flex items-center justify-center gap-1 shadow-lg">
-                        <span>Quiero este tatuaje</span>
-                        <span className="material-symbols-outlined text-[8px] sm:text-[10px]">arrow_forward</span>
-                      </button>
-                    </div>
-                  </div>
+                <div className="mt-auto overflow-hidden rounded-xl">
+                  <img alt="Diseño Inteligente" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src={landingImages.design} />
                 </div>
               </div>
               <div className="md:col-span-7 bg-surface-variant rounded-2xl neon-border overflow-hidden relative group">
