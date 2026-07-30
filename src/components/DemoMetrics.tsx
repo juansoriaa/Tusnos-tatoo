@@ -211,7 +211,7 @@ export default function DemoMetrics() {
                         imageUrl: f.imageUrl,
                         title: f.title,
                         category: f.category,
-                        clicks: 0
+                        clicks: 0, originalFallbackId: f.id
                     }))];
                 }
                 finalPhotos.sort((a, b) => b.clicks - a.clicks);

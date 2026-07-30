@@ -23,9 +23,9 @@ export default function SuperAdmin() {
     monthlySubscriptionPrice: 149,
     expenses: [],
     landingImages: {
-      waitlist: 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png',
-      metrics: 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg',
-      design: 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png'
+      waitlist: 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png?v=1',
+      metrics: 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg?v=1',
+      design: 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png?v=1'
     }
   });
   const [newExpense, setNewExpense] = useState({ name: '', price: 0, type: 'monthly' });
@@ -77,6 +77,9 @@ export default function SuperAdmin() {
           const cleanUrl = (url, defaultUrl) => {
             if (!url) return defaultUrl;
             if (url.includes('lh3.googleusercontent.com') || url === '/waitlist-mobile.png' || url.includes('AB6AXu')) return defaultUrl;
+            if (url.includes('ibb.co/WWwV52tV')) return 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg?v=1';
+            if (url.includes('ibb.co/d0k3jKsz')) return 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png?v=1';
+            if (url.includes('ibb.co/0yJZqYfX')) return 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png?v=1';
             return url;
           };
   
@@ -798,13 +801,18 @@ export default function SuperAdmin() {
                 <input 
                   type="text" 
                   value={globalConfig?.landingImages?.waitlist || ''}
-                  onChange={(e) => setGlobalConfig({...globalConfig, landingImages: {...(globalConfig.landingImages || {}), waitlist: e.target.value}})}
+                  onChange={(e) => setGlobalConfig({...globalConfig, landingImages: {...(globalConfig.landingImages || {}), waitlist: ((url) => {
+    if (url.includes('ibb.co/WWwV52tV')) return 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg?v=1';
+    if (url.includes('ibb.co/d0k3jKsz')) return 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png?v=1';
+    if (url.includes('ibb.co/0yJZqYfX')) return 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png?v=1';
+    return url;
+  })(e.target.value)}})}
                   className="bg-deep-black border border-outline-variant/30 rounded p-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
                   placeholder="URL de la imagen (ej: https://...)"
                 />
                 {globalConfig?.landingImages?.waitlist && (
                   <div className="mt-2 aspect-video bg-deep-black rounded border border-outline-variant/20 overflow-hidden">
-                    <img src={globalConfig.landingImages.waitlist} className="w-full h-full object-cover" />
+                    <img src={globalConfig.landingImages.waitlist} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>
@@ -815,13 +823,18 @@ export default function SuperAdmin() {
                 <input 
                   type="text" 
                   value={globalConfig?.landingImages?.metrics || ''}
-                  onChange={(e) => setGlobalConfig({...globalConfig, landingImages: {...(globalConfig.landingImages || {}), metrics: e.target.value}})}
+                  onChange={(e) => setGlobalConfig({...globalConfig, landingImages: {...(globalConfig.landingImages || {}), metrics: ((url) => {
+    if (url.includes('ibb.co/WWwV52tV')) return 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg?v=1';
+    if (url.includes('ibb.co/d0k3jKsz')) return 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png?v=1';
+    if (url.includes('ibb.co/0yJZqYfX')) return 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png?v=1';
+    return url;
+  })(e.target.value)}})}
                   className="bg-deep-black border border-outline-variant/30 rounded p-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
                   placeholder="URL de la imagen (ej: https://...)"
                 />
                 {globalConfig?.landingImages?.metrics && (
                   <div className="mt-2 aspect-video bg-deep-black rounded border border-outline-variant/20 overflow-hidden">
-                    <img src={globalConfig.landingImages.metrics} className="w-full h-full object-cover" />
+                    <img src={globalConfig.landingImages.metrics} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>
@@ -832,13 +845,18 @@ export default function SuperAdmin() {
                 <input 
                   type="text" 
                   value={globalConfig?.landingImages?.design || ''}
-                  onChange={(e) => setGlobalConfig({...globalConfig, landingImages: {...(globalConfig.landingImages || {}), design: e.target.value}})}
+                  onChange={(e) => setGlobalConfig({...globalConfig, landingImages: {...(globalConfig.landingImages || {}), design: ((url) => {
+    if (url.includes('ibb.co/WWwV52tV')) return 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg?v=1';
+    if (url.includes('ibb.co/d0k3jKsz')) return 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png?v=1';
+    if (url.includes('ibb.co/0yJZqYfX')) return 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png?v=1';
+    return url;
+  })(e.target.value)}})}
                   className="bg-deep-black border border-outline-variant/30 rounded p-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
                   placeholder="URL de la imagen (ej: https://...)"
                 />
                 {globalConfig?.landingImages?.design && (
                   <div className="mt-2 aspect-video bg-deep-black rounded border border-outline-variant/20 overflow-hidden">
-                    <img src={globalConfig.landingImages.design} className="w-full h-full object-cover" />
+                    <img src={globalConfig.landingImages.design} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>

@@ -59,9 +59,9 @@ export default function Landing() {
   const [loginError, setLoginError] = useState('');
   const [activeSlide, setActiveSlide] = useState(0);
   const [landingImages, setLandingImages] = useState<any>({
-    waitlist: 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png',
-    metrics: 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg',
-    design: 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png'
+    waitlist: 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png?v=1',
+    metrics: 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg?v=1',
+    design: 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png?v=1'
   });
 
   useEffect(() => {
@@ -74,6 +74,9 @@ export default function Landing() {
           const cleanUrl = (url, defaultUrl) => {
             if (!url) return defaultUrl;
             if (url.includes('lh3.googleusercontent.com') || url === '/waitlist-mobile.png' || url.includes('AB6AXu')) return defaultUrl;
+            if (url.includes('ibb.co/WWwV52tV')) return 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg?v=1';
+            if (url.includes('ibb.co/d0k3jKsz')) return 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png?v=1';
+            if (url.includes('ibb.co/0yJZqYfX')) return 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png?v=1';
             return url;
           };
   
@@ -435,14 +438,21 @@ export default function Landing() {
                     })()}
                   </div>
 
+                  {/* Action Button */}
+                  <div className="px-6 mb-6 w-full shrink-0">
+                    <button className="w-full py-2 bg-primary text-white font-bold uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 rounded shadow-lg border border-primary hover:bg-primary/90 transition-all">
+                      <span>Quiero un turno</span>
+                      <span className="material-symbols-outlined text-[14px]">calendar_month</span>
+                    </button>
+                  </div>
                   {/* Grid */}
-                  <div className="grid grid-cols-3 gap-1 w-full px-4 overflow-hidden">
-                    <div className="aspect-square bg-surface-container"><img src={landingImages.design} className="w-full h-full object-cover grayscale" alt=""/></div>
+                  <div className="grid grid-cols-3 gap-1 w-full px-4 overflow-hidden pb-4">
+                    <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" className="w-full h-full object-cover grayscale" alt=""/></div>
                     <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHwNb_MhbHOaP6c0Rl1EqFCiTHvx3OrwkHec41w-pIzdVOr7fsJR6seTV1H8FzBJ3iiQ-niPppsHlussWManmq3_37uMTyIRgGyAfz38023h98-mc7TXCSIobUFesaE9i91952TUovITXSuF_0DHR_r_6GS38wv-AYSWni62vZFkiIacuuAHSHqUBld76UFh-NsXjsIcZg-h_Vn10CGZcp3HYUtlUEeh82negXGsgP2u_nBmavAlj48S7v5uf-_qARYs4xf7o9gE8" className="w-full h-full object-cover grayscale" alt=""/></div>
                     <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBExqvT9llX2D0HY5gXD0pgutK1YUyCLP8CEJNM8DIVtN8ENfn13RmMA5bovsMB-J8PbQROw4rmvLORq0cF06c0VBS-zmh5vwUl_NjO2286Jnxr4srgoffNsb3K-JLYcCnNu81k1Cr-NYP_zhnNCtodbCXfKdcnq642dwIfs68cY47x8J7t7YsfjcAGo0eHcF5dfZEsWIDrYHtHIcbUkCn02Aho6E_OGQH6HdhW0i8n5qmt9rh0jY2uJWH3_qIzu7GXxNkfS-jybkg" className="w-full h-full object-cover grayscale" alt=""/></div>
                     <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuASHOMWeKVAQxGeWzc3sI2E5n8qAgw4P6xBLVnmV7EZhijxL5vffctyZq054C_Kcef9vYXNrqjJGHNeLW-lkEWK9KyQkyhnDLgXzLHPBh6ptgR6rrfFHCLKGzn4OJ7orZ8TZRua_YRLRwa5zhHRlFw8fZZurBfewtZA7Y2irrPpphi6K9XRUng_BiIaoMKAeAhG1-E8Re72e3sJpdd-7sZHmafVRKt2n5usQT048dwPRTpveoXDEmTg8JVskpX5GowUCm2MaHCDMnw" className="w-full h-full object-cover grayscale" alt=""/></div>
-                    <div className="aspect-square bg-surface-container"><img src={landingImages.design} className="w-full h-full object-cover grayscale" alt=""/></div>
-                    <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHwNb_MhbHOaP6c0Rl1EqFCiTHvx3OrwkHec41w-pIzdVOr7fsJR6seTV1H8FzBJ3iiQ-niPppsHlussWManmq3_37uMTyIRgGyAfz38023h98-mc7TXCSIobUFesaE9i91952TUovITXSuF_0DHR_r_6GS38wv-AYSWni62vZFkiIacuuAHSHqUBld76UFh-NsXjsIcZg-h_Vn10CGZcp3HYUtlUEeh82negXGsgP2u_nBmavAlj48S7v5uf-_qARYs4xf7o9gE8" className="w-full h-full object-cover grayscale" alt=""/></div>
+                    <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5DDAAcFYiq49hBeVBI21d-Kfzr6qKoiRfIXKP1UnRW7YF5GJFA5MFkoXHtdBxy6uEbgH9z0zVWPWxKIEtX3oXemICFI1Ssr7FZ-Hh_OVDjHQ-QLRxMXBp5c4FwHXswrbPE9ZdzVelcUFL0h0nTLuzuWpLR_QRaZBZsyq7srBJaHktN6PcAYY-NQ2d-8FRg_RJ15MYhPUfdaEk_oGzE57hWrd7ZFkT4ldOW1tTIz0PqCqzo5_ALKPhXP1byoz8eiIEM30X9HQLzho" className="w-full h-full object-cover grayscale" alt=""/></div>
+                    <div className="aspect-square bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDE9qEOTq3DlR_Z_PI95eeZBU5YHIAzEqTN6zzltLD_41wX6e4LCHu8sREZZ4N_qV-XW271u6bCjyo14IHISQRVRhCSBJdX_ICJvg9EM-iYGcv1owFVPqatY3-0uESdozTCTcvTib8fe2Um_CI2L6mxqWeMg8IoYm0FYaTzlqISISzi52HOylwmgk_IxCrKp2vueZ90nk1bGHhgH3ybo0PI5u7VOpkB_kQTPzrRjD2-N3hC-9IB-OKvuic1rp7_8b4w562jI2tcCKA" className="w-full h-full object-cover grayscale" alt=""/></div>
                   </div>
                 </div>
               </div>
@@ -465,7 +475,7 @@ export default function Landing() {
                   <p className="text-gray-400">Modo 'Lista Llena' activo. Captura prospectos y contáctalos vía WhatsApp cuando se libere un espacio.</p>
                 </div>
                 <div className="w-full md:w-1/2 relative p-6 flex items-center justify-center">
-                                    <img src={landingImages.waitlist} alt="Lista de Espera" className="w-full max-w-sm h-auto object-contain rounded-lg shadow-2xl group-hover:scale-105 transition-transform duration-500 origin-center mx-auto" />
+                                    <img src={landingImages.waitlist} referrerPolicy="no-referrer" alt="Lista de Espera" className="w-full max-w-sm h-auto object-contain rounded-lg shadow-2xl group-hover:scale-105 transition-transform duration-500 origin-center mx-auto" />
                 </div>
               </div>
               <div className="md:col-span-4 bg-surface-variant rounded-2xl neon-border p-10 flex flex-col group">
@@ -473,7 +483,7 @@ export default function Landing() {
                 <h3 className="text-2xl font-bold text-white mb-4">Métricas Avanzadas</h3>
                 <p className="text-gray-400 mb-8">Descubre qué tatuajes tienen más interacción con datos en tiempo real.</p>
                 <div className="mt-auto overflow-hidden rounded-xl">
-                  <img alt="Vistas Totales y Clicks" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src={landingImages.metrics} />
+                  <img alt="Vistas Totales y Clicks" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src={landingImages.metrics} referrerPolicy="no-referrer" />
                 </div>
               </div>
               <div className="md:col-span-5 bg-surface-variant rounded-2xl neon-border p-10 flex flex-col group">
@@ -481,7 +491,7 @@ export default function Landing() {
                 <h3 className="text-2xl font-bold text-white mb-4">Diseño Inteligente</h3>
                 <p className="text-gray-400 mb-8">Ahorra tiempo a tus clientes permitiéndoles elegir diseños específicos del catálogo.</p>
                 <div className="mt-auto overflow-hidden rounded-xl">
-                  <img alt="Diseño Inteligente" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src={landingImages.design} />
+                  <img alt="Diseño Inteligente" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src={landingImages.design} referrerPolicy="no-referrer" />
                 </div>
               </div>
               <div className="md:col-span-7 bg-surface-variant rounded-2xl neon-border overflow-hidden relative group">
