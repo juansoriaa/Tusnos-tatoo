@@ -1,28 +1,34 @@
 const fs = require('fs');
-let content = fs.readFileSync('src/components/Landing.tsx', 'utf-8');
 
-const oldFetch = `        const snapshot = await getDocs(q);
-        
-        if (!snapshot.empty) {
-          const works = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));`;
-          
-const newFetch = `        const snapshot = await getDocs(q);
-        
-        if (!snapshot.empty) {
-          // Filter to ensure photos have a valid URL and are not empty
-          const works = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                                     .filter(w => (w.url && w.url.length > 10) || (w.src && w.src.length > 10));`;
+let content = fs.readFileSync('src/components/ArtistProfile.tsx', 'utf-8');
 
-content = content.replace(oldFetch, newFetch);
+// First, we remove the two effects. 
+// It's a bit complex, let's just find the indices.
+const fileLines = content.split('\n');
 
-const oldMap = `                  return {
-                      ...w,
-                      src: w.url,`;
-                      
-const newMap = `                  return {
-                      ...w,
-                      src: w.url || w.src || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ',`;
+let firstEffectStart = -1;
+let firstEffectEnd = -1;
+let secondEffectStart = -1;
+let secondEffectEnd = -1;
 
-content = content.replace(oldMap, newMap);
+for (let i = 0; i < fileLines.length; i++) {
+    if (fileLines[i].includes('useEffect(() => {') && fileLines[i+1].includes('let unsubscribe = () => {};') && fileLines[i+2].includes("const localUid = localStorage.getItem('demoUserId');")) {
+        firstEffectStart = i;
+    }
+    // we know first effect ends at `  }, [id]);`
+    if (firstEffectStart !== -1 && firstEffectEnd === -1 && fileLines[i].includes('  }, [id]);')) {
+        firstEffectEnd = i;
+    }
+    
+    if (fileLines[i].includes('useEffect(() => {') && fileLines[i+1].includes('let authUnsub = () => {};') && fileLines[i+2].includes('const fetchTattoos = async (authUid: string | undefined) => {')) {
+        secondEffectStart = i;
+    }
+    // second effect ends at `  }, [id]);`
+    if (secondEffectStart !== -1 && secondEffectEnd === -1 && i > secondEffectStart && fileLines[i].includes('  }, [id]);')) {
+        secondEffectEnd = i;
+    }
+}
 
-fs.writeFileSync('src/components/Landing.tsx', content);
+console.log('first:', firstEffectStart, firstEffectEnd);
+console.log('second:', secondEffectStart, secondEffectEnd);
+

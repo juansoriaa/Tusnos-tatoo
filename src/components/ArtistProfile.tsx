@@ -74,361 +74,208 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    let unsubscribe = () => {};
-    const localUid = localStorage.getItem('demoUserId');
-    if (id) {
-        fetchArtist();
-    } else if (localUid) {
-        fetchArtist({uid: localUid});
-    } else {
-        unsubscribe = onAuthStateChanged(auth, (user) => {
-            fetchArtist(user);
-        });
-    }
-    
-    async function fetchArtist(user?: any) {
-      let targetId = id;
-      if (!targetId) {
-          targetId = user?.uid;
-      }
-      try {
-      if (targetId) {
-        if (!artistData) setIsProfileLoading(true);
-        const docRef = doc(db, 'users', targetId);
-        let docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          // Include UID to ensure we can identify the user
-          setArtistData({ ...data, uid: docSnap.id });
-          globalPreloadCache[targetId || 'demo'] = { ...globalPreloadCache[targetId || 'demo'], artistData: { ...data, uid: docSnap.id } };
-        } else {
-            // Try by userTag
-            let tag = targetId;
-            if (!tag.startsWith('@')) tag = '@' + tag;
-            const q = query(collection(db, 'users'), where('userTag', '==', tag));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const data = querySnapshot.docs[0].data();
-                setArtistData({ ...data, uid: querySnapshot.docs[0].id });
-                globalPreloadCache[targetId || 'demo'] = { ...globalPreloadCache[targetId || 'demo'], artistData: { ...data, uid: querySnapshot.docs[0].id } };
-            }
-        }
-      } else {
-        const saved = localStorage.getItem('demoArtistData_demo');
-        if (saved) {
-            try {
-                setArtistData(JSON.parse(saved));
-            } catch (e) {}
-        }
-      }
-    } catch(e) { console.error(e); } finally {
-      setIsProfileLoading(false);
-    }
-    };
-    const handleProfileDataChanged = () => fetchArtist({uid: localStorage.getItem('demoUserId') || auth.currentUser?.uid});
-    window.addEventListener('profileDataChanged', handleProfileDataChanged);
-    return () => {
-        unsubscribe();
-        window.removeEventListener("profileDataChanged", handleProfileDataChanged);
-        
-    };
-  }, [id]);
-
-  const [modalOpen, setModalOpen] = useState(false);
-
-  const trackMetric = async (metricKey: 'views' | 'photoClicks' | 'whatsappClicks' | 'agendaClicks', photoId?: string) => {
-      try {
-          // If we have artistUid, increment in Firestore
-          let targetUid = id;
-          if (targetUid && targetUid.startsWith('@')) {
-              // we don't have the UID, just the tag, let's try to resolve it from artistData if it matches
-              if (artistData && artistData.uid) {
-                  targetUid = artistData.uid;
-              }
-          }
-          if (targetUid && !targetUid.startsWith('@')) {
-              const { doc, updateDoc, increment } = await import('firebase/firestore');
-              await updateDoc(doc(db, 'users', targetUid), {
-                  [metricKey]: increment(1)
-              });
-              window.dispatchEvent(new CustomEvent('demoMetricsUpdated'));
-              if (photoId) {
-                  try {
-                      await updateDoc(doc(db, 'photos', photoId), { clicks: increment(1) });
-                  } catch (e) { console.error("Error updating photo clicks", e); }
-              }
-          } else {
-              // try by resolving
-              const { collection, query, where, getDocs, doc, updateDoc, increment } = await import('firebase/firestore');
-              let tag = id;
-              if (!tag.startsWith('@')) tag = '@' + tag;
-              const q = query(collection(db, 'users'), where('userTag', '==', tag));
-              const snap = await getDocs(q);
-              if (!snap.empty) {
-                  await updateDoc(doc(db, 'users', snap.docs[0].id), {
-                      [metricKey]: increment(1)
-                  });
-                  window.dispatchEvent(new CustomEvent('demoMetricsUpdated'));
-                  if (photoId) {
-                      try {
-                          await updateDoc(doc(db, 'photos', photoId), { clicks: increment(1) });
-                      } catch (e) { console.error("Error updating photo clicks", e); }
-                  }
-              }
-          }
-      } catch(e) {}
-  };
-
-  useEffect(() => {
-      if (!sessionStorage.getItem('profileViewed')) {
-          sessionStorage.setItem('profileViewed', 'true');
-          trackMetric('views');
-      }
-  }, []);
-
-  const [activeTattooIndex, setActiveTattooIndex] = useState<number>(0);
-  const [showMore, setShowMore] = useState(false);
-  const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
-  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
-  const [waitlistForm, setWaitlistForm] = useState({ name: '', phone: '', type: 'consulta', description: '', referenceImage: '' });
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [allTattoos, setAllTattoos] = useState<any[]>(() => {
-      try {
-          const targetId = resolveTargetId();
-          const saved = localStorage.getItem('demoAllTattoos_' + targetId);
-          if (saved) return JSON.parse(saved);
-      } catch(e) {}
-      return [];
-  });
-  const [termsModalOpen, setTermsModalOpen] = useState(false);
-  const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
-  const [contactModalOpen, setContactModalOpen] = useState(false);
-  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
-  const [contactSuccess, setContactSuccess] = useState(false);
-
-  useEffect(() => {
     let authUnsub = () => {};
-    const fetchTattoos = async (authUid: string | undefined) => {
-        let artistUid = id;
+    let isMounted = true;
+    
+    const loadProfileData = async (authUid: string | undefined) => {
+        let targetId = id;
+        if (!targetId) targetId = authUid;
+        if (!targetId) targetId = localStorage.getItem('demoUserId');
+        if (!targetId) targetId = 'anonymous_demo';
         
-        // Resolve tag to UID if needed
-        if (artistUid && (artistUid.startsWith('@') || artistUid.length < 20)) {
-            let tag = artistUid.startsWith('@') ? artistUid : '@' + artistUid;
-            const q = query(collection(db, 'users'), where('userTag', '==', tag));
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-                artistUid = snap.docs[0].id;
-            }
-        }
-        
-        if (!artistUid) {
-            artistUid = authUid;
-        }
-        if (!artistUid) {
-            artistUid = 'anonymous_demo';
-        }
-
         try {
-            const q = query(
+            if (!artistData) setIsProfileLoading(true);
+            if (allTattoos.length === 0) setIsTattoosLoading(true);
+            
+            let artistUid = targetId;
+            let currentArtistData = null;
+            let currentArtistDocId = null;
+
+            // Resolve ID if it's a tag
+            if (artistUid.startsWith('@') || artistUid.length < 20) {
+                let tag = artistUid.startsWith('@') ? artistUid : '@' + artistUid;
+                const q = query(collection(db, 'users'), where('userTag', '==', tag));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    artistUid = snap.docs[0].id;
+                    currentArtistData = snap.docs[0].data();
+                    currentArtistDocId = artistUid;
+                }
+            } 
+            
+            // Now that we definitely have the UID, we can fetch BOTH artist profile (if we don't have it yet) and tattoos in parallel using Promise.all!
+            const promises = [];
+            
+            if (!currentArtistData && artistUid !== 'anonymous_demo' && artistUid !== 'demo') {
+                promises.push(getDoc(doc(db, 'users', artistUid)).then(docSnap => {
+                    if (docSnap.exists()) {
+                        currentArtistData = docSnap.data();
+                        currentArtistDocId = docSnap.id;
+                    }
+                }));
+            } else {
+                promises.push(Promise.resolve());
+            }
+
+            const qTattoos = query(
                 collection(db, 'photos'),
                 where('createdBy', '==', artistUid),
                 orderBy('createdAt', 'desc'),
                 limit(20)
             );
-            const snapshot = await getDocs(q);
-            let finalPhotos: any[] = snapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    src: data.url || data.imageUrl || data.src,
-                    thumbnailUrl: data.thumbnailUrl,
-                    alt: data.info || data.title,
-                    title: data.title || 'Foto de Tatuaje',
-                    categories: data.tags || data.categories || ['Portfolio'],
-                    filters: data.filters || [],
-                    hours: data.hours,
-                    sessions: data.sessions,
-                    size: data.size,
-                    pinnedOrder: data.pinnedOrder,
-                    originalFallbackId: data.originalFallbackId
-                };
-            });
+            promises.push(getDocs(qTattoos));
             
-            let isDemoUser = false;
-            if (artistUid === '@victor_ink' || artistUid === 'victor_ink' || artistUid === 'demo' || artistUid === '@demo' || artistUid === 'anonymous_demo') isDemoUser = true;
-            if (artistData && (artistData.userTag === '@demo' || artistData.userTag === '@victor_ink' || artistData.userTag === 'victor_ink' || artistData.userTag === 'demo')) {
-                isDemoUser = true;
-            }
-
-            if (isDemoUser) {
-                const fallback = [
-                    {
-                      id: "fallback_1",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ",
-                      alt: "A highly detailed black and grey realism tattoo of a lion's face on a human forearm.",
-                      title: "Detailed black & grey realism",
-                      categories: ["Realismo", "Blackwork"],
-                      hours: 12,
-                      sessions: 2,
-                      size: "20x15 cm"
-                    },
-                    {
-                      id: "fallback_2",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA5DDAAcFYiq49hBeVBI21d-Kfzr6qKoiRfIXKP1UnRW7YF5GJFA5MFkoXHtdBxy6uEbgH9z0zVWPWxKIEtX3oXemICFI1Ssr7FZ-Hh_OVDjHQ-QLRxMXBp5c4FwHXswrbPE9ZdzVelcUFL0h0nTLuzuWpLR_QRaZBZsyq7srBJaHktN6PcAYY-NQ2d-8FRg_RJ15MYhPUfdaEk_oGzE57hWrd7ZFkT4ldOW1tTIz0PqCqzo5_ALKPhXP1byoz8eiIEM30X9HQLzho",
-                      alt: "Close-up of a delicate minimalist tattoo of a single rose.",
-                      title: "Delicate minimalist single rose",
-                      categories: ["Minimalista"],
-                      hours: 3,
-                      sessions: 1,
-                      size: "8x5 cm"
-                    },
-                    {
-                      id: "fallback_3",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE9qEOTq3DlR_Z_PI95eeZBU5YHIAzEqTN6zzltLD_41wX6e4LCHu8sREZZ4N_qV-XW271u6bCjyo14IHISQRVRhCSBJdX_ICJvg9EM-iYGcv1owFVPqatY3-0uESdozTCTcvTib8fe2Um_CI2L6mxqWeMg8IoYm0FYaTzlqISISzi52HOylwmgk_IxCrKp2vueZ90nk1bGHhgH3ybo0PI5u7VOpkB_kQTPzrRjD2-N3hC-9IB-OKvuic1rp7_8b4w562jI2tcCKA",
-                      alt: "Large-scale blackwork tattoo covering a full back.",
-                      title: "Large-scale blackwork back piece",
-                      categories: ["Blackwork", "Tradicional"],
-                      hours: 24,
-                      sessions: 4,
-                      size: "Espalda completa"
-                    },
-                    {
-                      id: "fallback_4",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBYd_bLleuw4yQOy32XLTc-ZA36ZI1Tx20UNajjWgcV5DQKPXzxE6vuXBvD3Ov7hcyCDB0Wpbc1BK7v4CJMIFC3KWS1bBdxzGJUcjSraTSohPMSOjESD5If5O8I8ZxmV0rWCZ_T_ncpPVYMBz9OD9_NXcCjwNkftJNjmowLcbK_jq3Fy-FieRJHky4A0G8SWmDSNGfDrlvoUxmb8aYt9Dxvi2w5uLOR4ir0BxgO2Sh5IfSstId4FI96uowW3Y1Jw1YCCRUk82ep4yPk",
-                      alt: "Hyper-realistic black and grey realism tattoo",
-                      title: "Hyper-realistic black & grey",
-                      categories: ["Realismo", "Blackwork"],
-                      hours: 15,
-                      sessions: 3,
-                      size: "Media manga"
-                    },
-                    {
-                      id: "fallback_5",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5LMtrwwTSFu95uiU0bVfXq9VmWZIJ10dyJ3Lwbu6VmGCGEnBfZXi0WQlrXz0JAAAXzBurYTXa8IleL_Z1UTW7x4BHigWcVZCarsYy-PDu3G5JOwCsz3c0mgBTVI90e2b4bcw5lLDYzc5mU0qXptlWkjo0e3ynOS0xxfhCjxtvA0Bykbfo3wSX79T_fwcMg4uFHYXGxws2NYoOaKhhgr6J8ErFHQqB5QJSnK9c2zkwmEgiIM-74wbPKlVjQPO8pxETkDa8jrj1OmA",
-                      alt: "Detailed blackwork owl",
-                      title: "Detailed blackwork owl",
-                      categories: ["Blackwork", "Realismo"],
-                      hours: 8,
-                      sessions: 2,
-                      size: "15x15 cm"
-                    },
-                    {
-                      id: "fallback_6",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuAiCcgze-zMmmFAOjCN4xQ6CeoqLv_BgkKj7iZWfDqCXh_QoGPCTeSVYBVbA3H_kloM0bS3tXxBa3cY1pNmeNr4CtKPuWY_AFMUCkSb29fVkPS2cJxnOnCZXdCOsST5XxUvicao5fv4hZLXgol8izTusYUx7vRcLz4wQi2YO2jqeWtkjahkSIkJ9bsZTT9Yc4B7Xyxsbuht5vClIiVLFRgAVTnmtfvKmMPDtXdGMokCs42r9vRajXl7r_QmrmtosOLgBWwvZeva_eLj",
-                      alt: "Minimalist mountain",
-                      title: "Minimalist mountain",
-                      categories: ["Minimalista"],
-                      hours: 2,
-                      sessions: 1,
-                      size: "5x5 cm"
-                    },
-                    {
-                      id: "fallback_7",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuB4kAzmGiitSjdk2D4_OGK9WYclBZmk7cefWe8BPMcY8LBacqpcoUc38Awd5FqNh4Eba1D7004xOI8zM_OfSwqcVZtS51XTNjE110SdiB0YMIgxjjBiNGxIGDifU-2yV2DRHxJyft8AS6K6D8tdWl2VVOQfu7wbFLEt11twfKV6pV5KYEwWElAna9GN2J36mCgbidD9hs4hjuPVR45M0Pps7tijbmPhi-RljtyBBrI8SYhiXDvFxXBFVQP1eN6iXqLAzNKsTq_SVt3I",
-                      alt: "Realistic koi fish",
-                      title: "Realistic koi fish",
-                      categories: ["Realismo", "Tradicional"],
-                      hours: 10,
-                      sessions: 2,
-                      size: "20x20 cm"
-                    },
-                    {
-                      id: "fallback_8",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCeiQ96QvK_CB1f544ltSr7zUBzrf2JkPLOlygIBhVzlG8_X5vs1kq9-qAOcPYyPpmhMJ1zn9Tcmc7NtA_i3PYk36Iz_1F__r0TDyBqJSggpzoN5zrF7-cvpX9b6WXiYVcfeoqEuaJYzdSoe8kUbhd0B4xu4PGqI41o9CycgDPQVit7QtUNuxbu8VjI8LNqibJ2Qpoa09qjNLV4Jo2vA81r1KdlIAW9YBEaay9duZ3ZH7HaFAD81admkcERAH-uJz-36mHQSAIx-9Eb",
-                      alt: "Micro-realism pocket watch",
-                      title: "Micro-realism pocket watch",
-                      categories: ["Realismo", "Minimalista"],
-                      hours: 4,
-                      sessions: 1,
-                      size: "8x8 cm"
-                    },
-                    {
-                      id: "fallback_9",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBq1VnZZF7nLUADCQTiQU7dFsZs6g49GFftf-8vLI5Eht2qRTRatf1CSOeX5KEYDypiRNGBkOf_c2xFWSl0jIvxnDMDACEPe9flYK5v_8YXNAZsg1vf9sU4ErKlOyti57hRTbY2bE0gaC06B9DTveMjFNKECVQukrTC9VKQib6kXWcVETRdRFmdCUJdFtzLRk4Dnc1UmNwEx2kNBrXTze-GZPlY4FY-H1oaaAh6UzJLZKz8EHc8jTj761A7z6b_CVlSjqiWdBYTjuCS",
-                      alt: "Geometric dotwork design",
-                      title: "Geometric dotwork design",
-                      categories: ["Minimalista", "Blackwork"],
-                      hours: 6,
-                      sessions: 1,
-                      size: "12x12 cm"
-                    },
-                    {
-                      id: "fallback_10",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDhMj-R1FS_ht2tgrQqme6b2-Hg846oZVQyQ8p1Rchy_7azS2BnqJ5ysLJC8ekDsqqJ8r8LVqJy7K0vGLwO3JKB2uZz_KP8CkOCEmoJ8VMPaUL6cRZryKuQ6HnyRnPdwZ1Qjl2e9IwAs2V3gj-qNn3VIs25WmVqhxfKa7qTsFCOZujgAJV7F3Sot0QO3TJ23bSoB7cpiXHeyHfC00e9Z2qW6y_9DnVNd3R4U30ZGgtAdmqv9-xhzzVl6qAEs0focdc8_W14OXWEfcFu",
-                      alt: "Elegant script lettering",
-                      title: "Elegant script lettering",
-                      categories: ["Fine Line"],
-                      hours: 2,
-                      sessions: 1,
-                      size: "10x3 cm"
-                    },
-                    {
-                      id: "fallback_11",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuAeHO5mvih_r7YM-AQGfl6iWFA1d3CbUokk5zQ4HXbH3KTIJGeDLkdA-9tQrC1005dLiu4B2NyIL87-Y2DeE-B2IaiAIAPscoi7yJyYW7p5C1BPnRQPAcrbpxuDExdI3Xp8j__iKVjs1sqqpCXXVAVzm8PpbbFoPB7ca91f2keDdXcwyQz10d28H_44u4UwZFaPaQzuS6lKDiS77IZ05qxOyMiiwJd0D48vNuQQqLxWFA4X67UB_J03NSR6pFTMBXwwJWUIXU-RHbwf",
-                      alt: "Diamond framed landscape",
-                      title: "Diamond framed landscape",
-                      categories: ["Blackwork", "Realismo"],
-                      hours: 7,
-                      sessions: 1,
-                      size: "15x10 cm"
-                    },
-                    {
-                      id: "fallback_12",
-                      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA_jhISTzGUC2siSj7XIqc-tB7Bzph9Pa50g881aLp9acURUaH40UfWqwlaPN8vl_o5GGNJwNHZFFRzpVpoVffXojuHdynlpn4l8usek3UlfDg4f2TZsxxNPWV8Iqm6jgpbW3-TnVjiwYzCzrj_Htjt1I3iffZTFCM68lixk6Oz4Jml38mAv0HpdJWGJaSe1Y8Img_4dzl_iPZkU9_WaeA0xH6i2x-1XthcwczFtCWa1ScOMF05bFoWQ7OSotfbDwUlQeZrcGO8bjT7",
-                      alt: "Neo-traditional dagger and rose",
-                      title: "Neo-traditional dagger",
-                      categories: ["Tradicional"],
-                      hours: 9,
-                      sessions: 2,
-                      size: "18x12 cm"
+            const results = await Promise.all(promises);
+            const tattoosSnapshot = results[1];
+            
+            if (isMounted) {
+                if (currentArtistData) {
+                    const data = { ...currentArtistData, uid: currentArtistDocId };
+                    setArtistData(data);
+                    globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], artistData: data };
+                } else if (targetId === 'demo' || targetId === 'anonymous_demo') {
+                    const saved = localStorage.getItem('demoArtistData_demo');
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            currentArtistData = parsed;
+                            setArtistData(parsed);
+                        } catch (e) {}
                     }
-                ];
+                }
                 
-                // User requested ONLY 5 photos for the demo
-                const limitedFallback = fallback.slice(0, 5);
-                const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
-                const addedFallbackPhotos = limitedFallback.filter(f => !finalPhotos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id));
-                finalPhotos = [...finalPhotos, ...addedFallbackPhotos];
+                let finalPhotos: any[] = [];
+                if (tattoosSnapshot) {
+                    finalPhotos = tattoosSnapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            src: data.url || data.imageUrl || data.src,
+                            thumbnailUrl: data.thumbnailUrl,
+                            alt: data.info || data.title,
+                            title: data.title || 'Foto de Tatuaje',
+                            categories: data.tags || data.categories || ['Portfolio'],
+                            filters: data.filters || [],
+                            hours: data.hours,
+                            sessions: data.sessions,
+                            size: data.size,
+                            pinnedOrder: data.pinnedOrder,
+                            originalFallbackId: data.originalFallbackId
+                        };
+                    });
+                }
+                
+                let isDemoUser = false;
+                if (artistUid === '@victor_ink' || artistUid === 'victor_ink' || artistUid === 'demo' || artistUid === '@demo' || artistUid === 'anonymous_demo') isDemoUser = true;
+                if (currentArtistData && (currentArtistData.userTag === '@demo' || currentArtistData.userTag === '@victor_ink' || currentArtistData.userTag === 'victor_ink' || currentArtistData.userTag === 'demo')) {
+                    isDemoUser = true;
+                }
+                if (isDemoUser) {
+                    const fallback = [
+                        {
+                          id: "fallback_1",
+                          src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ",
+                          alt: "A highly detailed black and grey realism tattoo of a lion's face on a human forearm.",
+                          title: "Detailed black & grey realism",
+                          categories: ["Realismo", "Blackwork"],
+                          hours: 12,
+                          sessions: 2,
+                          size: "20x15 cm"
+                        },
+                        {
+                          id: "fallback_2",
+                          src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA5DDAAcFYiq49hBeVBI21d-Kfzr6qKoiRfIXKP1UnRW7YF5GJFA5MFkoXHtdBxy6uEbgH9z0zVWPWxKIEtX3oXemICFI1Ssr7FZ-Hh_OVDjHQ-QLRxMXBp5c4FwHXswrbPE9ZdzVelcUFL0h0nTLuzuWpLR_QRaZBZsyq7srBJaHktN6PcAYY-NQ2d-8FRg_RJ15MYhPUfdaEk_oGzE57hWrd7ZFkT4ldOW1tTIz0PqCqzo5_ALKPhXP1byoz8eiIEM30X9HQLzho",
+                          alt: "Close-up of a delicate minimalist tattoo of a single rose.",
+                          title: "Delicate minimalist single rose",
+                          categories: ["Minimalista"],
+                          hours: 3,
+                          sessions: 1,
+                          size: "8x5 cm"
+                        },
+                        {
+                          id: "fallback_3",
+                          src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE9qEOTq3DlR_Z_PI95eeZBU5YHIAzEqTN6zzltLD_41wX6e4LCHu8sREZZ4N_qV-XW271u6bCjyo14IHISQRVRhCSBJdX_ICJvg9EM-iYGcv1owFVPqatY3-0uESdozTCTcvTib8fe2Um_CI2L6mxqWeMg8IoYm0FYaTzlqISISzi52HOylwmgk_IxCrKp2vueZ90nk1bGHhgH3ybo0PI5u7VOpkB_kQTPzrRjD2-N3hC-9IB-OKvuic1rp7_8b4w562jI2tcCKA",
+                          alt: "Large-scale blackwork tattoo covering a full back.",
+                          title: "Large-scale blackwork back piece",
+                          categories: ["Blackwork", "Tradicional"],
+                          hours: 24,
+                          sessions: 4,
+                          size: "Espalda completa"
+                        },
+                        {
+                          id: "fallback_4",
+                          src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBYd_bLleuw4yQOy32XLTc-ZA36ZI1Tx20UNajjWgcV5DQKPXzxE6vuXBvD3Ov7hcyCDB0Wpbc1BK7v4CJMIFC3KWS1bBdxzGJUcjSraTSohPMSOjESD5If5O8I8ZxmV0rWCZ_T_ncpPVYMBz9OD9_NXcCjwNkftJNjmowLcbK_jq3Fy-FieRJHky4A0G8SWmDSNGfDrlvoUxmb8aYt9Dxvi2w5uLOR4ir0BxgO2Sh5IfSstId4FI96uowW3Y1Jw1YCCRUk82ep4yPk",
+                          alt: "Hyper-realistic black and grey realism tattoo",
+                          title: "Hyper-realistic black & grey",
+                          categories: ["Realismo", "Blackwork"],
+                          hours: 15,
+                          sessions: 3,
+                          size: "Media manga"
+                        },
+                        {
+                          id: "fallback_5",
+                          src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5LMtrwwTSFu95uiU0bVfXq9VmWZIJ10dyJ3Lwbu6VmGCGEnBfZXi0WQlrXz0JAAAXzBurYTXa8IleL_Z1UTW7x4BHigWcVZCarsYy-PDu3G5JOwCsz3c0mgBTVI90e2b4bcw5lLDYzc5mU0qXptlWkjo0e3ynOS0xxfhCjxtvA0Bykbfo3wSX79T_fwcMg4uFHYXGxws2NYoOaKhhgr6J8ErFHQqB5QJSnK9c2zkwmEgiIM-74wbPKlVjQPO8pxETkDa8jrj1OmA",
+                          alt: "Detailed blackwork owl",
+                          title: "Detailed blackwork owl",
+                          categories: ["Blackwork", "Realismo"],
+                          hours: 8,
+                          sessions: 2,
+                          size: "15x15 cm"
+                        }
+                    ];
+                    const limitedFallback = fallback.slice(0, 5);
+                    const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
+                    const addedFallbackPhotos = limitedFallback.filter(f => !finalPhotos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id));
+                    finalPhotos = [...finalPhotos, ...addedFallbackPhotos];
+                }
+                
+                finalPhotos.sort((a, b) => {
+                    const aPinned = typeof a.pinnedOrder === 'number' && a.pinnedOrder > 0;
+                    const bPinned = typeof b.pinnedOrder === 'number' && b.pinnedOrder > 0;
+                    if (aPinned && bPinned) return a.pinnedOrder - b.pinnedOrder;
+                    if (aPinned) return -1;
+                    if (bPinned) return 1;
+                    return 0;
+                });
+                
+                setAllTattoos(finalPhotos);
+                setIsProfileLoading(false);
+                setIsTattoosLoading(false);
             }
-
-            // Sort to bring pinned tattoos to the top
-            finalPhotos.sort((a, b) => {
-                const aPinned = typeof a.pinnedOrder === 'number' && a.pinnedOrder > 0;
-                const bPinned = typeof b.pinnedOrder === 'number' && b.pinnedOrder > 0;
-                if (aPinned && bPinned) return a.pinnedOrder - b.pinnedOrder;
-                if (aPinned) return -1;
-                if (bPinned) return 1;
-                return 0; // fallback to original order (which is desc createdAt)
-            });
-            setAllTattoos(finalPhotos);
-            setIsTattoosLoading(false);
         } catch (error) {
-            console.error("Error fetching tattoos", error);
+            console.error(error);
+            if (isMounted) {
+                setIsProfileLoading(false);
+                setIsTattoosLoading(false);
+            }
         }
     };
-    
-    const localUid = localStorage.getItem('demoUserId');
+
     if (id) {
-        fetchTattoos(undefined);
-    } else if (localUid) {
-        fetchTattoos(localUid);
+        loadProfileData(undefined);
     } else {
-        authUnsub = onAuthStateChanged(auth, (user) => {
-            fetchTattoos(user?.uid);
-        });
+        const localUid = localStorage.getItem('demoUserId');
+        if (localUid) {
+            loadProfileData(localUid);
+        } else {
+            authUnsub = onAuthStateChanged(auth, (user) => {
+                loadProfileData(user?.uid);
+            });
+        }
     }
-
+    
     const handleProfileDataChanged = () => {
-        const uid = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
-        fetchTattoos(uid);
+        loadProfileData(localStorage.getItem('demoUserId') || auth.currentUser?.uid);
     };
-
     window.addEventListener('profileDataChanged', handleProfileDataChanged);
+    
     return () => {
-        window.removeEventListener("profileDataChanged", handleProfileDataChanged);
-        
+        isMounted = false;
+        authUnsub();
+        window.removeEventListener('profileDataChanged', handleProfileDataChanged);
     };
   }, [id]);
+
 
   const categoryCounts = allTattoos.reduce((acc, tattoo) => {
     (tattoo.categories || []).forEach((cat) => {
@@ -597,11 +444,13 @@ export default function Profile() {
             <div className="h-16 bg-surface-container rounded w-full max-w-2xl mb-8" />
             <div className="h-12 bg-surface-container rounded w-48 mb-12" />
             
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1 w-full">
-                <div className="aspect-[4/5] bg-surface-container" />
-                <div className="aspect-[4/5] bg-surface-container" />
-                <div className="aspect-[4/5] bg-surface-container" />
-                <div className="aspect-[4/5] bg-surface-container hidden md:block" />
+            <div className="grid grid-cols-3 gap-2 w-full">
+                <div className="aspect-square bg-surface-container" />
+                <div className="aspect-square bg-surface-container" />
+                <div className="aspect-square bg-surface-container" />
+                <div className="aspect-square bg-surface-container hidden md:block" />
+                <div className="aspect-square bg-surface-container hidden md:block" />
+                <div className="aspect-square bg-surface-container hidden md:block" />
             </div>
         </div>
       </div>
@@ -781,7 +630,7 @@ export default function Profile() {
                   alt={tattoo.alt} 
                   onClick={() => openModal(index)} 
                   thumbnailUrl={tattoo.thumbnailUrl}
-                  highResUrl={tattoo.src || tattoo.thumbnailUrl} 
+                  highResUrl={tattoo.thumbnailUrl || tattoo.src} 
                   style={{ filter: getFilterStr(tattoo.filters) }}
                 />
                 {index === 0 && (
