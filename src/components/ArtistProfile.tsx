@@ -76,7 +76,9 @@ export default function Profile() {
   useEffect(() => {
     let unsubscribe = () => {};
     const localUid = localStorage.getItem('demoUserId');
-    if (localUid) {
+    if (id) {
+        fetchArtist();
+    } else if (localUid) {
         fetchArtist({uid: localUid});
     } else {
         unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -406,7 +408,9 @@ export default function Profile() {
     };
     
     const localUid = localStorage.getItem('demoUserId');
-    if (localUid) {
+    if (id) {
+        fetchTattoos(undefined);
+    } else if (localUid) {
         fetchTattoos(localUid);
     } else {
         authUnsub = onAuthStateChanged(auth, (user) => {
