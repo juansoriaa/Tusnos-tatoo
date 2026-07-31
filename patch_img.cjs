@@ -1,28 +1,11 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/ArtistProfile.tsx', 'utf8');
+let content = fs.readFileSync('src/components/Landing.tsx', 'utf-8');
 
-code = code.replace(
-    /import \{ useSearchParams \} from 'react-router-dom';/,
-    `import { useSearchParams } from 'react-router-dom';
-import { ProgressiveImage } from './ProgressiveImage';`
-);
+// Add onError handler to image tags inside the gallery
+content = content.replace(/<img alt=\{photo.alt\} className="w-full h-full object-cover" src=\{photo.src\} \/>/g, 
+  '<img alt={photo.alt} className="w-full h-full object-cover" src={photo.src} onError={(e) => { e.currentTarget.src = "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" }} />');
 
-code = code.replace(
-    /import \{ useNavigate, useParams, useSearchParams \} from 'react-router-dom';/,
-    `import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ProgressiveImage } from './ProgressiveImage';`
-);
+content = content.replace(/<img alt=\{photo.alt\} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src=\{photo.src\} \/>/g, 
+  '<img alt={photo.alt} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src={photo.src} onError={(e) => { e.currentTarget.src = "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" }} />');
 
-code = code.replace(
-    /<img\s*className="w-full h-full grayscale hover:grayscale-0 transition-all duration-700 cursor-pointer object-cover aspect-square"\s*alt=\{tattoo\.alt\}\s*onClick=\{\(\) => openModal\(index\)\}\s*src=\{tattoo\.thumbnailUrl \|\| tattoo\.src\}\s*style=\{\{ filter: getFilterStr\(tattoo\.filters\) \}\}\s*\/>/g,
-    `<ProgressiveImage 
-                  className="w-full h-full grayscale hover:grayscale-0 transition-all duration-700 cursor-pointer object-cover aspect-square" 
-                  alt={tattoo.alt} 
-                  onClick={() => openModal(index)} 
-                  thumbnailUrl={tattoo.thumbnailUrl}
-                  highResUrl={tattoo.src || tattoo.thumbnailUrl} 
-                  style={{ filter: getFilterStr(tattoo.filters) }}
-                />`
-);
-
-fs.writeFileSync('src/components/ArtistProfile.tsx', code);
+fs.writeFileSync('src/components/Landing.tsx', content);

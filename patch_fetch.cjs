@@ -1,45 +1,28 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/ArtistProfile.tsx', 'utf8');
+let content = fs.readFileSync('src/components/Landing.tsx', 'utf-8');
 
-code = code.replace(
-    /if \(targetId\) \{[\s\S]*?\} else \{[\s\S]*?\}\s*setIsProfileLoading\(false\);/,
-    `try {
-      if (targetId) {
-        if (!artistData) setIsProfileLoading(true);
-        const docRef = doc(db, 'users', targetId);
-        let docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          // Include UID to ensure we can identify the user
-          setArtistData({ ...data, uid: docSnap.id });
-          globalPreloadCache[targetId || 'demo'] = { ...globalPreloadCache[targetId || 'demo'], artistData: { ...data, uid: docSnap.id } };
-        } else {
-            // Try by userTag
-            let tag = targetId;
-            if (!tag.startsWith('@')) tag = '@' + tag;
-            const q = query(collection(db, 'users'), where('userTag', '==', tag));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-                const data = querySnapshot.docs[0].data();
-                setArtistData({ ...data, uid: querySnapshot.docs[0].id });
-                globalPreloadCache[targetId || 'demo'] = { ...globalPreloadCache[targetId || 'demo'], artistData: { ...data, uid: querySnapshot.docs[0].id } };
-            }
-        }
-      } else {
-        const saved = localStorage.getItem('demoArtistData_demo');
-        if (saved) {
-            try {
-                setArtistData(JSON.parse(saved));
-            } catch (e) {}
-        }
-      }
-    } catch(e) { console.error(e); } finally {
-      setIsProfileLoading(false);
-    }`
-);
+const oldFetch = `        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+          const works = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));`;
+          
+const newFetch = `        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+          // Filter to ensure photos have a valid URL and are not empty
+          const works = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                                     .filter(w => (w.url && w.url.length > 10) || (w.src && w.src.length > 10));`;
 
-// Remove the double fetchArtist() call
-code = code.replace(/    \};\s*fetchArtist\(\);\s*const handleProfileDataChanged/, `    };
-    const handleProfileDataChanged`);
+content = content.replace(oldFetch, newFetch);
 
-fs.writeFileSync('src/components/ArtistProfile.tsx', code);
+const oldMap = `                  return {
+                      ...w,
+                      src: w.url,`;
+                      
+const newMap = `                  return {
+                      ...w,
+                      src: w.url || w.src || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ',`;
+
+content = content.replace(oldMap, newMap);
+
+fs.writeFileSync('src/components/Landing.tsx', content);

@@ -1,28 +1,31 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/DemoLayout.tsx', 'utf8');
 
-// replace the load function
-code = code.replace(
-    /const load = async \(\) => \{[\s\S]*?unsubscribe = onSnapshot\(q, \(snapshot\) => \{[\s\S]*?setWaitlistCount\(snapshot\.docs\.length\);[\s\S]*?\}\);[\s\S]*?\}[\s\S]*?\};/,
-    `const load = async () => {
-            const demoUserId = authUid || localStorage.getItem('demoUserId');
-            if (demoUserId) {
-                const { collection, onSnapshot, query, where, doc, getDoc } = await import('firebase/firestore');
-                
-                getDoc(doc(db, 'users', demoUserId)).then(userDoc => {
-                    if (userDoc.exists()) {
-                        const data = userDoc.data();
-                        setTurnosLlenos(data.isAvailable === false);
-                        if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);
-                    }
-                }).catch(e => console.error(e));
+let content = fs.readFileSync('src/components/DemoLayout.tsx', 'utf-8');
 
-                const q = query(collection(db, 'users', demoUserId, 'waitlist'), where('read', '==', false));
-                unsubscribe = onSnapshot(q, (snapshot) => {
-                    setWaitlistCount(snapshot.docs.length);
-                });
-            }
-        };`
-);
+// Add import
+content = content.replace("import React, { useState, useEffect } from 'react';", "import React, { useState, useEffect } from 'react';\nimport { Helmet } from 'react-helmet-async';");
 
-fs.writeFileSync('src/components/DemoLayout.tsx', code);
+// Add state
+const statePattern = "    const [turnosLlenos, setTurnosLlenos] = useState(false);";
+const newState = `    const [turnosLlenos, setTurnosLlenos] = useState(false);\n    const [artistName, setArtistName] = useState('Artista');\n    const [artistBio, setArtistBio] = useState('Panel de Control - Turnos Tattoo');`;
+content = content.replace(statePattern, newState);
+
+// Update fetch
+const fetchPattern = "                        if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);";
+const newFetch = `                        if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);\n                        if (data.displayName) setArtistName(data.displayName);\n                        if (data.bio) setArtistBio(data.bio);`;
+content = content.replace(fetchPattern, newFetch);
+
+// Update return to include Helmet
+const returnPattern = `    return (
+        <div className="bg-deep-black text-silver-text font-body-md h-[100dvh] overflow-hidden flex text-[#e5e2e1] bg-[#050505]">`;
+const newReturn = `    return (
+        <div className="bg-deep-black text-silver-text font-body-md h-[100dvh] overflow-hidden flex text-[#e5e2e1] bg-[#050505]">
+            <Helmet>
+                <title>{artistName} - Panel de Control</title>
+                <meta name="description" content={artistBio} />
+                <link rel="icon" href={avatarUrl} />
+                <link rel="apple-touch-icon" href={avatarUrl} />
+            </Helmet>`;
+content = content.replace(returnPattern, newReturn);
+
+fs.writeFileSync('src/components/DemoLayout.tsx', content);

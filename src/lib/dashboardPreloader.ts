@@ -63,7 +63,7 @@ export const preloadDashboardData = (uid: string) => {
             globalPreloadCache[uid] = { ...globalPreloadCache[uid], allTattoos: photos };
             
             // 3. Appointments (Dashboard)
-            const qAppt = query(collection(db, 'appointments'), where('artistId', '==', uid));
+            const qAppt = query(collection(db, 'users', uid, 'appointments'));
             const apptSnap = await getDocs(qAppt);
             if (activePreloadUid !== uid) return;
             const appts = apptSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -71,7 +71,7 @@ export const preloadDashboardData = (uid: string) => {
             globalPreloadCache[uid] = { ...globalPreloadCache[uid], appointments: appts };
 
             // 4. Waitlist (Dashboard)
-            const qWait = query(collection(db, 'waitlist'), where('artistId', '==', uid));
+            const qWait = query(collection(db, 'users', uid, 'waitlist'));
             const waitSnap = await getDocs(qWait);
             if (activePreloadUid !== uid) return;
             const waitlist = waitSnap.docs.map(d => ({ id: d.id, ...d.data() }));

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth, onAuthStateChanged } from '../firebase';
@@ -36,6 +37,8 @@ export default function DemoLayout
                         const data = userDoc.data();
                         setTurnosLlenos(data.isAvailable === false);
                         if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);
+                        if (data.displayName) setArtistName(data.displayName);
+                        if (data.bio) setArtistBio(data.bio);
                     }
                 }).catch(e => console.error(e));
 
@@ -50,6 +53,8 @@ export default function DemoLayout
     }, [authUid]);
         const [avatarUrl, setAvatarUrl] = useState('https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo');
     const [turnosLlenos, setTurnosLlenos] = useState(false);
+    const [artistName, setArtistName] = useState('Artista');
+    const [artistBio, setArtistBio] = useState('Panel de Control - Turnos Tattoo');
 
 
     useEffect(() => {
@@ -246,6 +251,12 @@ export default function DemoLayout
 
     return (
         <div className="bg-deep-black text-silver-text font-body-md h-[100dvh] overflow-hidden flex text-[#e5e2e1] bg-[#050505]">
+            <Helmet>
+                <title>{artistName} - Panel de Control</title>
+                <meta name="description" content={artistBio} />
+                <link rel="icon" href={avatarUrl} />
+                <link rel="apple-touch-icon" href={avatarUrl} />
+            </Helmet>
             {/* Common Styles */}
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {

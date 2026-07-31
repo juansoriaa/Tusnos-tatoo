@@ -282,7 +282,8 @@ export default function DemoMetrics() {
     const chartTitles = {
         views: 'Visitas Totales',
         photoClicks: 'Clicks en Fotos',
-        whatsappClicks: 'Clicks en WhatsApp'
+        whatsappClicks: 'Clicks en WhatsApp',
+        agendaClicks: 'Clicks en Agenda'
     };
 
 
@@ -446,6 +447,13 @@ export default function DemoMetrics() {
                                         style={chartMetric === 'whatsappClicks' ? {backgroundColor: '#054d44'} : {}}
                                     >
                                         WhatsApp
+                                    </button>
+                                    <button 
+                                        onClick={() => setChartMetric('agendaClicks')}
+                                        className={`px-3 py-1 font-label-sm text-[10px] uppercase transition-all rounded ${chartMetric === 'agendaClicks' ? 'bg-primary-container text-white' : 'text-on-surface-variant hover:text-silver-text'}`}
+                                        style={chartMetric === 'agendaClicks' ? {backgroundColor: '#054d44'} : {}}
+                                    >
+                                        Agenda
                                     </button>
                                 </div>
                             </div>

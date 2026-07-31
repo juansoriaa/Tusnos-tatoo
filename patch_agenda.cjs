@@ -1,13 +1,33 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/components/ArtistProfile.tsx', 'utf8');
 
-// 1. Remove trackMetric('agendaClicks') when opening modal
-code = code.replace(/trackMetric\('agendaClicks'\);\n\s*setWaitlistModalOpen\(true\);/g, 'setWaitlistModalOpen(true);');
+let content = fs.readFileSync('src/components/DemoMetrics.tsx', 'utf-8');
 
-// 2. Add trackMetric('agendaClicks') on submission
-code = code.replace(
-    /setWaitlistSuccess\(true\);\n\s*setTimeout\(\(\) => \{/g,
-    `trackMetric('agendaClicks');\n                setWaitlistSuccess(true);\n                setTimeout(() => {`
-);
+const oldBtns = `                                    <button 
+                                        onClick={() => setChartMetric('whatsappClicks')}
+                                        className={\`px-3 py-1 font-label-sm text-[10px] uppercase transition-all rounded \${chartMetric === 'whatsappClicks' ? 'bg-primary-container text-white' : 'text-on-surface-variant hover:text-silver-text'}\`}
+                                        style={chartMetric === 'whatsappClicks' ? {backgroundColor: '#054d44'} : {}}
+                                    >
+                                        WhatsApp
+                                    </button>
+                                </div>
+                            </div>`;
 
-fs.writeFileSync('src/components/ArtistProfile.tsx', code);
+const newBtns = `                                    <button 
+                                        onClick={() => setChartMetric('whatsappClicks')}
+                                        className={\`px-3 py-1 font-label-sm text-[10px] uppercase transition-all rounded \${chartMetric === 'whatsappClicks' ? 'bg-primary-container text-white' : 'text-on-surface-variant hover:text-silver-text'}\`}
+                                        style={chartMetric === 'whatsappClicks' ? {backgroundColor: '#054d44'} : {}}
+                                    >
+                                        WhatsApp
+                                    </button>
+                                    <button 
+                                        onClick={() => setChartMetric('agendaClicks')}
+                                        className={\`px-3 py-1 font-label-sm text-[10px] uppercase transition-all rounded \${chartMetric === 'agendaClicks' ? 'bg-primary-container text-white' : 'text-on-surface-variant hover:text-silver-text'}\`}
+                                        style={chartMetric === 'agendaClicks' ? {backgroundColor: '#054d44'} : {}}
+                                    >
+                                        Agenda
+                                    </button>
+                                </div>
+                            </div>`;
+
+content = content.replace(oldBtns, newBtns);
+fs.writeFileSync('src/components/DemoMetrics.tsx', content);

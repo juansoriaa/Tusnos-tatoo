@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged, db } from '../firebase';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, orderBy, limit } from 'firebase/firestore';
 
 
 const fallbackPhotos = [
@@ -34,6 +34,23 @@ export default function Landing() {
   const [specialties, setSpecialties] = useState<string[]>(['Realismo', 'Black & Grey']);
 
   useEffect(() => {
+    const preloadDemo = async () => {
+        try {
+            const { query, collection, where, getDocs } = await import('firebase/firestore');
+            const { db } = await import('../firebase');
+            const q = query(collection(db, 'users'), where('userTag', '==', '@victor_ink'));
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+                const demoUid = snap.docs[0].id;
+                const { preloadDashboardData } = await import('../lib/dashboardPreloader');
+                preloadDashboardData(demoUid);
+            }
+        } catch(e) {}
+    };
+    preloadDemo();
+  }, []);
+
+  useEffect(() => {
     const loadData = () => {
       const saved = localStorage.getItem('demoArtistData');
       if (saved) {
@@ -47,7 +64,7 @@ export default function Landing() {
     
     loadData();
     window.addEventListener('profileDataChanged', loadData);
-    return () => window.removeEventListener('profileDataChanged', loadData);
+  return () => window.removeEventListener('profileDataChanged', loadData);
   }, []);
   const [user, setUser] = useState<any>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -57,12 +74,66 @@ export default function Landing() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+  const [contactSuccess, setContactSuccess] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [directoryWorks, setDirectoryWorks] = useState<any[]>([]);
   const [landingImages, setLandingImages] = useState<any>({
     waitlist: 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png?v=1',
     metrics: 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg?v=1',
     design: 'https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png?v=1'
   });
+
+  useEffect(() => {
+    const fetchDirectoryWorks = async () => {
+      try {
+        const q = query(
+            collection(db, 'photos'),
+            orderBy('createdAt', 'desc'),
+            limit(12)
+        );
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+          // Filter to ensure photos have a valid URL and are not empty
+          const works = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                                     .filter(w => (w.url && w.url.length > 10) || (w.src && w.src.length > 10));
+          // Now fetch user details for these works
+          const userIds = [...new Set(works.map(w => w.createdBy))].filter(Boolean);
+          
+          if (userIds.length > 0) {
+              const usersData: any = {};
+              // Fetch each user sequentially (or you could batch, but standard is fine for small limits)
+              for (const uid of userIds) {
+                  const uSnap = await getDoc(doc(db, 'users', uid));
+                  if (uSnap.exists()) {
+                      usersData[uid] = uSnap.data();
+                  }
+              }
+              
+              const combinedWorks = works.map(w => {
+                  const user = usersData[w.createdBy];
+                  return {
+                      ...w,
+                      src: w.url || w.src || w.imageUrl,
+                      title: w.title || (user?.name ? `Obra de ${user.name}` : 'Obra Destacada'),
+                      tags: w.tags || [],
+                      userTag: user?.userTag || '@artista',
+                      userAvatar: user?.profilePhotoUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo'
+                  };
+              });
+              setDirectoryWorks(combinedWorks);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching directory works:", err);
+      }
+    };
+    fetchDirectoryWorks();
+  }, []);
 
   useEffect(() => {
     const fetchLandingConfig = async () => {
@@ -96,10 +167,10 @@ export default function Landing() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-        setActiveSlide((prev) => (prev + 1) % fallbackPhotos.length);
+        setActiveSlide((prev) => (prev + 1) % (directoryWorks.length > 0 ? directoryWorks.length : fallbackPhotos.length));
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [directoryWorks.length]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -321,6 +392,7 @@ export default function Landing() {
         sections.forEach(el => observer.unobserve(el));
     };
   }, []);
+  const displayWorks = directoryWorks.length > 0 ? directoryWorks : fallbackPhotos.map(p => ({...p, userTag: "@victor_ink", userAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBTy79SDu2NnHX_tAaMxoahcDiJ4pf7_nJmr7uTAAHM8nxqhJff5IC5kw81q-uy-DejCNoslPvxIxRoAS0kmUW2rRVGPoXENl4-mG4KeSHwaVkHpwH697MHIwve1I-TOLV4QpKI1kNS0rrInl2u5PHFRbN-LoP9GV-4VLjLN1CD4iioFFwkH1q7TvXKkvqwEs1r2ziFSscHLtIk_MG7mMjY-BXTPPEyDPKgvKExhYN8hJQbmQ4f_-PDUbakN5_n7OX29L7XqCB9a0E"}));
 
   return (
     <>
@@ -491,7 +563,7 @@ export default function Landing() {
                 <h3 className="text-2xl font-bold text-white mb-4">Diseño Inteligente</h3>
                 <p className="text-gray-400 mb-8">Ahorra tiempo a tus clientes permitiéndoles elegir diseños específicos del catálogo.</p>
                 <div className="mt-auto overflow-hidden rounded-xl">
-                  <img alt="Diseño Inteligente" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src={landingImages.design} referrerPolicy="no-referrer" />
+                  <img alt="Diseño Inteligente" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src="https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png" referrerPolicy="no-referrer" />
                 </div>
               </div>
               <div className="md:col-span-7 bg-surface-variant rounded-2xl neon-border overflow-hidden relative group">
@@ -514,29 +586,15 @@ export default function Landing() {
           <div className="max-w-container-max mx-auto">
             <div className="text-center mb-16">
               <h2 className="font-display-lg text-display-lg-mobile md:text-[56px] font-bold mb-4">El <span className="text-primary emerald-glow">Directorio</span></h2>
-              <p className="text-gray-400 max-w-2xl mx-auto">Artistas de élite potenciando sus carreras.</p>
-            </div>
-            
-            {/* Featured Spotlight */}
-            <div className="w-full bg-surface-variant rounded-2xl overflow-hidden neon-border mb-8 flex flex-col md:flex-row group cursor-pointer" onClick={() => navigate('/@victor_ink')}>
-              <div className="w-full md:w-2/3 h-[500px] relative overflow-hidden">
-                <img alt="Victor Ink" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTy79SDu2NnHX_tAaMxoahcDiJ4pf7_nJmr7uTAAHM8nxqhJff5IC5kw81q-uy-DejCNoslPvxIxRoAS0kmUW2rRVGPoXENl4-mG4KeSHwaVkHpwH697MHIwve1I-TOLV4QpKI1kNS0rrInl2u5PHFRbN-LoP9GV-4VLjLN1CD4iioFFwkH1q7TvXKkvqwEs1r2ziFSscHLtIk_MG7mMjY-BXTPPEyDPKgvKExhYN8hJQbmQ4f_-PDUbakN5_n7OX29L7XqCB9a0E" />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-surface-variant hidden md:block"></div>
-              </div>
-              <div className="w-full md:w-1/3 p-10 flex flex-col justify-center bg-surface-variant">
-                <span className="text-primary uppercase tracking-[0.2em] font-bold text-sm mb-2">Artista Destacado (Demo)</span>
-                <h3 className="text-4xl font-bold text-white mb-4">Victor Ink</h3>
-                <p className="text-gray-400 mb-8">Blackwork / Minimalist. Creando piezas únicas con precisión y estética limpia. Explora la experiencia completa de nuestro software con esta cuenta de demostración.</p>
-                <button className="px-8 py-3 border-2 border-primary text-primary font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-all">Ver Perfil Demo</button>
-              </div>
+              <p className="text-gray-400 max-w-2xl mx-auto">Un lugar donde los tatuadores muestran sus obras con elegancia, estilo y con toda su información de forma profesional.</p>
             </div>
             
             {/* Mobile Carousel & Desktop Grid */}
             <div className="block md:hidden relative w-full overflow-hidden rounded-2xl neon-border h-[450px]">
                 <div className="flex w-full h-full transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
-                   {fallbackPhotos.map((photo, idx) => (
+                   {displayWorks.map((photo, idx) => (
                       <div key={photo.id} className="w-full h-full shrink-0 relative group">
-                          <img alt={photo.alt} className="w-full h-full object-cover" src={photo.src} />
+                          <img alt={photo.alt} className="w-full h-full object-cover" src={photo.src} onError={(e) => { e.currentTarget.src = "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" }} />
                           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent flex flex-col justify-end p-6">
                               <h4 className="text-2xl font-bold text-white mb-2">{photo.title}</h4>
                               <div className="flex flex-wrap gap-2 mb-4">
@@ -545,8 +603,8 @@ export default function Landing() {
                                 ))}
                               </div>
                               <div className="flex items-center gap-3 pt-4 border-t border-white/20">
-                                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTy79SDu2NnHX_tAaMxoahcDiJ4pf7_nJmr7uTAAHM8nxqhJff5IC5kw81q-uy-DejCNoslPvxIxRoAS0kmUW2rRVGPoXENl4-mG4KeSHwaVkHpwH697MHIwve1I-TOLV4QpKI1kNS0rrInl2u5PHFRbN-LoP9GV-4VLjLN1CD4iioFFwkH1q7TvXKkvqwEs1r2ziFSscHLtIk_MG7mMjY-BXTPPEyDPKgvKExhYN8hJQbmQ4f_-PDUbakN5_n7OX29L7XqCB9a0E" alt="Victor Ink" className="w-8 h-8 rounded-full border border-primary/50 object-cover" />
-                                <span className="text-sm text-gray-300 font-bold">@victor_ink</span>
+                                <img src={photo.userAvatar} alt={photo.userTag} className="w-8 h-8 rounded-full border border-primary/50 object-cover" onError={(e) => { e.currentTarget.src = "https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo" }} />
+                                <span className="text-sm text-gray-300 font-bold">{photo.userTag}</span>
                               </div>
                           </div>
                       </div>
@@ -554,26 +612,26 @@ export default function Landing() {
                 </div>
                 {/* Indicators */}
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-                    {fallbackPhotos.map((_, idx) => (
+                    {displayWorks.map((_, idx) => (
                         <div key={idx} className={`w-2 h-2 rounded-full transition-all ${activeSlide === idx ? 'bg-primary w-6' : 'bg-white/50'}`}></div>
                     ))}
                 </div>
             </div>
 
             <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-8">
-              {fallbackPhotos.map((photo) => (
+              {displayWorks.map((photo) => (
                   <div key={photo.id} className="relative group overflow-hidden rounded-2xl neon-border h-[400px]">
-                    <img alt={photo.alt} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src={photo.src} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent flex flex-col justify-end p-6 translate-y-4 group-hover:translate-y-0 transition-transform">
+                    <img alt={photo.alt} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src={photo.src} onError={(e) => { e.currentTarget.src = "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" }} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent flex flex-col justify-end p-6">
                       <h4 className="text-xl font-bold text-white mb-2">{photo.title}</h4>
                       <div className="flex flex-wrap gap-2 mb-4">
                         {photo.tags.map(tag => (
                             <span key={tag} className="text-[10px] font-bold px-2 py-1 bg-primary/20 text-primary border border-primary/30 rounded uppercase tracking-widest">{tag}</span>
                         ))}
                       </div>
-                      <div className="flex items-center gap-3 pt-4 border-t border-white/20 opacity-0 group-hover:opacity-100 transition-opacity delay-100">
-                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTy79SDu2NnHX_tAaMxoahcDiJ4pf7_nJmr7uTAAHM8nxqhJff5IC5kw81q-uy-DejCNoslPvxIxRoAS0kmUW2rRVGPoXENl4-mG4KeSHwaVkHpwH697MHIwve1I-TOLV4QpKI1kNS0rrInl2u5PHFRbN-LoP9GV-4VLjLN1CD4iioFFwkH1q7TvXKkvqwEs1r2ziFSscHLtIk_MG7mMjY-BXTPPEyDPKgvKExhYN8hJQbmQ4f_-PDUbakN5_n7OX29L7XqCB9a0E" alt="Victor Ink" className="w-6 h-6 rounded-full border border-primary/50 object-cover" />
-                        <span className="text-xs text-gray-300 font-bold">@victor_ink</span>
+                      <div className="flex items-center gap-3 pt-4 border-t border-white/20">
+                        <img src={photo.userAvatar} alt={photo.userTag} className="w-6 h-6 rounded-full border border-primary/50 object-cover" onError={(e) => { e.currentTarget.src = "https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo" }} />
+                        <span className="text-xs text-gray-300 font-bold">{photo.userTag}</span>
                       </div>
                     </div>
                   </div>
@@ -594,15 +652,14 @@ export default function Landing() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-section-gap px-gutter flex flex-col items-center gap-unit text-center bg-surface-container-lowest border-t border-outline-variant/10 px-6">
-        <div className="mb-8">
-          <span className="font-headline-sm text-headline-sm text-on-surface font-bold uppercase tracking-tighter">Turnos <span className="text-primary">Tattoo</span></span>
+      <footer className="w-full py-16 px-gutter flex flex-col items-center gap-8 text-center bg-surface-container-lowest border-t border-outline-variant/10 mt-8">
+        <div className="flex flex-col items-center gap-6">
+          <span className="font-headline-sm text-headline-sm text-on-surface font-extrabold uppercase tracking-tighter">Turnos <span className="text-primary">Tattoo</span></span>
         </div>
-        <div className="flex flex-wrap justify-center gap-8 mb-12">
-          <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Terms</a>
-          <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Privacy</a>
-          <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Contact</a>
-          <a className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary underline transition-opacity opacity-80 hover:opacity-100" href="#">Join Us</a>
+        <div className="flex flex-wrap justify-center gap-8 mb-4">
+          <button className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setTermsModalOpen(true)}>Términos</button>
+          <button className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setPrivacyModalOpen(true)}>Privacidad</button>
+          <button className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setContactModalOpen(true)}>Contacto</button>
         </div>
         <p className="font-caption text-caption uppercase tracking-widest text-on-surface-variant opacity-60">© 2026 Turnos Tattoo. All rights reserved.</p>
       </footer>
@@ -726,6 +783,127 @@ export default function Landing() {
               </div>
             </div>
           )}
+        </div>
+      )}
+      {/* Terms Modal */}
+      {termsModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
+          <div className="bg-surface-container border border-outline-variant w-full max-w-2xl max-h-[80vh] flex flex-col p-6 relative overflow-hidden">
+            <button 
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
+              onClick={() => setTermsModalOpen(false)}
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h3 className="text-xl font-bold uppercase tracking-widest text-primary mb-4 shrink-0">Términos y Condiciones</h3>
+            <div className="overflow-y-auto pr-2 flex-1 hide-scrollbar">
+              <p className="text-on-surface-variant mb-4 leading-relaxed">
+                Bienvenido a Turnos Tattoo. Al utilizar nuestros servicios, usted acepta estos términos y condiciones en su totalidad. No utilice Turnos Tattoo si no acepta todos los términos y condiciones establecidos en esta página.
+              </p>
+              <p className="text-on-surface-variant mb-4 leading-relaxed">
+                <strong>Reservas y Turnos:</strong> Todas las reservas están sujetas a disponibilidad y requieren confirmación por parte del artista. En algunos casos, puede ser necesario un depósito no reembolsable para asegurar la cita. Las cancelaciones deben realizarse con al menos 48 horas de anticipación para poder reprogramar sin penalización.
+              </p>
+              <p className="text-on-surface-variant mb-4 leading-relaxed">
+                <strong>Diseños:</strong> Los diseños de los tatuajes son propiedad intelectual del artista. El artista se reserva el derecho de modificar el diseño para asegurar un mejor resultado en la piel, previa consulta con el cliente.
+              </p>
+              <p className="text-on-surface-variant leading-relaxed">
+                <strong>Cuidado Posterior:</strong> Es responsabilidad exclusiva del cliente seguir las instrucciones de cuidado posterior proporcionadas por el artista. Turnos Tattoo y sus artistas no se hacen responsables de infecciones u otros problemas derivados de un cuidado inadecuado.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-outline-variant/10 shrink-0">
+              <button 
+                className="w-full py-3 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md uppercase font-bold transition-colors"
+                onClick={() => setTermsModalOpen(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Modal */}
+      {privacyModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
+          <div className="bg-surface-container border border-outline-variant w-full max-w-2xl max-h-[80vh] flex flex-col p-6 relative overflow-hidden">
+            <button 
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
+              onClick={() => setPrivacyModalOpen(false)}
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h3 className="text-xl font-bold uppercase tracking-widest text-primary mb-4 shrink-0">Política de Privacidad</h3>
+            <div className="overflow-y-auto pr-2 flex-1 hide-scrollbar">
+              <p className="text-on-surface-variant mb-4 leading-relaxed">
+                En Turnos Tattoo respetamos su privacidad y estamos comprometidos a proteger la información personal que nos proporciona. Esta política explica cómo recopilamos, usamos y salvaguardamos su información.
+              </p>
+              <p className="text-on-surface-variant mb-4 leading-relaxed">
+                <strong>Información que Recopilamos:</strong> Podemos solicitar información personal como su nombre, número de teléfono, dirección de correo electrónico y detalles médicos relevantes cuando realiza una consulta, reserva un turno o interactúa con nuestros servicios.
+              </p>
+              <p className="text-on-surface-variant mb-4 leading-relaxed">
+                <strong>Uso de la Información:</strong> Utilizamos su información para gestionar sus reservas, comunicarnos con usted acerca de su cita, proporcionarle información sobre nuestros servicios y garantizar que su experiencia de tatuaje sea segura y personalizada.
+              </p>
+              <p className="text-on-surface-variant leading-relaxed">
+                <strong>Protección de Datos:</strong> Implementamos medidas de seguridad para mantener la confidencialidad de su información. No vendemos, intercambiamos ni transferimos a terceros su información personal identificable sin su consentimiento previo.
+              </p>
+            </div>
+            <div className="mt-6 pt-4 border-t border-outline-variant/10 shrink-0">
+              <button 
+                className="w-full py-3 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md uppercase font-bold transition-colors"
+                onClick={() => setPrivacyModalOpen(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Modal */}
+      {contactModalOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
+          <div className="bg-surface-container border border-outline-variant w-full max-w-md p-6 relative flex flex-col gap-4 overflow-hidden">
+            <button 
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
+              onClick={() => {
+                setContactModalOpen(false);
+                setContactSuccess(false);
+                setContactForm({ name: '', email: '', message: '' });
+              }}
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <h3 className="text-xl font-bold uppercase tracking-widest text-primary mb-2">Contacto</h3>
+            
+            {contactSuccess ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center animate-fade-in gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-2">
+                  <span className="material-symbols-outlined text-4xl text-primary">check_circle</span>
+                </div>
+                <h4 className="text-xl font-bold text-on-surface">¡Mensaje Enviado!</h4>
+                <p className="text-on-surface-variant text-sm">Nos pondremos en contacto contigo a la brevedad.</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-on-surface-variant text-sm mb-2">
+                  Envíanos un mensaje a turnos.tatoo@gmail.com
+                </p>
+                <div className="flex flex-col gap-4 mt-2">
+                  <p className="text-on-surface-variant text-sm mb-4">
+                    Al hacer clic en el botón, se abrirá tu cliente de correo predeterminado para redactar un mensaje a nuestro equipo.
+                  </p>
+                  <a 
+                    href="mailto:turnos.tatoo@gmail.com?subject=Consulta%20desde%20Turnos%20Tattoo"
+                    className="w-full py-3 bg-primary text-on-primary font-label-md uppercase font-bold hover:bg-[#065f46] transition-colors text-center flex items-center justify-center gap-2"
+                    onClick={() => setContactModalOpen(false)}
+                  >
+                    <span className="material-symbols-outlined">mail</span>
+                    Abrir Correo
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
     </>
