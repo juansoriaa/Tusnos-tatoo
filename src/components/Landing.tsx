@@ -99,7 +99,7 @@ export default function Landing() {
         
         if (!snapshot.empty) {
           // Filter to ensure photos have a valid URL and are not empty
-          const works = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          const works = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any))
                                      .filter(w => (w.url && w.url.length > 10) || (w.src && w.src.length > 10));
           // Now fetch user details for these works
           const userIds = [...new Set(works.map(w => w.createdBy))].filter(Boolean);

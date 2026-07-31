@@ -73,6 +73,64 @@ export default function Profile() {
     return null;
   });
 
+
+  const [allTattoos, setAllTattoos] = useState<any[]>(() => {
+      try {
+          const targetId = resolveTargetId();
+          let savedData = globalPreloadCache[targetId]?.allTattoos;
+          if (!savedData) {
+              const saved = localStorage.getItem('demoAllTattoos_' + targetId);
+              if (saved) savedData = JSON.parse(saved);
+          }
+          if (savedData) {
+              globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], allTattoos: savedData };
+              return savedData;
+          }
+      } catch(e) {}
+      return [];
+  });
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [showMore, setShowMore] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeTattooIndex, setActiveTattooIndex] = useState(0);
+  const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+  const [waitlistForm, setWaitlistForm] = useState({ name: '', phone: '', email: '', style: '', size: '', placement: '', details: '', referencePhoto: null as File | null, type: 'consulta', description: '', referenceImage: '' });
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: '', phone: '', message: '' });
+
+  const trackMetric = async (metricKey: 'views' | 'photoClicks' | 'whatsappClicks' | 'agendaClicks', photoId?: string) => {
+      try {
+          let targetUid = id;
+          if (targetUid && targetUid.startsWith('@')) {
+              if (artistData && artistData.uid) {
+                  targetUid = artistData.uid;
+              }
+          }
+          if (targetUid && !targetUid.startsWith('@')) {
+              const { doc, updateDoc, increment } = await import('firebase/firestore');
+              const statRef = doc(db, 'users', targetUid, 'stats', 'metrics');
+              
+              const updates: any = {
+                  [metricKey]: increment(1),
+                  lastUpdated: new Date()
+              };
+              
+              await updateDoc(statRef, updates).catch(() => {});
+          }
+      } catch(e) {}
+  };
+  
+  useEffect(() => {
+      if (!sessionStorage.getItem('profileViewed')) {
+          sessionStorage.setItem('profileViewed', 'true');
+          trackMetric('views');
+      }
+  }, []);
+
   useEffect(() => {
     let authUnsub = () => {};
     let isMounted = true;
