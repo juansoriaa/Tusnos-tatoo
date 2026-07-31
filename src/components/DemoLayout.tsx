@@ -252,7 +252,7 @@ export default function DemoLayout
     return (
         <div className="bg-deep-black text-silver-text font-body-md h-[100dvh] overflow-hidden flex text-[#e5e2e1] bg-[#050505]">
             <Helmet>
-                <title>{artistName} - Panel de Control</title>
+                <title>Panel Privado - {artistName} | Turnos Tattoo</title>
                 <meta name="description" content={artistBio} />
                 <link rel="icon" href={avatarUrl} />
                 <link rel="apple-touch-icon" href={avatarUrl} />
