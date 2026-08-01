@@ -417,22 +417,24 @@ export default function Profile() {
   };
 
   const prevPhoto = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     const newIndex = activeTattooIndex > 0 ? activeTattooIndex - 1 : visibleTattoos.length - 1;
     const photoId = visibleTattoos[newIndex]?.id;
     if (photoId) {
-      setSearchParams({ photo: photoId }, { replace: true });
+      setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('obra', photoId); return p; }, { replace: true });
     } else {
       setActiveTattooIndex(newIndex);
     }
   };
 
   const nextPhoto = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     const newIndex = activeTattooIndex < visibleTattoos.length - 1 ? activeTattooIndex + 1 : 0;
     const photoId = visibleTattoos[newIndex]?.id;
     if (photoId) {
-      setSearchParams({ photo: photoId }, { replace: true });
+      setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('obra', photoId); return p; }, { replace: true });
     } else {
       setActiveTattooIndex(newIndex);
     }
@@ -459,10 +461,35 @@ export default function Profile() {
         }
       }
     } else if (!photoId && modalOpen) {
+      console.log('Closing modal because photoId is null');
       setModalOpen(false);
       document.body.classList.remove('overflow-hidden');
     }
   }, [searchParams, allTattoos, visibleTattoos, modalOpen, activeTattooIndex]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!modalOpen) return;
+      if (e.key === 'Escape') {
+        closeModal();
+      } else if (e.key === 'ArrowRight') {
+        const newIndex = activeTattooIndex < visibleTattoos.length - 1 ? activeTattooIndex + 1 : 0;
+        const photoId = visibleTattoos[newIndex]?.id;
+        if (photoId) {
+          setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('obra', photoId); return p; }, { replace: true });
+        }
+      } else if (e.key === 'ArrowLeft') {
+        const newIndex = activeTattooIndex > 0 ? activeTattooIndex - 1 : visibleTattoos.length - 1;
+        const photoId = visibleTattoos[newIndex]?.id;
+        if (photoId) {
+          setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('obra', photoId); return p; }, { replace: true });
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalOpen, activeTattooIndex, visibleTattoos, setSearchParams]);
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -601,7 +628,7 @@ export default function Profile() {
                               </svg>
                             </a>
             )}
-              <button 
+              <button type="button"
                 className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" 
                 aria-label="Compartir perfil"
                 onClick={async () => {
@@ -635,7 +662,7 @@ export default function Profile() {
 
         {/* Portfolio Section */}
         <div className="flex justify-center mb-8 px-gutter mt-4 relative z-30">
-          <button 
+          <button type="button"
             className={`w-full max-w-md py-3 px-6 font-label-md text-label-md font-extrabold uppercase tracking-widest shadow-2xl transition-all duration-300 transform flex items-center justify-center gap-4 relative overflow-hidden bg-primary text-on-primary hover:bg-[#065f46] active:scale-95 shimmer-btn`}
             style={{ touchAction: 'manipulation' }}
             onClick={() => {
@@ -667,7 +694,7 @@ export default function Profile() {
           <div className="relative mb-12">
             <div className="flex items-center justify-start md:justify-center gap-2 overflow-x-auto hide-scrollbar pb-4 border-b border-outline-variant/10 pr-12 md:pr-0">
               {filterCategories.map(cat => (
-                <button 
+                <button type="button"
                   key={cat}
                   onClick={() => { setActiveCategory(cat); setShowMore(false); }}
                   className={`whitespace-nowrap px-4 py-2 border rounded font-label-md text-[10px] md:text-xs uppercase tracking-widest font-bold transition-colors ${
@@ -723,7 +750,7 @@ export default function Profile() {
 
           <div className="flex justify-center mt-12 gap-4">
             {filteredTattoos.length > 9 && (
-              <button 
+              <button type="button"
                 className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all uppercase tracking-widest border-b border-outline-variant hover:border-primary py-2 font-bold" 
                 onClick={() => setShowMore(!showMore)}
               >
@@ -808,7 +835,7 @@ export default function Profile() {
       <footer className="w-full py-16 px-gutter flex flex-col items-center gap-8 text-center bg-surface-container-lowest border-t border-outline-variant/10 mt-8">
         <div className="flex flex-col md:flex-row items-center gap-6">
           <span className="font-headline-sm text-headline-sm text-on-surface font-extrabold uppercase tracking-tighter">Turnos <span className="text-primary">Tattoo</span></span>
-          <button 
+          <button type="button"
             onClick={() => {
               const btn = document.getElementById('quiero-mi-pagina-btn');
               if (btn) btn.classList.add('animate-button-pop');
@@ -824,9 +851,9 @@ export default function Profile() {
           </button>
         </div>
         <div className="flex flex-wrap justify-center gap-8 mb-4">
-          <button className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setTermsModalOpen(true)}>Términos</button>
-          <button className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setPrivacyModalOpen(true)}>Privacidad</button>
-          <button className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setContactModalOpen(true)}>Contacto</button>
+          <button type="button" className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setTermsModalOpen(true)}>Términos</button>
+          <button type="button" className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setPrivacyModalOpen(true)}>Privacidad</button>
+          <button type="button" className="font-caption text-caption uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors" onClick={() => setContactModalOpen(true)}>Contacto</button>
         </div>
         <p className="font-caption text-caption uppercase tracking-widest text-on-surface-variant opacity-60">© 2026 Turnos Tattoo. All rights reserved.</p>
       </footer>
@@ -836,7 +863,7 @@ export default function Profile() {
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center p-2 md:p-8 transition-opacity duration-300 overscroll-none">
           <div className="absolute inset-0 z-0 cursor-pointer" onClick={closeModal}></div>
           <div className="relative z-10 w-full max-w-6xl h-[100dvh] md:h-auto md:max-h-[95vh] md:min-h-[80vh] flex flex-col bg-surface-container border border-outline-variant/20 shadow-2xl transform transition-transform duration-300">
-            <button className="absolute top-1 right-1 md:top-3 md:right-3 z-[110] p-1 md:p-1.5 text-on-surface hover:text-primary transition-colors duration-200 focus:outline-none bg-surface/50 backdrop-blur-sm rounded-lg" onClick={closeModal}>
+            <button type="button" className="absolute top-1 right-1 md:top-3 md:right-3 z-[110] p-1 md:p-1.5 text-on-surface hover:text-primary transition-colors duration-200 focus:outline-none bg-surface/50 backdrop-blur-sm rounded-lg" onClick={closeModal}>
               <span className="material-symbols-outlined text-lg md:text-xl">close</span>
             </button>
             
@@ -844,7 +871,7 @@ export default function Profile() {
               
               <div className="w-full h-[45vh] md:h-auto md:w-2/3 bg-black flex items-center justify-center p-2 md:p-4 relative overflow-hidden flex-shrink-0 group">
                 {/* Navigation Left */}
-                <button 
+                <button type="button"
                   className="hidden md:flex absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-[110] w-10 h-10 md:w-12 md:h-12 items-center justify-center p-0 text-white/90 bg-black/40 md:bg-black/20 hover:bg-black/70 border border-white/20 backdrop-blur-md rounded-full transition-all duration-300 focus:outline-none hover:scale-110 shadow-lg md:opacity-0 md:group-hover:opacity-100" 
                   onClick={prevPhoto}
                 >
@@ -852,7 +879,7 @@ export default function Profile() {
                 </button>
                 
                 {/* Navigation Right */}
-                <button 
+                <button type="button"
                   className="hidden md:flex absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-[110] w-10 h-10 md:w-12 md:h-12 items-center justify-center p-0 text-white/90 bg-black/40 md:bg-black/20 hover:bg-black/70 border border-white/20 backdrop-blur-md rounded-full transition-all duration-300 focus:outline-none hover:scale-110 shadow-lg md:opacity-0 md:group-hover:opacity-100" 
                   onClick={nextPhoto}
                 >
@@ -885,7 +912,7 @@ export default function Profile() {
                   <div className="flex flex-col justify-start space-y-4 md:mt-4 shrink-0">
                     <div className="text-center flex flex-col items-center w-full">
                       <div className="relative flex items-center justify-center w-full min-h-[32px] mb-4">
-                        <button 
+                        <button type="button"
                           className="absolute left-0 top-1/2 -translate-y-1/2 md:hidden flex-shrink-0 flex items-center justify-center w-8 h-8 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-full transition-colors" 
                           onClick={prevPhoto}
                         >
@@ -902,7 +929,7 @@ export default function Profile() {
                           ))}
                         </div>
                         
-                        <button 
+                        <button type="button"
                           className="absolute right-0 top-1/2 -translate-y-1/2 md:hidden flex-shrink-0 flex items-center justify-center w-8 h-8 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 rounded-full transition-colors" 
                           onClick={nextPhoto}
                         >
@@ -952,7 +979,7 @@ export default function Profile() {
                     )}
 
                     <div className="mt-0">
-                      <button 
+                      <button type="button"
                         className="w-full py-3 bg-primary text-on-primary font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-[#065f46] transition-all duration-300 group shadow-lg animate-button-pop"
                         onClick={() => {
                            if (artistData?.isAvailable !== false) {
@@ -993,7 +1020,7 @@ export default function Profile() {
       {waitlistModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
           <div className="bg-surface-container border border-outline-variant w-full max-w-md p-6 relative flex flex-col gap-4 overflow-hidden">
-            <button 
+            <button type="button"
               className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
               onClick={() => {
                 setWaitlistModalOpen(false);
@@ -1095,7 +1122,7 @@ export default function Profile() {
                       return (
                         <div className="flex flex-col gap-2">
                           <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wider">Imagen adjuntada</p>
-                          <button 
+                          <button type="button"
                             className="text-[10px] uppercase tracking-wider text-error hover:text-error/80 text-left transition-colors font-bold flex items-center gap-1"
                             onClick={() => setWaitlistForm({...waitlistForm, referenceImage: ''})}
                           >
@@ -1127,7 +1154,7 @@ export default function Profile() {
               </div>
             )}
 
-            <button 
+            <button type="button"
               className="w-full py-3 mt-2 bg-emerald-accent text-on-surface font-label-md font-extrabold uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all"
               style={{backgroundColor: '#054d44', color: '#e5e2e1'}}
               onClick={async () => {
@@ -1175,7 +1202,7 @@ export default function Profile() {
       {termsModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
           <div className="bg-surface-container border border-outline-variant w-full max-w-2xl max-h-[80vh] flex flex-col p-6 relative overflow-hidden">
-            <button 
+            <button type="button"
               className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
               onClick={() => setTermsModalOpen(false)}
             >
@@ -1197,7 +1224,7 @@ export default function Profile() {
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-outline-variant/10 shrink-0">
-              <button 
+              <button type="button"
                 className="w-full py-3 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md uppercase font-bold transition-colors"
                 onClick={() => setTermsModalOpen(false)}
               >
@@ -1212,7 +1239,7 @@ export default function Profile() {
       {privacyModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
           <div className="bg-surface-container border border-outline-variant w-full max-w-2xl max-h-[80vh] flex flex-col p-6 relative overflow-hidden">
-            <button 
+            <button type="button"
               className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
               onClick={() => setPrivacyModalOpen(false)}
             >
@@ -1234,7 +1261,7 @@ export default function Profile() {
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-outline-variant/10 shrink-0">
-              <button 
+              <button type="button"
                 className="w-full py-3 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md uppercase font-bold transition-colors"
                 onClick={() => setPrivacyModalOpen(false)}
               >
@@ -1249,7 +1276,7 @@ export default function Profile() {
       {contactModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
           <div className="bg-surface-container border border-outline-variant w-full max-w-md p-6 relative flex flex-col gap-4 overflow-hidden">
-            <button 
+            <button type="button"
               className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
               onClick={() => {
                 setContactModalOpen(false);
