@@ -396,7 +396,7 @@ export default function Profile() {
   const openModal = (index: number) => {
     const photoId = visibleTattoos[index]?.id;
     if (photoId) {
-      setSearchParams({ photo: photoId }); // Pushes to history so back button closes modal
+      setSearchParams({ obra: photoId }); // Pushes to history so back button closes modal
     } else {
       setActiveTattooIndex(index);
       setModalOpen(true);
@@ -406,9 +406,9 @@ export default function Profile() {
   };
 
   const closeModal = () => {
-    if (searchParams.get('photo')) {
+    if (searchParams.get('obra')) {
       const newParams = new URLSearchParams(searchParams);
-      newParams.delete('photo');
+      newParams.delete('obra');
       setSearchParams(newParams, { replace: true });
     } else {
       setModalOpen(false);
@@ -439,7 +439,7 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    const photoId = searchParams.get('photo');
+    const photoId = searchParams.get('obra');
     if (photoId && allTattoos.length > 0) {
       const vIndex = visibleTattoos.findIndex(t => t.id === photoId);
       if (vIndex !== -1) {
@@ -962,11 +962,8 @@ export default function Profile() {
                                    const photoId = visibleTattoos[activeTattooIndex].id;
                                    const photoUrl = visibleTattoos[activeTattooIndex].src;
                                    const profileUrl = window.location.origin + window.location.pathname;
-                                   const message = `Hola ${artistData?.displayName || 'artista'}, vengo de tu página web y me encantó este tatuaje. Me gustaría hacerme algo similar o saber más al respecto:
-
-Referencia: ${photoUrl}
-
-Perfil: ${profileUrl}`;
+                                   const tattooTitle = visibleTattoos[activeTattooIndex].title || visibleTattoos[activeTattooIndex].alt || 'Diseño';
+                                   const message = `Hola ${artistData?.displayName || 'artista'}, me interesa este diseño: [${tattooTitle}] (ID: ${photoId}). Me gustaría hacerme algo similar o saber más al respecto.\nVer obra: ${profileUrl}?obra=${photoId}`;
                                    window.open(`https://wa.me/549${num}?text=${encodeURIComponent(message)}`, '_blank');
                                }
                            } else {
