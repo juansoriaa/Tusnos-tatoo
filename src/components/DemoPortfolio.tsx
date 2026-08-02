@@ -53,6 +53,51 @@ export default function DemoPortfolio() {
     }, [existingPhotos]);
     const [filterCategory, setFilterCategory] = useState('all');
 
+    
+    // Background migration of base64 images to Firebase Storage
+    useEffect(() => {
+        const migrateImages = async () => {
+            const photosToMigrate = existingPhotos.filter(p => p.url?.startsWith('data:image') || p.src?.startsWith('data:image') || p.thumbnailUrl?.startsWith('data:image'));
+            if (photosToMigrate.length === 0) return;
+            
+            console.log(`Found ${photosToMigrate.length} photos to migrate to storage`);
+            
+            for (const photo of photosToMigrate) {
+                try {
+                    const uid = (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo';
+                    let newUrl = photo.url || photo.src;
+                    let newThumb = photo.thumbnailUrl;
+                    
+                    if (newUrl?.startsWith('data:image')) {
+                        const res = await fetch(newUrl);
+                        const blob = await res.blob();
+                        const sRef = ref(storage, `users/${uid}/photos/${photo.id}_full.webp`);
+                        await uploadBytes(sRef, blob, { contentType: 'image/webp' });
+                        newUrl = await getDownloadURL(sRef);
+                    }
+                    
+                    if (newThumb?.startsWith('data:image')) {
+                        const res = await fetch(newThumb);
+                        const blob = await res.blob();
+                        const sRef = ref(storage, `users/${uid}/photos/${photo.id}_thumb.webp`);
+                        await uploadBytes(sRef, blob, { contentType: 'image/webp' });
+                        newThumb = await getDownloadURL(sRef);
+                    }
+                    
+                    await updateDoc(doc(db, 'photos', photo.id), {
+                        url: newUrl,
+                        src: newUrl,
+                        thumbnailUrl: newThumb
+                    });
+                    console.log(`Migrated photo ${photo.id}`);
+                } catch(e) {
+                    console.error(`Failed to migrate photo ${photo.id}`, e);
+                }
+            }
+        };
+        migrateImages();
+    }, [existingPhotos]);
+
     const trackPhotoClick = (photoId: string) => {
         try {
             const stats = JSON.parse(localStorage.getItem('photoStats') || '{}');
@@ -521,6 +566,27 @@ const handleSaveObra = async () => {
                 if (selectedFile) {
                     photoDataUrl = await createThumbnail(selectedFile, 1080, 1080);
                     thumbDataUrl = await createThumbnail(selectedFile, 400, 400);
+                    
+                    // Upload to Firebase Storage
+                    try {
+                        const uid = (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo';
+                        const timestamp = Date.now();
+                        
+                        // Convert base64 to blob
+                        const base64Response = await fetch(photoDataUrl);
+                        const blob = await base64Response.blob();
+                        const storageRef = ref(storage, `users/${uid}/photos/${timestamp}_full.webp`);
+                        await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
+                        photoDataUrl = await getDownloadURL(storageRef);
+                        
+                        const thumbResponse = await fetch(thumbDataUrl);
+                        const thumbBlob = await thumbResponse.blob();
+                        const thumbRef = ref(storage, `users/${uid}/photos/${timestamp}_thumb.webp`);
+                        await uploadBytes(thumbRef, thumbBlob, { contentType: 'image/webp' });
+                        thumbDataUrl = await getDownloadURL(thumbRef);
+                    } catch (err) {
+                        console.error('Error uploading to storage, falling back to base64', err);
+                    }
                 }
                 
                 const updatedData = {
