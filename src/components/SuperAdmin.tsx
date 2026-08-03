@@ -359,6 +359,7 @@ export default function SuperAdmin() {
         userTag: newUserData.userTag,
         displayName: newUserData.name,
         whatsapp: newUserData.whatsapp,
+        customPassword: '123456',
         subscriptionStatus: newUserData.subscriptionStatus,
         subscriptionEndsAt: subscriptionEndsAt,
         views: 0,

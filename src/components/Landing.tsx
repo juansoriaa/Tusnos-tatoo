@@ -186,6 +186,11 @@ export default function Landing() {
     return () => unsubscribe();
   }, []);
 
+    const handleWhatsAppRedirect = () => {
+    const message = 'hola vengo de la página turnos tatoo quiero mi página';
+    window.open(`https://wa.me/541140679334?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
   const handleLogin = async () => {
     if (user) {
       localStorage.clear();
@@ -355,7 +360,7 @@ export default function Landing() {
           >
             {user ? 'Cerrar Sesión' : 'Login'}
           </button>
-          <button onClick={() => { if(user) navigate('/demo/dashboard'); else setContactModalOpen(true); }} className="bg-primary text-white px-4 md:px-6 py-2 font-body-md text-sm md:text-body-md font-bold hover:bg-emerald-accent/80 transition-all duration-200 active:scale-95 transition-transform shadow-[0_0_15px_rgba(5,77,68,0.5)] hidden md:block whitespace-nowrap">
+          <button onClick={() => { if(user) navigate('/demo/dashboard'); else handleWhatsAppRedirect(); }} className="bg-primary text-white px-4 md:px-6 py-2 font-body-md text-sm md:text-body-md font-bold hover:bg-emerald-accent/80 transition-all duration-200 active:scale-95 transition-transform shadow-[0_0_15px_rgba(5,77,68,0.5)] hidden md:block whitespace-nowrap">
             {user ? 'Ir al Panel' : 'Quiero mi página'}
           </button>
         </div>
@@ -374,7 +379,7 @@ export default function Landing() {
               Maximiza tus conversiones con un perfil optimizado. Del 'Link in Bio' a la reserva confirmada en segundos, con un diseño que proyecta pura autoridad.
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-              <button onClick={() => setContactModalOpen(true)} className="w-full md:w-auto px-12 py-5 bg-primary text-white font-black text-body-md uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 active:scale-95 shadow-[0_0_30px_rgba(5,77,68,0.4)]">Quiero mi página</button>
+              <button onClick={handleWhatsAppRedirect} className="w-full md:w-auto px-12 py-5 bg-primary text-white font-black text-body-md uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 active:scale-95 shadow-[0_0_30px_rgba(5,77,68,0.4)]">Quiero mi página</button>
               <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/@victor_ink')}>
                 Ver Demo
               </button>
@@ -583,7 +588,7 @@ export default function Landing() {
           <div className="max-w-3xl mx-auto relative z-10 py-12">
             <h2 className="font-display-lg text-headline-lg md:text-[64px] font-black text-white mb-8 leading-tight">¿Listo para multiplicar<br /><span className="text-primary emerald-glow">tus reservas?</span></h2>
             <p className="font-body-lg text-gray-400 mb-12 text-xl">Deja de perder clientes potenciales en el DMs. Implementa el sistema que convierte clics en agendas completas.</p>
-            <button onClick={() => setContactModalOpen(true)} className="px-16 py-6 bg-primary text-white font-black text-xl uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 shadow-[0_0_40px_rgba(5,77,68,0.4)] hover:shadow-[0_0_60px_rgba(5,77,68,0.6)] scale-100 hover:scale-105">Quiero mi página</button>
+            <button onClick={handleWhatsAppRedirect} className="px-16 py-6 bg-primary text-white font-black text-xl uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 shadow-[0_0_40px_rgba(5,77,68,0.4)] hover:shadow-[0_0_60px_rgba(5,77,68,0.6)] scale-100 hover:scale-105">Quiero mi página</button>
           </div>
         </section>
       </main>
@@ -693,9 +698,9 @@ export default function Landing() {
               <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-outline-variant/10 text-center">
                 <p className="font-caption text-[9px] md:text-caption text-on-surface-variant uppercase tracking-widest">
                   ¿No tienes una cuenta? 
-                  <a className="text-on-surface font-bold hover:text-primary transition-colors ml-1 md:ml-2 underline decoration-primary underline-offset-4 block mt-2 md:inline md:mt-0" href="#">
+                  <button onClick={handleWhatsAppRedirect} type="button" className="text-on-surface font-bold hover:text-primary transition-colors ml-1 md:ml-2 underline decoration-primary underline-offset-4 block mt-2 md:inline md:mt-0" >
                     Quiero mi página
-                  </a>
+                  </button>
                 </p>
               </div>
             </div>

@@ -1,8 +1,10 @@
 const fs = require('fs');
+let content = fs.readFileSync('src/components/DemoDashboard.tsx', 'utf-8');
 
-let content = fs.readFileSync('src/components/ArtistProfile.tsx', 'utf-8');
+content = content.replace(
+    /const hasUnsavedChanges = initialDataStr !== '' && currentDataStr !== initialDataStr;/,
+    "const hasUnsavedChanges = initialDataStr !== '' && currentDataStr !== initialDataStr;\n    if (hasUnsavedChanges) {\n      console.log('UNSAVED CHANGES DETECTED:');\n      console.log('Initial:', initialDataStr);\n      console.log('Current:', currentDataStr);\n    }"
+);
 
-content = content.replace("} else if (!photoId && modalOpen) {", "} else if (!photoId && modalOpen) {\n      console.log('Closing modal because photoId is null');");
-
-fs.writeFileSync('src/components/ArtistProfile.tsx', content);
+fs.writeFileSync('src/components/DemoDashboard.tsx', content);
 console.log("Patched debug successfully!");

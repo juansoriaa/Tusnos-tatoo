@@ -6,6 +6,7 @@ import { db, storage, auth, onAuthStateChanged } from '../firebase';
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, where, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { createThumbnail } from '../lib/imageUtils';
+import { OptimizedImage } from './OptimizedImage';
 
 let globalCachedPhotos: any[] | null = null;
 let globalCachedArtistUid: string | null = null;
@@ -54,49 +55,7 @@ export default function DemoPortfolio() {
     const [filterCategory, setFilterCategory] = useState('all');
 
     
-    // Background migration of base64 images to Firebase Storage
-    useEffect(() => {
-        const migrateImages = async () => {
-            const photosToMigrate = existingPhotos.filter(p => p.url?.startsWith('data:image') || p.src?.startsWith('data:image') || p.thumbnailUrl?.startsWith('data:image'));
-            if (photosToMigrate.length === 0) return;
-            
-            console.log(`Found ${photosToMigrate.length} photos to migrate to storage`);
-            
-            for (const photo of photosToMigrate) {
-                try {
-                    const uid = (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo';
-                    let newUrl = photo.url || photo.src;
-                    let newThumb = photo.thumbnailUrl;
-                    
-                    if (newUrl?.startsWith('data:image')) {
-                        const res = await fetch(newUrl);
-                        const blob = await res.blob();
-                        const sRef = ref(storage, `users/${uid}/photos/${photo.id}_full.webp`);
-                        await uploadBytes(sRef, blob, { contentType: 'image/webp' });
-                        newUrl = await getDownloadURL(sRef);
-                    }
-                    
-                    if (newThumb?.startsWith('data:image')) {
-                        const res = await fetch(newThumb);
-                        const blob = await res.blob();
-                        const sRef = ref(storage, `users/${uid}/photos/${photo.id}_thumb.webp`);
-                        await uploadBytes(sRef, blob, { contentType: 'image/webp' });
-                        newThumb = await getDownloadURL(sRef);
-                    }
-                    
-                    await updateDoc(doc(db, 'photos', photo.id), {
-                        url: newUrl,
-                        src: newUrl,
-                        thumbnailUrl: newThumb
-                    });
-                    console.log(`Migrated photo ${photo.id}`);
-                } catch(e) {
-                    console.error(`Failed to migrate photo ${photo.id}`, e);
-                }
-            }
-        };
-        migrateImages();
-    }, [existingPhotos]);
+    
 
     const trackPhotoClick = (photoId: string) => {
         try {
@@ -563,13 +522,16 @@ const handleSaveObra = async () => {
                 let photoDataUrl = editingPhoto.url || editingPhoto.src;
                 let thumbDataUrl = editingPhoto.thumbnailUrl || editingPhoto.src;
                 
+                let previewDataUrl = editingPhoto.previewUrl || editingPhoto.url || editingPhoto.src;
                 if (selectedFile) {
-                    photoDataUrl = await createThumbnail(selectedFile, 1080, 1080);
+                    photoDataUrl = await createThumbnail(selectedFile, 1920, 1920);
+                    previewDataUrl = await createThumbnail(selectedFile, 800, 800);
                     thumbDataUrl = await createThumbnail(selectedFile, 400, 400);
                     
                     // Upload to Firebase Storage
                     try {
-                        const uid = (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo';
+                        if (!auth.currentUser) throw new Error('Not authenticated, falling back to base64');
+                        const uid = auth.currentUser.uid;
                         const timestamp = Date.now();
                         
                         // Convert base64 to blob
@@ -579,6 +541,12 @@ const handleSaveObra = async () => {
                         await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
                         photoDataUrl = await getDownloadURL(storageRef);
                         
+                        const previewResponse = await fetch(previewDataUrl);
+                        const previewBlob = await previewResponse.blob();
+                        const previewRef = ref(storage, `users/${uid}/photos/${timestamp}_preview.webp`);
+                        await uploadBytes(previewRef, previewBlob, { contentType: 'image/webp' });
+                        previewDataUrl = await getDownloadURL(previewRef);
+
                         const thumbResponse = await fetch(thumbDataUrl);
                         const thumbBlob = await thumbResponse.blob();
                         const thumbRef = ref(storage, `users/${uid}/photos/${timestamp}_thumb.webp`);
@@ -591,6 +559,7 @@ const handleSaveObra = async () => {
                 
                 const updatedData = {
                     url: photoDataUrl,
+                    previewUrl: previewDataUrl,
                     thumbnailUrl: thumbDataUrl,
                     title,
                     tags: selectedCategories,
@@ -633,11 +602,40 @@ const handleSaveObra = async () => {
                     cancelEdit();
                 }, 2000);
             } else {
-                const photoDataUrl = await createThumbnail(selectedFile, 1080, 1080);
-                const thumbDataUrl = await createThumbnail(selectedFile, 400, 400);
+                let photoDataUrl = await createThumbnail(selectedFile, 1920, 1920);
+                let previewDataUrl = await createThumbnail(selectedFile, 800, 800);
+                let thumbDataUrl = await createThumbnail(selectedFile, 400, 400);
+
+                // Upload to Firebase Storage
+                try {
+                    if (!auth.currentUser) throw new Error('Not authenticated, falling back to base64');
+                    const uid = auth.currentUser.uid;
+                    const timestamp = Date.now();
+                    
+                    const base64Response = await fetch(photoDataUrl);
+                    const blob = await base64Response.blob();
+                    const storageRef = ref(storage, `users/${uid}/photos/${timestamp}_full.webp`);
+                    await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
+                    photoDataUrl = await getDownloadURL(storageRef);
+                    
+                    const previewResponse = await fetch(previewDataUrl);
+                    const previewBlob = await previewResponse.blob();
+                    const previewRef = ref(storage, `users/${uid}/photos/${timestamp}_preview.webp`);
+                    await uploadBytes(previewRef, previewBlob, { contentType: 'image/webp' });
+                    previewDataUrl = await getDownloadURL(previewRef);
+
+                    const thumbResponse = await fetch(thumbDataUrl);
+                    const thumbBlob = await thumbResponse.blob();
+                    const thumbRef = ref(storage, `users/${uid}/photos/${timestamp}_thumb.webp`);
+                    await uploadBytes(thumbRef, thumbBlob, { contentType: 'image/webp' });
+                    thumbDataUrl = await getDownloadURL(thumbRef);
+                } catch (err) {
+                    console.error('Error uploading to storage, falling back to base64', err);
+                }
 
                 const newPhotoRef = await addDoc(collection(db, 'photos'), {
                     url: photoDataUrl,
+                    previewUrl: previewDataUrl,
                     thumbnailUrl: thumbDataUrl,
                     title,
                     tags: selectedCategories,
@@ -653,6 +651,7 @@ const handleSaveObra = async () => {
                 const newPhoto = {
                     id: newPhotoRef.id,
                     url: photoDataUrl,
+                    previewUrl: previewDataUrl,
                     thumbnailUrl: thumbDataUrl,
                     title,
                     tags: selectedCategories,
@@ -989,11 +988,12 @@ const handleSaveObra = async () => {
                         className="relative group border border-border-muted rounded bg-deep-black aspect-[4/5] overflow-hidden cursor-pointer" 
                         style={{borderColor: '#353434', backgroundColor: '#050505'}}
                     >
-                        <img 
+                        <OptimizedImage 
                             alt={photo.title} 
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100" 
-                            src={photo.thumbnailUrl || photo.url || photo.src} 
+                            highResUrl={photo.thumbnailUrl || photo.previewUrl || photo.url || photo.src} 
                             style={{ filter: filterStr.trim() }}
+                            useIntersectionObserver={true}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-deep-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         
@@ -1031,11 +1031,13 @@ const handleSaveObra = async () => {
                         style={{backgroundColor: '#141313', borderColor: '#353434'}}
                     >
                         <div className="relative aspect-square w-full bg-deep-black" style={{backgroundColor: '#050505'}}>
-                            <img 
-                                src={selectedGalleryPhoto.url || selectedGalleryPhoto.src} 
+                            <OptimizedImage 
+                                lowResUrl={selectedGalleryPhoto.previewUrl || selectedGalleryPhoto.thumbnailUrl}
+                                highResUrl={selectedGalleryPhoto.url || selectedGalleryPhoto.src} 
                                 alt={selectedGalleryPhoto.title} 
                                 className="w-full h-full object-cover"
                                 style={{ filter: getFilterStyle(selectedGalleryPhoto.filters) }}
+                                useIntersectionObserver={false}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                             

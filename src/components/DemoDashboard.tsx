@@ -72,6 +72,8 @@ const defaultFaqs = [
                 setSpecialty3(data.specialtyTags?.[2] || '');
                 setIsAvailable(data.isAvailable !== false);
                 setWhatsapp(data.whatsapp || '');
+                setLoginEmail(data.email || '');
+                setCustomPassword(data.customPassword || '');
                 setInstagram(data.instagram || '');
                 setFacebook(data.facebook || '');
                 setTiktok(data.tiktok || '');
@@ -93,6 +95,8 @@ const defaultFaqs = [
                     specialty3: data.specialtyTags?.[2] || '',
                     isAvailable: data.isAvailable !== false,
                     whatsapp: data.whatsapp || '',
+                    loginEmail: data.email || '',
+                    customPassword: data.customPassword || '',
                     instagram: data.instagram || '',
                     facebook: data.facebook || '',
                     tiktok: data.tiktok || '',
@@ -108,7 +112,7 @@ const defaultFaqs = [
                 }));
             } catch (e) {}
         } else {
-            setInitialDataStr(JSON.stringify({
+            const initData = {
                 name: 'Victor Ink',
                 bio: 'Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.',
                 specialty1: 'Realismo',
@@ -116,6 +120,8 @@ const defaultFaqs = [
                 specialty3: '',
                 isAvailable: true,
                 whatsapp: '',
+                loginEmail: '',
+                customPassword: '',
                 instagram: '',
                 facebook: '',
                 tiktok: '',
@@ -128,7 +134,29 @@ const defaultFaqs = [
                 studioHours: '',
                 mapLink: '',
                 faqs: defaultFaqs
-            }));
+            };
+            setName(initData.name);
+            setBio(initData.bio);
+            setSpecialty1(initData.specialty1);
+            setSpecialty2(initData.specialty2);
+            setSpecialty3(initData.specialty3);
+            setIsAvailable(initData.isAvailable);
+            setWhatsapp(initData.whatsapp);
+            setLoginEmail(initData.loginEmail);
+            setCustomPassword(initData.customPassword);
+            setInstagram(initData.instagram);
+            setFacebook(initData.facebook);
+            setTiktok(initData.tiktok);
+            setAvatarUrl(initData.avatarUrl);
+            setBannerUrl(initData.bannerUrl);
+            setHasPhysicalStudio(initData.hasPhysicalStudio);
+            setStudioName(initData.studioName);
+            setStudioDescription(initData.studioDescription);
+            setStudioAddress(initData.studioAddress);
+            setStudioHours(initData.studioHours);
+            setMapLink(initData.mapLink);
+            setFaqs(initData.faqs);
+            setInitialDataStr(JSON.stringify(initData));
         }
         };
     }, []); // Subscribe to auth changes instead of manual call
@@ -145,6 +173,8 @@ const defaultFaqs = [
     const [studioAddress, setStudioAddress] = useState('');
     const [studioHours, setStudioHours] = useState('');
     const [whatsapp, setWhatsapp] = useState('');
+    const [loginEmail, setLoginEmail] = useState('');
+    const [customPassword, setCustomPassword] = useState('');
     const [instagram, setInstagram] = useState('');
     const [facebook, setFacebook] = useState('');
     const [tiktok, setTiktok] = useState('');
@@ -167,11 +197,16 @@ const defaultFaqs = [
 
     const currentData = {
         name, bio, specialty1, specialty2, specialty3, isAvailable,
-        whatsapp, instagram, facebook, tiktok, avatarUrl, bannerUrl,
+        whatsapp, loginEmail, customPassword, instagram, facebook, tiktok, avatarUrl, bannerUrl,
         hasPhysicalStudio, studioName, studioDescription, studioAddress, studioHours, mapLink, faqs
     };
     const currentDataStr = JSON.stringify(currentData);
     const hasUnsavedChanges = initialDataStr !== '' && currentDataStr !== initialDataStr;
+    if (hasUnsavedChanges) {
+      console.log('UNSAVED CHANGES DETECTED:');
+      console.log('Initial:', initialDataStr);
+      console.log('Current:', currentDataStr);
+    }
 
     const handleSaveAll = () => {
         const demoData = {
@@ -180,6 +215,8 @@ const defaultFaqs = [
             specialtyTags: [specialty1, specialty2, specialty3].filter(Boolean),
             isAvailable: isAvailable,
             whatsapp: whatsapp,
+            email: loginEmail,
+            customPassword: customPassword,
             instagram: instagram,
             facebook: facebook,
             tiktok: tiktok,
@@ -480,6 +517,14 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
                                 
                                 {/* Social Links with additions */}
                                 <div className="space-y-4 pt-4">
+                                    <div className="flex items-center gap-3 bg-surface-container-low p-3 border border-outline-variant/10 relative">
+                                        <span className="material-symbols-outlined text-primary shrink-0" style={{color: '#054d44'}}>mail</span>
+                                        <input className="w-full bg-transparent border-none p-0 focus:ring-0 text-xs outline-none" placeholder="correo@ejemplo.com" type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+                                    </div>
+                                    <div className="flex items-center gap-3 bg-surface-container-low p-3 border border-outline-variant/10 relative">
+                                        <span className="material-symbols-outlined text-primary shrink-0" style={{color: '#054d44'}}>lock</span>
+                                        <input className="w-full bg-transparent border-none p-0 focus:ring-0 text-xs outline-none" placeholder="Nueva Contraseña (opcional)" type="text" value={customPassword} onChange={(e) => setCustomPassword(e.target.value)} />
+                                    </div>
                                     <div className="flex items-center gap-3 bg-surface-container-low p-3 border border-outline-variant/10 relative">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="text-primary shrink-0" style={{color: '#054d44'}}>
                                           <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c-.003 1.396.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>

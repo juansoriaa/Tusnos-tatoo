@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ProgressiveImage } from './ProgressiveImage';
+import { OptimizedImage } from './OptimizedImage';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db, auth, onAuthStateChanged } from '../firebase';
 import { globalPreloadCache } from '../lib/cache';
@@ -193,6 +193,7 @@ export default function Profile() {
                             return {
                                 id: doc.id,
                                 src: data.url || data.imageUrl || data.src,
+                                previewUrl: data.previewUrl,
                                 thumbnailUrl: data.thumbnailUrl,
                                 alt: data.info || data.title,
                                 title: data.title || 'Foto de Tatuaje',
@@ -290,7 +291,9 @@ export default function Profile() {
                 }
             };
             
-            fetchTattoos();
+            promises.push(fetchTattoos());
+
+            await Promise.all(promises);
 
             if (isMounted) {
                 if (currentArtistData) {
@@ -496,6 +499,26 @@ export default function Profile() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [modalOpen, activeTattooIndex, visibleTattoos, setSearchParams]);
 
+
+
+  useEffect(() => {
+    if (modalOpen && visibleTattoos.length > 0) {
+      const nextIndex = activeTattooIndex < visibleTattoos.length - 1 ? activeTattooIndex + 1 : 0;
+      const prevIndex = activeTattooIndex > 0 ? activeTattooIndex - 1 : visibleTattoos.length - 1;
+      
+      const preloadUrl = (url) => {
+        if (url) {
+          const img = new Image();
+          img.src = url;
+        }
+      };
+      
+      // Preload next
+      preloadUrl(visibleTattoos[nextIndex]?.previewUrl || visibleTattoos[nextIndex]?.src);
+      // Preload prev
+      preloadUrl(visibleTattoos[prevIndex]?.previewUrl || visibleTattoos[prevIndex]?.src);
+    }
+  }, [modalOpen, activeTattooIndex, visibleTattoos]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -735,12 +758,12 @@ export default function Profile() {
 
             {visibleTattoos.map((tattoo, index) => (
               <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 ${index === 0 ? 'interactive-cue' : ''}`}>
-                <ProgressiveImage 
+                <OptimizedImage 
                   className="w-full h-full grayscale hover:grayscale-0 transition-all duration-700 cursor-pointer object-cover aspect-square" 
                   alt={tattoo.alt} 
                   onClick={() => openModal(index)} 
-                  thumbnailUrl={tattoo.thumbnailUrl}
-                  highResUrl={tattoo.thumbnailUrl || tattoo.src} 
+                  lowResUrl={tattoo.thumbnailUrl}
+                  highResUrl={tattoo.thumbnailUrl || tattoo.previewUrl || tattoo.src} 
                   style={{ filter: getFilterStr(tattoo.filters) }}
                 />
                 {index === 0 && (
@@ -894,22 +917,25 @@ export default function Profile() {
 
                 {/* Ambient Smart Glow */}
                 <div className="absolute inset-0 z-0 flex items-center justify-center opacity-25 blur-[2rem] md:blur-[4rem] scale-110 pointer-events-none animate-pulse duration-3000">
-                  <img 
+                  <OptimizedImage 
                     key={`glow-${visibleTattoos[activeTattooIndex].id}`}
                     alt="" 
                     className="w-full h-full object-cover animate-fade-in opacity-50" 
-                    src={visibleTattoos[activeTattooIndex].src} 
+                    highResUrl={visibleTattoos[activeTattooIndex].previewUrl || visibleTattoos[activeTattooIndex].src} 
                     style={{ filter: getFilterStr(visibleTattoos[activeTattooIndex].filters) }}
                   />
                 </div>
                 
                 {/* Main Image */}
-                <img 
+                <OptimizedImage 
                   key={visibleTattoos[activeTattooIndex].id}
                   alt={visibleTattoos[activeTattooIndex].alt} 
                   className="max-w-full max-h-[45vh] md:max-h-[85vh] object-contain animate-fade-in relative z-10 shadow-2xl" 
-                  src={visibleTattoos[activeTattooIndex].src} 
+                  lowResUrl={visibleTattoos[activeTattooIndex].previewUrl || visibleTattoos[activeTattooIndex].thumbnailUrl}
+                  highResUrl={visibleTattoos[activeTattooIndex].src} 
                   style={{ filter: getFilterStr(visibleTattoos[activeTattooIndex].filters) }}
+                  useIntersectionObserver={false}
+                  loading="eager"
                 />
               </div>
 
