@@ -14,7 +14,71 @@ const defaultFaqs = [
   { question: '¿Duele tatuarse?', answer: 'El dolor es subjetivo y depende de la zona del cuerpo y la tolerancia de cada persona. Generalmente se siente como un rasguño constante, pero es totalmente soportable.' }
 ];
 
+
+const DEMO_FALLBACK_PHOTOS = [
+    {
+      id: "fallback_1",
+      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ",
+      alt: "A highly detailed black and grey realism tattoo of a lion's face on a human forearm.",
+      title: "Detailed black & grey realism",
+      categories: ["Realismo", "Blackwork"],
+      hours: 12,
+      sessions: 2,
+      size: "20x15 cm"
+    },
+    {
+      id: "fallback_2",
+      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA5DDAAcFYiq49hBeVBI21d-Kfzr6qKoiRfIXKP1UnRW7YF5GJFA5MFkoXHtdBxy6uEbgH9z0zVWPWxKIEtX3oXemICFI1Ssr7FZ-Hh_OVDjHQ-QLRxMXBp5c4FwHXswrbPE9ZdzVelcUFL0h0nTLuzuWpLR_QRaZBZsyq7srBJaHktN6PcAYY-NQ2d-8FRg_RJ15MYhPUfdaEk_oGzE57hWrd7ZFkT4ldOW1tTIz0PqCqzo5_ALKPhXP1byoz8eiIEM30X9HQLzho",
+      alt: "Close-up of a delicate minimalist tattoo of a single rose.",
+      title: "Delicate minimalist single rose",
+      categories: ["Minimalista"],
+      hours: 3,
+      sessions: 1,
+      size: "8x5 cm"
+    },
+    {
+      id: "fallback_3",
+      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE9qEOTq3DlR_Z_PI95eeZBU5YHIAzEqTN6zzltLD_41wX6e4LCHu8sREZZ4N_qV-XW271u6bCjyo14IHISQRVRhCSBJdX_ICJvg9EM-iYGcv1owFVPqatY3-0uESdozTCTcvTib8fe2Um_CI2L6mxqWeMg8IoYm0FYaTzlqISISzi52HOylwmgk_IxCrKp2vueZ90nk1bGHhgH3ybo0PI5u7VOpkB_kQTPzrRjD2-N3hC-9IB-OKvuic1rp7_8b4w562jI2tcCKA",
+      alt: "Large-scale blackwork tattoo covering a full back.",
+      title: "Large-scale blackwork back piece",
+      categories: ["Blackwork", "Tradicional"],
+      hours: 24,
+      sessions: 4,
+      size: "Espalda completa"
+    },
+    {
+      id: "fallback_4",
+      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBYd_bLleuw4yQOy32XLTc-ZA36ZI1Tx20UNajjWgcV5DQKPXzxE6vuXBvD3Ov7hcyCDB0Wpbc1BK7v4CJMIFC3KWS1bBdxzGJUcjSraTSohPMSOjESD5If5O8I8ZxmV0rWCZ_T_ncpPVYMBz9OD9_NXcCjwNkftJNjmowLcbK_jq3Fy-FieRJHky4A0G8SWmDSNGfDrlvoUxmb8aYt9Dxvi2w5uLOR4ir0BxgO2Sh5IfSstId4FI96uowW3Y1Jw1YCCRUk82ep4yPk",
+      alt: "Hyper-realistic black and grey realism tattoo",
+      title: "Hyper-realistic black & grey",
+      categories: ["Realismo", "Blackwork"],
+      hours: 15,
+      sessions: 3,
+      size: "Media manga"
+    },
+    {
+      id: "fallback_5",
+      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5LMtrwwTSFu95uiU0bVfXq9VmWZIJ10dyJ3Lwbu6VmGCGEnBfZXi0WQlrXz0JAAAXzBurYTXa8IleL_Z1UTW7x4BHigWcVZCarsYy-PDu3G5JOwCsz3c0mgBTVI90e2b4bcw5lLDYzc5mU0qXptlWkjo0e3ynOS0xxfhCjxtvA0Bykbfo3wSX79T_fwcMg4uFHYXGxws2NYoOaKhhgr6J8ErFHQqB5QJSnK9c2zkwmEgiIM-74wbPKlVjQPO8pxETkDa8jrj1OmA",
+      alt: "Detailed blackwork owl",
+      title: "Detailed blackwork owl",
+      categories: ["Blackwork", "Realismo"],
+      hours: 8,
+      sessions: 2,
+      size: "15x15 cm"
+    }
+];
+
+const DEMO_FALLBACK_ARTIST_DATA = {
+    displayName: "Victor Ink",
+    bio: "Conoce a este increíble artista del tatuaje y explora su portafolio en Turnos Tattoo.",
+    backgroundPhotos: ["https://lh3.googleusercontent.com/aida-public/AB6AXuBiWtwSf0Fh3AWm01LAlMfj3JGoOdHldaVkVIRDRpbavMRKQEt_SI7cvqZB7R56dQt7nuInHJM7V0a74racFxJT0E12v57KMBnC09rQOtg5YVpvOdglwy8KnhHl1H0tFedvuBum6LD2ADyKGFqdnQ3lUJqIhOZj6bJPzlLI4S7L2n9tqn9wZ6t8smG60s2wvnHM3NabsjD_rMrUmix943Tdd_CAZDTFaQeq5FEq8IXpsVkSLkJ24K0VpV9R4GRF2SDH8cwWPwwNjXI"],
+    profilePhotoUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuC_KPGqcJA_LhFIZepjSW5Tf7MtTYEc4iRE4J7SbB3ZSPxSwnEhyd39Iptl8UJFQS6m269Hwwx2KZd5ywVY5a6mTaGP0eKxhhFlOChAey3A8OvJ2X43uTD6BH3bkh9AjFk_ged61veFwFc7XeGxUyraAjawtpIIQxmkRhrpbijpEFfFKyxzuCj7Ltek0mSl4QQtognkqRBrsSC25geKA2JCuif3FBQ8nEvcajl0_fkXLSakiANOEXbVDwi9vnMRrjEXDcc5_qMFBm0",
+    userTag: "@victor_ink",
+    uid: "demo"
+};
+
 export default function Profile() {
+
   const navigate = useNavigate();
   const { id } = useParams();
   
@@ -46,6 +110,7 @@ export default function Profile() {
             const targetId = resolveTargetId();
             if (globalPreloadCache[targetId]?.allTattoos) return false;
             if (localStorage.getItem('demoAllTattoos_' + targetId)) return false;
+            if (targetId === '@victor_ink' || targetId === 'victor_ink' || targetId === 'demo' || targetId === '@demo' || targetId === 'anonymous_demo') return false;
         } catch(e) {}
         return true;
     });
@@ -54,9 +119,14 @@ export default function Profile() {
             const targetId = resolveTargetId();
             if (globalPreloadCache[targetId]?.artistData) return false;
             if (localStorage.getItem('demoArtistData_' + targetId)) return false;
+            if (targetId === '@victor_ink' || targetId === 'victor_ink' || targetId === 'demo' || targetId === '@demo' || targetId === 'anonymous_demo') return false;
         } catch(e) {}
         return true;
     });
+  const isTargetDemo = () => {
+        const targetId = resolveTargetId();
+        return targetId === '@victor_ink' || targetId === 'victor_ink' || targetId === 'demo' || targetId === '@demo' || targetId === 'anonymous_demo';
+    };
   const [artistData, setArtistData] = useState<any>(() => {
     try {
         const targetId = resolveTargetId();
@@ -70,7 +140,7 @@ export default function Profile() {
             return savedData;
         }
     } catch(e) {}
-    return null;
+    return isTargetDemo() ? DEMO_FALLBACK_ARTIST_DATA : null;
   });
 
 
@@ -87,7 +157,7 @@ export default function Profile() {
               return savedData;
           }
       } catch(e) {}
-      return [];
+      return isTargetDemo() ? DEMO_FALLBACK_PHOTOS : [];
   });
   const [activeCategory, setActiveCategory] = useState("All");
   const [showMore, setShowMore] = useState(false);
@@ -213,64 +283,40 @@ export default function Profile() {
                             isDemoUser = true;
                         }
                         if (isDemoUser) {
-                            const fallback = [
-                                {
-                                  id: "fallback_1",
-                                  src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ",
-                                  alt: "A highly detailed black and grey realism tattoo of a lion's face on a human forearm.",
-                                  title: "Detailed black & grey realism",
-                                  categories: ["Realismo", "Blackwork"],
-                                  hours: 12,
-                                  sessions: 2,
-                                  size: "20x15 cm"
-                                },
-                                {
-                                  id: "fallback_2",
-                                  src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA5DDAAcFYiq49hBeVBI21d-Kfzr6qKoiRfIXKP1UnRW7YF5GJFA5MFkoXHtdBxy6uEbgH9z0zVWPWxKIEtX3oXemICFI1Ssr7FZ-Hh_OVDjHQ-QLRxMXBp5c4FwHXswrbPE9ZdzVelcUFL0h0nTLuzuWpLR_QRaZBZsyq7srBJaHktN6PcAYY-NQ2d-8FRg_RJ15MYhPUfdaEk_oGzE57hWrd7ZFkT4ldOW1tTIz0PqCqzo5_ALKPhXP1byoz8eiIEM30X9HQLzho",
-                                  alt: "Close-up of a delicate minimalist tattoo of a single rose.",
-                                  title: "Delicate minimalist single rose",
-                                  categories: ["Minimalista"],
-                                  hours: 3,
-                                  sessions: 1,
-                                  size: "8x5 cm"
-                                },
-                                {
-                                  id: "fallback_3",
-                                  src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE9qEOTq3DlR_Z_PI95eeZBU5YHIAzEqTN6zzltLD_41wX6e4LCHu8sREZZ4N_qV-XW271u6bCjyo14IHISQRVRhCSBJdX_ICJvg9EM-iYGcv1owFVPqatY3-0uESdozTCTcvTib8fe2Um_CI2L6mxqWeMg8IoYm0FYaTzlqISISzi52HOylwmgk_IxCrKp2vueZ90nk1bGHhgH3ybo0PI5u7VOpkB_kQTPzrRjD2-N3hC-9IB-OKvuic1rp7_8b4w562jI2tcCKA",
-                                  alt: "Large-scale blackwork tattoo covering a full back.",
-                                  title: "Large-scale blackwork back piece",
-                                  categories: ["Blackwork", "Tradicional"],
-                                  hours: 24,
-                                  sessions: 4,
-                                  size: "Espalda completa"
-                                },
-                                {
-                                  id: "fallback_4",
-                                  src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBYd_bLleuw4yQOy32XLTc-ZA36ZI1Tx20UNajjWgcV5DQKPXzxE6vuXBvD3Ov7hcyCDB0Wpbc1BK7v4CJMIFC3KWS1bBdxzGJUcjSraTSohPMSOjESD5If5O8I8ZxmV0rWCZ_T_ncpPVYMBz9OD9_NXcCjwNkftJNjmowLcbK_jq3Fy-FieRJHky4A0G8SWmDSNGfDrlvoUxmb8aYt9Dxvi2w5uLOR4ir0BxgO2Sh5IfSstId4FI96uowW3Y1Jw1YCCRUk82ep4yPk",
-                                  alt: "Hyper-realistic black and grey realism tattoo",
-                                  title: "Hyper-realistic black & grey",
-                                  categories: ["Realismo", "Blackwork"],
-                                  hours: 15,
-                                  sessions: 3,
-                                  size: "Media manga"
-                                },
-                                {
-                                  id: "fallback_5",
-                                  src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5LMtrwwTSFu95uiU0bVfXq9VmWZIJ10dyJ3Lwbu6VmGCGEnBfZXi0WQlrXz0JAAAXzBurYTXa8IleL_Z1UTW7x4BHigWcVZCarsYy-PDu3G5JOwCsz3c0mgBTVI90e2b4bcw5lLDYzc5mU0qXptlWkjo0e3ynOS0xxfhCjxtvA0Bykbfo3wSX79T_fwcMg4uFHYXGxws2NYoOaKhhgr6J8ErFHQqB5QJSnK9c2zkwmEgiIM-74wbPKlVjQPO8pxETkDa8jrj1OmA",
-                                  alt: "Detailed blackwork owl",
-                                  title: "Detailed blackwork owl",
-                                  categories: ["Blackwork", "Realismo"],
-                                  hours: 8,
-                                  sessions: 2,
-                                  size: "15x15 cm"
-                                }
-                            ];
-                            const limitedFallback = fallback.slice(0, 5);
+                            const limitedFallback = DEMO_FALLBACK_PHOTOS.slice(0, 5);
                             const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
                             const addedFallbackPhotos = limitedFallback.filter(f => !finalPhotos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id));
                             finalPhotos = [...finalPhotos, ...addedFallbackPhotos];
                         }
                         
+                        const sharedPhotoId = searchParams.get('obra');
+                        if (sharedPhotoId && !finalPhotos.find(p => p.id === sharedPhotoId)) {
+                            // Check if it's a fallback photo first
+                            const fbMatch = DEMO_FALLBACK_PHOTOS.find(f => f.id === sharedPhotoId);
+                            if (fbMatch) {
+                                finalPhotos.unshift(fbMatch);
+                            } else {
+                                try {
+                                    const { doc, getDoc } = await import('firebase/firestore');
+                                    const pDoc = await getDoc(doc(db, 'photos', sharedPhotoId));
+                                    if (pDoc.exists()) {
+                                        const pData = pDoc.data();
+                                        finalPhotos.unshift({
+                                            id: pDoc.id,
+                                            src: pData.url || pData.imageUrl || pData.src,
+                                            alt: pData.alt || pData.title || '',
+                                            title: pData.title || '',
+                                            categories: pData.tags || pData.categories || [],
+                                            hours: pData.hours || 0,
+                                            sessions: pData.sessions || 1,
+                                            size: pData.size || '',
+                                            pinnedOrder: pData.pinnedOrder
+                                        });
+                                    }
+                                } catch (e) {}
+                            }
+                        }
+
                         finalPhotos.sort((a, b) => {
                             const aPinned = typeof a.pinnedOrder === 'number' && a.pinnedOrder > 0;
                             const bPinned = typeof b.pinnedOrder === 'number' && b.pinnedOrder > 0;
@@ -537,7 +583,7 @@ export default function Profile() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  let isExplicitDemoTarget = false;
+  let isExplicitDemoTarget = isTargetDemo();
   let isDemoProfile = isExplicitDemoTarget;
   if (artistData && (artistData.userTag === '@demo' || artistData.userTag === '@victor_ink' || artistData.userTag === 'victor_ink' || artistData.userTag === 'demo')) {
       isDemoProfile = true;
@@ -551,32 +597,6 @@ export default function Profile() {
 
 
   
-  if (isProfileLoading) {
-    return (
-      <div className="bg-background min-h-screen flex flex-col animate-pulse">
-        <div className="h-[30vh] md:h-[40vh] bg-surface-variant w-full" />
-        <div className="max-w-screen-xl mx-auto px-4 w-full -mt-20 md:-mt-24 flex flex-col items-center">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-surface-container border-4 border-background mb-4" />
-            <div className="h-8 bg-surface-container rounded w-64 mb-4" />
-            <div className="flex gap-4 mb-4">
-                <div className="h-6 bg-surface-container rounded w-24" />
-                <div className="h-6 bg-surface-container rounded w-24" />
-            </div>
-            <div className="h-16 bg-surface-container rounded w-full max-w-2xl mb-8" />
-            <div className="h-12 bg-surface-container rounded w-48 mb-12" />
-            
-            <div className="grid grid-cols-3 gap-2 w-full">
-                <div className="aspect-square bg-surface-container" />
-                <div className="aspect-square bg-surface-container" />
-                <div className="aspect-square bg-surface-container" />
-                <div className="aspect-square bg-surface-container hidden md:block" />
-                <div className="aspect-square bg-surface-container hidden md:block" />
-                <div className="aspect-square bg-surface-container hidden md:block" />
-            </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-background text-on-background font-body-md selection:bg-primary selection:text-on-primary min-h-screen">
@@ -744,7 +764,7 @@ export default function Profile() {
 
           {/* Masonry Grid */}
 
-          {isTattoosLoading ? (
+          {isProfileLoading || (isTattoosLoading && visibleTattoos.length === 0) ? (
             <div className="grid grid-cols-3 gap-2 w-full animate-pulse">
                 <div className="aspect-square bg-surface-container border border-white/5" />
                 <div className="aspect-square bg-surface-container border border-white/5" />
