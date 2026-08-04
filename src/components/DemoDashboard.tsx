@@ -494,7 +494,7 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
                                     <div className="shrink-0 mx-auto flex flex-col items-center text-center">
                                         <label className="w-24 h-24 bg-surface-container-highest border border-outline-variant/20 flex items-center justify-center relative group cursor-pointer overflow-hidden block">
                                             <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setAvatarUrl)} />
-                                            <img className="w-full h-full object-cover" src={avatarUrl} />
+                                            <img className="w-full h-full object-cover" src={avatarUrl || undefined} />
                                             <div className="absolute inset-0 bg-surface/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <span className="material-symbols-outlined" data-icon="upload">upload</span>
                                             </div>

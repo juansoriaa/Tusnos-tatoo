@@ -318,7 +318,7 @@ export default function DemoWaitlist() {
                         <span className="material-symbols-outlined">close</span>
                     </button>
                     <div className="flex-1 overflow-y-auto w-full flex items-center justify-center bg-black">
-                        {workModalData && <img src={workModalData.image} className="w-full h-auto object-contain max-h-[70vh]" alt="Portfolio Reference" />}
+                        {workModalData && <img src={workModalData.image || undefined} className="w-full h-auto object-contain max-h-[70vh]" alt="Portfolio Reference" />}
                     </div>
                     <div className="p-6 border-t border-border-muted bg-surface-container shrink-0" style={{borderColor: '#353434'}}>
                         <div className="flex flex-col gap-2">

@@ -60,7 +60,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     <img
       ref={imgRef}
       {...props}
-      src={isVisible ? currentSrc : (lowResUrl || '')}
+      src={isVisible ? (currentSrc || undefined) : (lowResUrl || undefined)}
       alt={alt}
       loading={props.loading || "lazy"}
       decoding="async"

@@ -537,7 +537,7 @@ export default function DemoMetrics() {
                                     <div className="flex items-center gap-3 active:bg-surface-container-high active:scale-95 transition-all py-3 cursor-pointer">
                                         <div className="font-label-md text-label-md text-on-surface-variant w-4">0{index + 1}</div>
                                         <div className="w-12 h-12 border border-border-muted flex-shrink-0 relative overflow-hidden" style={{borderColor: '#353434'}}>
-                                            <img className="w-full h-full object-cover" alt={photo.title} src={photo.imageUrl}/>
+                                            <img className="w-full h-full object-cover" alt={photo.title} src={photo.imageUrl || undefined}/>
                                         </div>
                                         <div className="flex-grow">
                                             <h4 className="font-body-md text-body-md text-silver-text text-sm">{photo.title}</h4>
@@ -586,7 +586,7 @@ export default function DemoMetrics() {
                                                 {index + 1}
                                             </div>
                                             <div className="w-16 h-16 border border-border-muted flex-shrink-0 relative overflow-hidden" style={{borderColor: '#353434'}}>
-                                                <img className="w-full h-full object-cover transition-all duration-500" alt={photo.title} src={photo.imageUrl}/>
+                                                <img className="w-full h-full object-cover transition-all duration-500" alt={photo.title} src={photo.imageUrl || undefined}/>
                                             </div>
                                             <div className="flex-grow">
                                                 <h4 className="font-body-md text-silver-text text-sm font-medium">{photo.title}</h4>

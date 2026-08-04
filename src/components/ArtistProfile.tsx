@@ -1134,7 +1134,7 @@ export default function Profile() {
               <div className="flex flex-col gap-2 mt-1">
                 <label className="font-label-sm text-[10px] uppercase tracking-wider font-bold text-on-surface-variant">Tatuaje de referencia seleccionado</label>
                 <div className="flex gap-4 items-start bg-surface-variant/30 p-2 rounded border border-outline-variant/30">
-                  <img src={waitlistForm.referenceImage} alt="Referencia" className="w-20 h-20 object-cover rounded border border-border-muted shrink-0" />
+                  <img src={waitlistForm.referenceImage || undefined} alt="Referencia" className="w-20 h-20 object-cover rounded border border-border-muted shrink-0" />
                   <div className="flex flex-col gap-1.5 overflow-hidden justify-center h-full">
                     {(() => {
                       const refTattoo = allTattoos.find(t => t.src === waitlistForm.referenceImage);
