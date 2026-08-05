@@ -304,6 +304,8 @@ export default function Profile() {
                                         finalPhotos.unshift({
                                             id: pDoc.id,
                                             src: pData.url || pData.imageUrl || pData.src,
+                                            previewUrl: pData.previewUrl,
+                                            thumbnailUrl: pData.thumbnailUrl,
                                             alt: pData.alt || pData.title || '',
                                             title: pData.title || '',
                                             categories: pData.tags || pData.categories || [],
@@ -615,8 +617,14 @@ export default function Profile() {
           <span className="font-label-md text-label-md font-extrabold text-on-surface uppercase tracking-tighter">Turnos <span className="text-primary">Tattoo</span></span>
         </div>
         {/* Banner Section */}
-        <section className="relative w-full h-64 md:h-96 overflow-hidden">
-          <div className="w-full h-full bg-cover bg-center transition-transform duration-1000 hover:scale-105" style={{ backgroundImage: `url('${defaultBg}')` }}></div>
+        <section className="relative w-full h-64 md:h-96 overflow-hidden bg-surface-container">
+          <OptimizedImage
+             className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105"
+             highResUrl={defaultBg}
+             alt="Banner"
+             useIntersectionObserver={false}
+             loading="eager"
+          />
           {/* Filtro oscuro para no perder la estética con fotos claras */}
           <div className="absolute inset-0 bg-black/40"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-background via-black/50 to-transparent"></div>
@@ -627,7 +635,7 @@ export default function Profile() {
           {/* Profile Photo */}
           <div className="relative p-1 bg-background rounded-full mb-2">
             <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-primary">
-              <img className="w-full h-full object-cover" alt="Artist profile" src={defaultAvatar} />
+              <OptimizedImage className="w-full h-full object-cover" alt="Artist profile" highResUrl={defaultAvatar} useIntersectionObserver={false} loading="eager" />
             </div>
           </div>
 
@@ -785,6 +793,7 @@ export default function Profile() {
                   lowResUrl={tattoo.thumbnailUrl}
                   highResUrl={tattoo.thumbnailUrl || tattoo.previewUrl || tattoo.src} 
                   style={{ filter: getFilterStr(tattoo.filters) }}
+                  useIntersectionObserver={true}
                 />
                 {index === 0 && (
                   <div className="absolute inset-0 flex items-center justify-center flex-col gap-1 pointer-events-none interactive-overlay bg-black/40">
@@ -840,7 +849,7 @@ export default function Profile() {
                 className="h-48 md:h-64 w-full mx-auto grayscale border border-outline-variant overflow-hidden hover:grayscale-0 hover:border-primary transition-all duration-500 block relative group"
               >
                 <div className="w-full h-full bg-surface-container flex items-center justify-center relative">
-                  <img className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 transition-opacity duration-500" alt="Map" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1MG2dFZwUDUPDIxG_Aln6x7qj7PTFU-nq71Kz_QrgZTsCKbHPWFjx1ECNLxh36R0plsldSaxtyWi1PPUfx4GZVICAiwQXgKFS91w9QB5JPN2AUgGXuwSqPAQHVv_Rrra-Rqlu99MtTqyjx4iIJbH0Xe-XAk9kQyS0DhXbqymKwhMbLjhlxQ9vs6vSgvupRUsYJkHkoWe_Sp9AOCXN0tXfooiYuXTp3PQK0-nvaoIExJsH7e4H5n1iynsgSXS0Bc702RScJbs0uf8" />
+                  <OptimizedImage className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 transition-opacity duration-500" alt="Map" highResUrl="https://lh3.googleusercontent.com/aida-public/AB6AXuC1MG2dFZwUDUPDIxG_Aln6x7qj7PTFU-nq71Kz_QrgZTsCKbHPWFjx1ECNLxh36R0plsldSaxtyWi1PPUfx4GZVICAiwQXgKFS91w9QB5JPN2AUgGXuwSqPAQHVv_Rrra-Rqlu99MtTqyjx4iIJbH0Xe-XAk9kQyS0DhXbqymKwhMbLjhlxQ9vs6vSgvupRUsYJkHkoWe_Sp9AOCXN0tXfooiYuXTp3PQK0-nvaoIExJsH7e4H5n1iynsgSXS0Bc702RScJbs0uf8" useIntersectionObserver={true} />
                   <div className="relative z-10 text-center p-6 border border-primary/30 bg-surface/80 backdrop-blur-md group-hover:bg-primary/90 group-hover:border-primary group-hover:text-on-primary transition-all duration-300">
                     <span className="material-symbols-outlined text-3xl text-primary mb-2 group-hover:text-on-primary transition-colors">map</span>
                     <p className="font-label-md text-label-md text-on-surface font-bold group-hover:text-on-primary transition-colors">Abrir en Google Maps</p>
@@ -853,7 +862,7 @@ export default function Profile() {
 
         <section className="mt-section-gap mb-section-gap px-gutter max-w-container-max mx-auto ">
           <div className="bg-surface-container p-8 border border-outline-variant/20 flex flex-col gap-8 items-center text-center">
-            <img className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-primary shrink-0" alt={artistData?.displayName || "Artist"} src={defaultAvatar} />
+            <OptimizedImage className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-primary shrink-0" alt={artistData?.displayName || "Artist"} highResUrl={defaultAvatar} useIntersectionObserver={true} />
             <div>
               <h2 className="font-headline-md text-headline-md text-on-surface mb-4 font-bold uppercase tracking-tight">Sobre Mí</h2>
               <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">{artistData?.bio || "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente."}</p>
@@ -941,6 +950,7 @@ export default function Profile() {
                     key={`glow-${visibleTattoos[activeTattooIndex].id}`}
                     alt="" 
                     className="w-full h-full object-cover animate-fade-in opacity-50" 
+                    lowResUrl={visibleTattoos[activeTattooIndex].thumbnailUrl}
                     highResUrl={visibleTattoos[activeTattooIndex].previewUrl || visibleTattoos[activeTattooIndex].src} 
                     style={{ filter: getFilterStr(visibleTattoos[activeTattooIndex].filters) }}
                   />
@@ -1154,7 +1164,7 @@ export default function Profile() {
               <div className="flex flex-col gap-2 mt-1">
                 <label className="font-label-sm text-[10px] uppercase tracking-wider font-bold text-on-surface-variant">Tatuaje de referencia seleccionado</label>
                 <div className="flex gap-4 items-start bg-surface-variant/30 p-2 rounded border border-outline-variant/30">
-                  <img src={waitlistForm.referenceImage || undefined} alt="Referencia" className="w-20 h-20 object-cover rounded border border-border-muted shrink-0" />
+                  <OptimizedImage highResUrl={waitlistForm.referenceImage || ""} alt="Referencia" className="w-20 h-20 object-cover rounded border border-border-muted shrink-0" useIntersectionObserver={true} />
                   <div className="flex flex-col gap-1.5 overflow-hidden justify-center h-full">
                     {(() => {
                       const refTattoo = allTattoos.find(t => t.src === waitlistForm.referenceImage);
