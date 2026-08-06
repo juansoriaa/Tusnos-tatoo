@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { OptimizedImage } from './OptimizedImage';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, startAfter } from 'firebase/firestore';
 import { db, auth, onAuthStateChanged } from '../firebase';
 import { globalPreloadCache } from '../lib/cache';
 
@@ -160,7 +160,9 @@ export default function Profile() {
       return isTargetDemo() ? DEMO_FALLBACK_PHOTOS : [];
   });
   const [activeCategory, setActiveCategory] = useState("All");
-  const [showMore, setShowMore] = useState(false);
+  const [lastDoc, setLastDoc] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeTattooIndex, setActiveTattooIndex] = useState(0);
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
@@ -253,10 +255,16 @@ export default function Profile() {
                         collection(db, 'photos'),
                         where('createdBy', '==', artistUid),
                         orderBy('createdAt', 'desc'),
-                        limit(20)
+                        limit(12)
                     );
                     const tattoosSnapshot = await getDocs(qTattoos);
                     if (isMounted) {
+                        if (tattoosSnapshot.docs.length > 0) {
+                            setLastDoc(tattoosSnapshot.docs[tattoosSnapshot.docs.length - 1]);
+                        }
+                        if (tattoosSnapshot.docs.length < 12) {
+                            setHasMore(false);
+                        }
                         let finalPhotos: any[] = [];
                         finalPhotos = tattoosSnapshot.docs.map(doc => {
                             const data = doc.data();
@@ -428,27 +436,57 @@ export default function Profile() {
   };
 
   const filteredTattoos = allTattoos.filter(t => activeCategory === "All" || t.categories.includes(activeCategory));
-  const visibleTattoos = showMore ? filteredTattoos : filteredTattoos.slice(0, 9);
-  
-  useEffect(() => {
-    if (!showMore && filteredTattoos.length > 9) {
-      // Preload the next images in background
-      const hiddenTattoos = filteredTattoos.slice(9);
-      const timer = setTimeout(() => {
-        hiddenTattoos.forEach(tattoo => {
-            if (tattoo.thumbnailUrl) {
-                const imgThumb = new Image();
-                imgThumb.src = tattoo.thumbnailUrl;
-            }
-            if (tattoo.src) {
-                const imgFull = new Image();
-                imgFull.src = tattoo.src;
-            }
+  const visibleTattoos = filteredTattoos;
+
+  const loadMoreTattoos = async () => {
+    if (!hasMore || !lastDoc || isLoadingMore) return;
+    
+    setIsLoadingMore(true);
+    try {
+        const uid = artistData?.uid || artistData?.id || resolveTargetId();
+        const { collection, query, where, orderBy, limit, startAfter, getDocs } = await import('firebase/firestore');
+        const qTattoos = query(
+            collection(db, 'photos'),
+            where('createdBy', '==', uid),
+            orderBy('createdAt', 'desc'),
+            startAfter(lastDoc),
+            limit(12)
+        );
+        const tattoosSnapshot = await getDocs(qTattoos);
+        
+        if (tattoosSnapshot.docs.length > 0) {
+            setLastDoc(tattoosSnapshot.docs[tattoosSnapshot.docs.length - 1]);
+        }
+        if (tattoosSnapshot.docs.length < 12) {
+            setHasMore(false);
+        }
+        
+        let newPhotos = tattoosSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                src: data.url || data.imageUrl || data.src,
+                previewUrl: data.previewUrl,
+                thumbnailUrl: data.thumbnailUrl,
+                alt: data.info || data.title,
+                title: data.title || 'Foto de Tatuaje',
+                categories: data.tags || data.categories || ['Portfolio'],
+                filters: data.filters || [],
+                hours: data.hours,
+                sessions: data.sessions,
+                size: data.size,
+                pinnedOrder: data.pinnedOrder,
+                originalFallbackId: data.originalFallbackId
+            };
         });
-      }, 1000); // Wait 1 second after initial render to avoid stealing bandwidth
-      return () => clearTimeout(timer);
+        
+        setAllTattoos(prev => [...prev, ...newPhotos]);
+    } catch(e) {
+        console.error("Error loading more tattoos", e);
+    } finally {
+        setIsLoadingMore(false);
     }
-  }, [filteredTattoos, showMore]);
+  };
 
   const openModal = (index: number) => {
     const photoId = visibleTattoos[index]?.id;
@@ -514,7 +552,6 @@ export default function Profile() {
         const aIndex = allTattoos.findIndex(t => t.id === photoId);
         if (aIndex !== -1) {
           if (activeCategory !== "All") setActiveCategory("All");
-          if (!showMore) setShowMore(true);
         }
       }
     } else if (!photoId && modalOpen) {
@@ -807,12 +844,16 @@ export default function Profile() {
           )}
 
           <div className="flex justify-center mt-12 gap-4">
-            {filteredTattoos.length > 9 && (
+            {hasMore && (
               <button type="button"
-                className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all uppercase tracking-widest border-b border-outline-variant hover:border-primary py-2 font-bold" 
-                onClick={() => setShowMore(!showMore)}
+                className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all uppercase tracking-widest border-b border-outline-variant hover:border-primary py-2 font-bold flex items-center gap-2" 
+                onClick={loadMoreTattoos}
+                disabled={isLoadingMore}
               >
-                {showMore ? 'Ver menos' : 'Ver más'}
+                {isLoadingMore ? (
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                ) : null}
+                {isLoadingMore ? 'Cargando...' : 'Cargar más'}
               </button>
             )}
           </div>
@@ -944,17 +985,7 @@ export default function Profile() {
                   <span className="material-symbols-outlined text-2xl md:text-3xl">chevron_right</span>
                 </button>
 
-                {/* Ambient Smart Glow */}
-                <div className="absolute inset-0 z-0 flex items-center justify-center opacity-25 blur-[2rem] md:blur-[4rem] scale-110 pointer-events-none animate-pulse duration-3000">
-                  <OptimizedImage 
-                    key={`glow-${visibleTattoos[activeTattooIndex].id}`}
-                    alt="" 
-                    className="w-full h-full object-cover animate-fade-in opacity-50" 
-                    lowResUrl={visibleTattoos[activeTattooIndex].thumbnailUrl}
-                    highResUrl={visibleTattoos[activeTattooIndex].previewUrl || visibleTattoos[activeTattooIndex].src} 
-                    style={{ filter: getFilterStr(visibleTattoos[activeTattooIndex].filters) }}
-                  />
-                </div>
+
                 
                 {/* Main Image */}
                 <OptimizedImage 

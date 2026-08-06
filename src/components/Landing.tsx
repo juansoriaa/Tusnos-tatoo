@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { OptimizedImage } from './OptimizedImage';
 import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged, db } from '../firebase';
 import { collection, query, where, getDocs, doc, getDoc, orderBy, limit } from 'firebase/firestore';
@@ -81,6 +82,7 @@ export default function Landing() {
   const [contactSuccess, setContactSuccess] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [directoryWorks, setDirectoryWorks] = useState<any[]>([]);
+  const [isLoadingDirectoryWorks, setIsLoadingDirectoryWorks] = useState(true);
   const [landingImages, setLandingImages] = useState<any>({
     waitlist: 'https://i.ibb.co/1G2KZR9n/Screenshot-20260728-201421.png?v=1',
     metrics: 'https://i.ibb.co/d0qmM5gm/Polish-20260729-200826495.jpg?v=1',
@@ -89,18 +91,35 @@ export default function Landing() {
 
   useEffect(() => {
     const fetchDirectoryWorks = async () => {
+      setIsLoadingDirectoryWorks(true);
       try {
-        const q = query(
-            collection(db, 'photos'),
-            orderBy('createdAt', 'desc'),
-            limit(12)
-        );
-        const snapshot = await getDocs(q);
+        let snapshot;
+        try {
+            const q = query(
+                collection(db, 'photos'),
+                orderBy('createdAt', 'desc'),
+                limit(12)
+            );
+            snapshot = await getDocs(q);
+        } catch (idxErr) {
+            console.warn("Index missing, falling back to local sort", idxErr);
+            const fallbackQ = query(collection(db, 'photos'));
+            snapshot = await getDocs(fallbackQ);
+        }
         
         if (!snapshot.empty) {
           // Filter to ensure photos have a valid URL and are not empty
-          const works = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any))
-                                     .filter(w => (w.url && w.url.length > 10) || (w.src && w.src.length > 10));
+          let works = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any))
+                                     .filter(w => (w.url && w.url.length > 10) || (w.src && w.src.length > 10) || (w.imageUrl && w.imageUrl.length > 10));
+          
+          // Local sort unconditionally just to be safe if fallback was used
+          works.sort((a, b) => {
+              const timeA = a.createdAt?.toMillis?.() || a.createdAt || 0;
+              const timeB = b.createdAt?.toMillis?.() || b.createdAt || 0;
+              return timeB - timeA;
+          });
+          works = works.slice(0, 12);
+          
           // Now fetch user details for these works
           const userIds = [...new Set(works.map(w => w.createdBy))].filter(Boolean);
           
@@ -130,6 +149,8 @@ export default function Landing() {
         }
       } catch (err) {
         console.error("Error fetching directory works:", err);
+      } finally {
+        setIsLoadingDirectoryWorks(false);
       }
     };
     fetchDirectoryWorks();
@@ -532,11 +553,17 @@ export default function Landing() {
             </div>
             
             {/* Mobile Carousel & Desktop Grid */}
+            {isLoadingDirectoryWorks ? (
+              <div className="w-full flex items-center justify-center h-[450px] md:h-[400px] bg-surface-container rounded-2xl border border-outline-variant/20">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+            <>
             <div className="block md:hidden relative w-full overflow-hidden rounded-2xl neon-border h-[450px]">
                 <div className="flex w-full h-full transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
                    {displayWorks.map((photo, idx) => (
                       <div key={photo.id} className="w-full h-full shrink-0 relative group">
-                          <img alt={photo.alt} className="w-full h-full object-cover" src={photo.src || undefined} onError={(e) => { e.currentTarget.src = "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" }} />
+                          <OptimizedImage alt={photo.alt} className="w-full h-full object-cover" highResUrl={photo.src || "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ"} useIntersectionObserver={true} lowResUrl={photo.thumbnailUrl} />
                           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent flex flex-col justify-end p-6">
                               <h4 className="text-2xl font-bold text-white mb-2">{photo.title}</h4>
                               <div className="flex flex-wrap gap-2 mb-4">
@@ -563,7 +590,7 @@ export default function Landing() {
             <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-8">
               {displayWorks.map((photo) => (
                   <div key={photo.id} className="relative group overflow-hidden rounded-2xl neon-border h-[400px]">
-                    <img alt={photo.alt} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src={photo.src || undefined} onError={(e) => { e.currentTarget.src = "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ" }} />
+                    <OptimizedImage alt={photo.alt} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" highResUrl={photo.src || "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ"} useIntersectionObserver={true} lowResUrl={photo.thumbnailUrl} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent flex flex-col justify-end p-6">
                       <h4 className="text-xl font-bold text-white mb-2">{photo.title}</h4>
                       <div className="flex flex-wrap gap-2 mb-4">
@@ -579,6 +606,8 @@ export default function Landing() {
                   </div>
               ))}
             </div>
+            </>
+            )}
           </div>
         </section>
 
