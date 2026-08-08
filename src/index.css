@@ -316,3 +316,397 @@
     border-radius: 20px;
   }
 }
+
+@layer utilities {
+  .theme-pink-neon {
+    --color-primary: #FF2A85;
+    --color-primary-container: #FF007F;
+    --color-background: #121013;
+    --color-surface-container-lowest: #121013;
+    --color-deep-black: #121013;
+    --color-surface: #121013;
+    --color-surface-container: #1a161b;
+    --color-surface-variant: #251e26;
+  }
+}
+
+@layer components {
+  .theme-minimal-clean .banner-overlay-1 { display: none !important; }
+  .theme-minimal-clean .banner-overlay-2 { background: linear-gradient(to top, var(--color-background), transparent) !important; }
+  .theme-minimal-clean .profile-logo-container { background: rgba(0,0,0,0.4) !important; border: none !important; }
+  .theme-minimal-clean .profile-logo-text { color: rgba(255,255,255,0.7) !important; }
+  .theme-minimal-clean .profile-logo-primary { color: rgba(255,255,255,0.8) !important; }
+
+  /* ========================================================
+     ESTILO 3: Neo-Traditional Pink / Vibrant (Profile View)
+     ======================================================== */
+  .theme-pink-neon .profile-photo-container {
+    border: 2px solid #FF2A85;
+    box-shadow: 0 0 20px rgba(255, 42, 133, 0.5);
+  }
+
+  .theme-pink-neon .specialty-badge {
+    border-color: rgba(255, 42, 133, 0.4);
+    background: transparent;
+  }
+  .theme-pink-neon .specialty-badge.active,
+  .theme-pink-neon .category-filter-btn.active {
+    background: #FF2A85;
+    color: white;
+    border-color: #FF2A85;
+  }
+  .theme-pink-neon .category-filter-btn {
+    border-color: rgba(255, 42, 133, 0.4);
+  }
+
+  .theme-pink-neon .primary-action-btn {
+    background: linear-gradient(90deg, #FF2A85 0%, #FF5E9B 100%);
+    border: none;
+    transition: all 0.3s ease;
+  }
+  .theme-pink-neon .primary-action-btn:hover,
+  .theme-pink-neon .primary-action-btn:active {
+    transform: scale(1.02);
+    box-shadow: 0 0 25px rgba(255, 42, 133, 0.6);
+  }
+
+  /* Grilla de obras */
+  .theme-pink-neon .tattoo-card {
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  .theme-pink-neon .tattoo-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 30px;
+    border-top: 2px solid rgba(255, 42, 133, 0.4);
+    border-left: 2px solid rgba(255, 42, 133, 0.4);
+    border-right: 2px solid rgba(255, 42, 133, 0.4);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Secciones informativas */
+  .theme-pink-neon .info-section {
+    background: rgba(26, 22, 27, 0.7);
+    border: none;
+    border-left: 3px solid #FF2A85;
+    border-radius: 0 8px 8px 0; padding: 2rem;
+  }
+
+  /* Modal de Detalle */
+  .theme-pink-neon .modal-nav-arrow {
+    background: rgba(18, 16, 19, 0.8);
+    border: 1px solid rgba(255, 42, 133, 0.3);
+  }
+  .theme-pink-neon .modal-nav-arrow span {
+    color: #FF2A85;
+  }
+  
+  .theme-pink-neon .stat-icon {
+    color: #FF2A85;
+  }
+}
+
+@layer utilities {
+  .theme-minimal-clean {
+    --color-primary: #111111;
+    --color-primary-container: #111111;
+    --color-background: #F9F9FB;
+    --color-surface-container-lowest: #F9F9FB;
+    --color-deep-black: #F9F9FB;
+    --color-surface: #FFFFFF;
+    --color-surface-container: #FFFFFF;
+    --color-surface-variant: #FFFFFF;
+    --color-surface-container-low: #FFFFFF;
+    --color-surface-container-high: #F9F9FB;
+    --color-surface-container-highest: #EFEFF4;
+    --color-on-background: #111111;
+    --color-on-surface: #111111;
+    --color-on-surface-variant: #666666;
+    --color-outline-variant: #EFEFF4;
+    --color-on-primary: #FFFFFF;
+  }
+}
+
+@layer components {
+  .theme-minimal-clean .banner-overlay-1 { display: none !important; }
+  .theme-minimal-clean .banner-overlay-2 { background: linear-gradient(to top, var(--color-background), transparent) !important; }
+  .theme-minimal-clean .profile-logo-container { background: rgba(0,0,0,0.4) !important; border: none !important; }
+  .theme-minimal-clean .profile-logo-text { color: rgba(255,255,255,0.7) !important; }
+  .theme-minimal-clean .profile-logo-primary { color: rgba(255,255,255,0.8) !important; }
+
+  /* ========================================================
+     ESTILO 1: Minimal Clean & Professional (Profile View)
+     ======================================================== */
+  .theme-minimal-clean .profile-photo-container {
+    border: 1px solid #E5E5EA !important;
+    box-shadow: none !important;
+  }
+
+  .theme-minimal-clean .specialty-badge {
+    background: #EFEFF4 !important;
+    color: #333333 !important;
+    border: none !important;
+    border-radius: 6px !important;
+  }
+
+  .theme-minimal-clean .specialty-badge.active,
+  .theme-minimal-clean .category-filter-btn.active {
+    background: #111111 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+  }
+
+  .theme-minimal-clean .category-filter-btn {
+    border: 1px solid #E5E5EA !important;
+    color: #666666 !important;
+  }
+
+  .theme-minimal-clean .primary-action-btn {
+    background: #111111 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    text-transform: uppercase;
+    box-shadow: none !important;
+    transition: all 0.3s ease;
+  }
+
+  .theme-minimal-clean .primary-action-btn:hover,
+  .theme-minimal-clean .primary-action-btn:active {
+    background: #333333 !important;
+    transform: scale(0.98) !important;
+    box-shadow: none !important;
+  }
+
+  /* Grilla de obras */
+  .theme-minimal-clean .tattoo-card {
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    border: none !important;
+  }
+
+  .theme-minimal-clean .tattoo-card::before {
+    display: none !important;
+  }
+
+  /* Secciones informativas */
+  .theme-minimal-clean .info-section {
+    background: #FFFFFF !important;
+    border: 1px solid #EFEFF4 !important;
+    border-radius: 8px !important;
+    padding: 2rem !important;
+    box-shadow: none !important;
+  }
+
+  .theme-minimal-clean .info-section details {
+    border-bottom: 1px solid #EFEFF4 !important;
+    border: none;
+    border-radius: 0;
+  }
+  
+  .theme-minimal-clean .info-section details:last-child {
+    border-bottom: none !important;
+  }
+
+  /* Modal de Detalle */
+  .theme-minimal-clean .modal-backdrop {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+  }
+  
+  .theme-minimal-clean .modal-container {
+     background: #FFFFFF !important;
+     border: 1px solid #EFEFF4 !important;
+     box-shadow: 0 10px 40px rgba(0,0,0,0.05) !important;
+  }
+
+  .theme-minimal-clean .modal-nav-arrow {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid #E5E5EA !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+  }
+
+  .theme-minimal-clean .modal-nav-arrow span {
+    color: #111111 !important;
+  }
+
+  .theme-minimal-clean .tech-stat-card {
+    background: #FFFFFF !important;
+    border: 1px solid #EFEFF4 !important;
+  }
+  .theme-minimal-clean .stat-icon {
+    color: #111111 !important;
+    font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24 !important; /* thin clean icon */
+  }
+
+  .theme-minimal-clean h1, .theme-minimal-clean h2, .theme-minimal-clean h3 {
+    font-weight: 300 !important;
+    color: #111111 !important;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@layer utilities {
+  .theme-cyber-neon {
+    --color-primary: #00F0FF;
+    --color-primary-container: #0077FF;
+    --color-background: #0A0A0C;
+    --color-surface-container-lowest: #0A0A0C;
+    --color-deep-black: #0A0A0C;
+    --color-surface: #0A0A0C;
+    --color-surface-container: #111114;
+    --color-surface-variant: #16161A;
+    --color-on-background: #E0E0E0;
+    --color-on-surface: #FFFFFF;
+    --color-on-surface-variant: #A0A0A0;
+    --color-outline-variant: #1F2937;
+    --color-on-primary: #000000;
+  }
+}
+
+@layer components {
+  .theme-minimal-clean .banner-overlay-1 { display: none !important; }
+  .theme-minimal-clean .banner-overlay-2 { background: linear-gradient(to top, var(--color-background), transparent) !important; }
+  .theme-minimal-clean .profile-logo-container { background: rgba(0,0,0,0.4) !important; border: none !important; }
+  .theme-minimal-clean .profile-logo-text { color: rgba(255,255,255,0.7) !important; }
+  .theme-minimal-clean .profile-logo-primary { color: rgba(255,255,255,0.8) !important; }
+
+  /* ========================================================
+     ESTILO 2: Cyber Dark & Electric Neon (Profile View)
+     ======================================================== */
+  .theme-cyber-neon .profile-photo-container {
+    border: 1px solid #00F0FF !important;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4) !important;
+  }
+
+  .theme-cyber-neon h1, .theme-cyber-neon h2, .theme-cyber-neon h3 {
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+    font-weight: 700 !important;
+    text-transform: uppercase;
+  }
+
+  .theme-cyber-neon .specialty-badge {
+    background: rgba(0, 240, 255, 0.05) !important;
+    color: #00F0FF !important;
+    border: 1px solid #00F0FF !important;
+    border-radius: 4px !important;
+    box-shadow: inset 0 0 5px rgba(0, 240, 255, 0.2);
+  }
+
+  .theme-cyber-neon .specialty-badge.active,
+  .theme-cyber-neon .category-filter-btn.active {
+    background: #00F0FF !important;
+    color: #000000 !important;
+    border: 1px solid #00F0FF !important;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.6) !important;
+  }
+
+  .theme-cyber-neon .category-filter-btn {
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+    color: #00F0FF !important;
+    background: transparent !important;
+  }
+
+  .theme-cyber-neon .primary-action-btn {
+    background: linear-gradient(135deg, #00F0FF 0%, #0077FF 100%) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 4px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.3) !important;
+    transition: all 0.3s ease;
+  }
+
+  .theme-cyber-neon .primary-action-btn:hover,
+  .theme-cyber-neon .primary-action-btn:active {
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.8) !important;
+    transform: scale(1.02) !important;
+  }
+
+  /* Grilla de obras */
+  .theme-cyber-neon .tattoo-card {
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(0, 240, 255, 0.15) !important;
+    transition: all 0.3s ease;
+  }
+  
+  .theme-cyber-neon .tattoo-card:hover {
+    border-color: rgba(0, 240, 255, 0.5) !important;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
+  }
+
+  .theme-cyber-neon .tattoo-card::before {
+    display: none !important;
+  }
+
+  /* Secciones informativas */
+  .theme-cyber-neon .info-section {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: none !important;
+    border-left: 3px solid #00F0FF !important;
+    border-radius: 0 8px 8px 0 !important;
+    padding: 2rem !important;
+    box-shadow: none !important;
+  }
+
+  .theme-cyber-neon .info-section details {
+    border-bottom: 1px solid rgba(0, 240, 255, 0.1) !important;
+    border: none;
+    border-radius: 0;
+  }
+  
+  .theme-cyber-neon .info-section details:last-child {
+    border-bottom: none !important;
+  }
+  
+  .theme-cyber-neon .info-section details[open] summary {
+     color: #00F0FF !important;
+  }
+
+  /* Modal de Detalle */
+  .theme-cyber-neon .modal-backdrop {
+    background: rgba(10, 10, 12, 0.9) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+  }
+  
+  .theme-cyber-neon .modal-container {
+     background: #0A0A0C !important;
+     border: 1px solid rgba(0, 240, 255, 0.2) !important;
+     box-shadow: 0 0 40px rgba(0, 240, 255, 0.1) !important;
+  }
+
+  .theme-cyber-neon .modal-nav-arrow {
+    background: #0A0A0C !important;
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2) !important;
+  }
+
+  .theme-cyber-neon .modal-nav-arrow span {
+    color: #00F0FF !important;
+    text-shadow: 0 0 5px rgba(0, 240, 255, 0.5) !important;
+  }
+
+  .theme-cyber-neon .stat-icon {
+    color: #00F0FF !important;
+    filter: drop-shadow(0 0 3px rgba(0, 240, 255, 0.6));
+  }
+}

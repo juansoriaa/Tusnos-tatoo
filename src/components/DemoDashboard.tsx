@@ -78,7 +78,7 @@ const defaultFaqs = [
                 setFacebook(data.facebook || '');
                 setTiktok(data.tiktok || '');
                 setAvatarUrl(data.profilePhotoUrl || defaultAvatar);
-                setBannerUrl(data.backgroundPhotos?.[0] || defaultBanner);
+                setBannerUrl((data.backgroundPhotos && data.backgroundPhotos.length > 0 && data.backgroundPhotos[0]) ? data.backgroundPhotos[0] : defaultBanner);
                 setMapLink(data.mapLink || '');
                 setHasPhysicalStudio(data.hasPhysicalStudio !== false);
                 setStudioName(data.studioName || '');
@@ -101,7 +101,7 @@ const defaultFaqs = [
                     facebook: data.facebook || '',
                     tiktok: data.tiktok || '',
                     avatarUrl: data.profilePhotoUrl || defaultAvatar,
-                    bannerUrl: (data.backgroundPhotos && data.backgroundPhotos.length > 0) ? data.backgroundPhotos[0] : defaultBanner,
+                    bannerUrl: (data.backgroundPhotos && data.backgroundPhotos.length > 0 && data.backgroundPhotos[0]) ? data.backgroundPhotos[0] : defaultBanner,
                     hasPhysicalStudio: data.hasPhysicalStudio !== false,
                     studioName: data.studioName || '',
                     studioDescription: data.studioDescription || '',
@@ -110,7 +110,7 @@ const defaultFaqs = [
                     mapLink: data.mapLink || '',
                     faqs: data.faqs || defaultFaqs
                 }));
-            } catch (e) {}
+            } catch (e) { console.error('Error in setInitialDataStr block', e); }
         } else {
             const initData = {
                 name: 'Victor Ink',
@@ -196,16 +196,40 @@ const defaultFaqs = [
     };
 
     const currentData = {
-        name, bio, specialty1, specialty2, specialty3, isAvailable,
-        whatsapp, loginEmail, customPassword, instagram, facebook, tiktok, avatarUrl, bannerUrl,
-        hasPhysicalStudio, studioName, studioDescription, studioAddress, studioHours, mapLink, faqs
+        name,
+        bio,
+        specialty1,
+        specialty2,
+        specialty3,
+        isAvailable,
+        whatsapp,
+        loginEmail,
+        customPassword,
+        instagram,
+        facebook,
+        tiktok,
+        avatarUrl,
+        bannerUrl,
+        hasPhysicalStudio,
+        studioName,
+        studioDescription,
+        studioAddress,
+        studioHours,
+        mapLink,
+        faqs
     };
     const currentDataStr = JSON.stringify(currentData);
-    const hasUnsavedChanges = initialDataStr !== '' && currentDataStr !== initialDataStr;
-    if (hasUnsavedChanges) {
-      console.log('UNSAVED CHANGES DETECTED:');
-      console.log('Initial:', initialDataStr);
-      console.log('Current:', currentDataStr);
+    let hasUnsavedChanges = false;
+    if (initialDataStr !== '') {
+        try {
+            const initialData = JSON.parse(initialDataStr);
+            for (const key in currentData) {
+                if (JSON.stringify(currentData[key]) !== JSON.stringify(initialData[key])) {
+                    hasUnsavedChanges = true;
+                    break;
+                }
+            }
+        } catch(e) {}
     }
 
     const handleSaveAll = () => {

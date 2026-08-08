@@ -638,7 +638,7 @@ export default function Profile() {
   
 
   return (
-    <div className="bg-background text-on-background font-body-md selection:bg-primary selection:text-on-primary min-h-screen">
+    <div className={`bg-background text-on-background font-body-md selection:bg-primary selection:text-on-primary min-h-screen ${artistData?.theme === 'pink_neon' ? 'theme-pink-neon' : ''} ${artistData?.theme === 'minimal_clean' ? 'theme-minimal-clean' : ''} ${artistData?.theme === 'cyber_neon' ? 'theme-cyber-neon' : ''}`}>
       <Helmet>
         <title>{artistData?.displayName ? `${artistData.displayName} - Turnos Tattoo` : 'Perfil de Artista - Turnos Tattoo'}</title>
         <meta name="description" content={artistData?.bio || defaultBio} />
@@ -650,8 +650,8 @@ export default function Profile() {
         <link rel="apple-touch-icon" href={defaultAvatar} />
       </Helmet>
       <main className="pb-8 md:pb-16">
-        <div className="top-0 left-0 z-40 px-3 py-1.5 bg-black/60 backdrop-blur-md fixed">
-          <span className="font-label-md text-label-md font-extrabold text-on-surface uppercase tracking-tighter">Turnos <span className="text-primary">Tattoo</span></span>
+        <div className="top-0 left-0 z-40 px-3 py-1 bg-black/30 backdrop-blur-sm fixed rounded-br-lg border-b border-r border-white/5 profile-logo-container">
+          <span className="text-[10px] font-medium text-white/70 uppercase tracking-widest profile-logo-text drop-shadow-md">Turnos <span className="text-primary/80 profile-logo-primary">Tattoo</span></span>
         </div>
         {/* Banner Section */}
         <section className="relative w-full h-64 md:h-96 overflow-hidden bg-surface-container">
@@ -663,15 +663,15 @@ export default function Profile() {
              loading="eager"
           />
           {/* Filtro oscuro para no perder la estética con fotos claras */}
-          <div className="absolute inset-0 bg-black/40"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-black/50 to-transparent"></div>
+          <div className="absolute inset-0 bg-black/40 banner-overlay-1"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-black/50 to-transparent banner-overlay-2"></div>
         </section>
 
         {/* Profile Header Section */}
         <section className="relative px-gutter -mt-12 md:-mt-20 flex flex-col items-center text-center z-10">
           {/* Profile Photo */}
           <div className="relative p-1 bg-background rounded-full mb-2">
-            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-primary">
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-primary profile-photo-container">
               <OptimizedImage className="w-full h-full object-cover" alt="Artist profile" highResUrl={defaultAvatar} useIntersectionObserver={false} loading="eager" />
             </div>
           </div>
@@ -689,7 +689,7 @@ export default function Profile() {
             return (
               <div className={containerClass}>
                 {tags.map((tag: string, index: number) => (
-                  <span key={index} className="px-2 py-1 md:px-3 md:py-1 bg-surface-container border border-outline-variant font-caption text-[9px] md:text-xs text-on-surface-variant uppercase tracking-widest whitespace-nowrap truncate max-w-[32%] md:max-w-none text-center flex-1 md:flex-none">
+                  <span key={index} className="px-2 py-1 md:px-3 md:py-1 bg-surface-container border border-outline-variant specialty-badge font-caption text-[9px] md:text-xs text-on-surface-variant uppercase tracking-widest whitespace-nowrap truncate max-w-[32%] md:max-w-none text-center flex-1 md:flex-none">
                     {tag}
                   </span>
                 ))}
@@ -757,7 +757,7 @@ export default function Profile() {
         {/* Portfolio Section */}
         <div className="flex justify-center mb-8 px-gutter mt-4 relative z-30">
           <button type="button"
-            className={`w-full max-w-md py-3 px-6 font-label-md text-label-md font-extrabold uppercase tracking-widest shadow-2xl transition-all duration-300 transform flex items-center justify-center gap-4 relative overflow-hidden bg-primary text-on-primary hover:bg-[#065f46] active:scale-95 shimmer-btn`}
+            className={`w-full max-w-md py-3 px-6 font-label-md text-label-md font-extrabold uppercase tracking-widest shadow-2xl transition-all duration-300 transform flex items-center justify-center gap-4 relative overflow-hidden bg-primary text-on-primary hover:bg-[#065f46] active:scale-95 shimmer-btn primary-action-btn`}
             style={{ touchAction: 'manipulation' }}
             onClick={() => {
               if (artistData?.isAvailable !== false) {
@@ -790,10 +790,10 @@ export default function Profile() {
               {filterCategories.map(cat => (
                 <button type="button"
                   key={cat}
-                  onClick={() => { setActiveCategory(cat); setShowMore(false); }}
-                  className={`whitespace-nowrap px-4 py-2 border rounded font-label-md text-[10px] md:text-xs uppercase tracking-widest font-bold transition-colors ${
+                  onClick={() => { setActiveCategory(cat); }}
+                  className={`whitespace-nowrap px-4 py-2 border rounded font-label-md text-[10px] md:text-xs uppercase tracking-widest font-bold transition-colors category-filter-btn ${
                     activeCategory === cat 
-                      ? 'bg-primary/20 text-primary border-primary/30' 
+                      ? 'bg-primary/20 text-primary border-primary/30 active' 
                       : 'border-outline-variant/30 text-on-surface-variant hover:border-primary/30 hover:text-primary'
                   }`}
                 >
@@ -822,7 +822,7 @@ export default function Profile() {
           <div className="grid grid-cols-3 gap-2">
 
             {visibleTattoos.map((tattoo, index) => (
-              <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 ${index === 0 ? 'interactive-cue' : ''}`}>
+              <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 tattoo-card ${index === 0 ? 'interactive-cue' : ''}`}>
                 <OptimizedImage 
                   className="w-full h-full grayscale hover:grayscale-0 transition-all duration-700 cursor-pointer object-cover aspect-square" 
                   alt={tattoo.alt} 
@@ -863,7 +863,7 @@ export default function Profile() {
         {artistData?.hasPhysicalStudio !== false && (
           <section className="mt-section-gap px-gutter max-w-container-max mx-auto ">
             <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="text-left">
+              <div className="text-left info-section">
                 <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4 font-bold uppercase tracking-tight">{artistData?.studioName || "El Estudio"}</h2>
                 <p className="font-body-lg text-body-lg text-on-surface-variant mb-8">{artistData?.studioDescription || "Ubicado en el corazón del distrito de diseño, nuestro espacio combina la precisión técnica con una atmósfera de galería de arte."}</p>
                 <div className="space-y-6">
@@ -902,7 +902,7 @@ export default function Profile() {
         )}
 
         <section className="mt-section-gap mb-section-gap px-gutter max-w-container-max mx-auto ">
-          <div className="bg-surface-container p-8 border border-outline-variant/20 flex flex-col gap-8 items-center text-center">
+          <div className="bg-surface-container p-8 border border-outline-variant/20 flex flex-col gap-8 items-center text-center info-section">
             <OptimizedImage className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-primary shrink-0" alt={artistData?.displayName || "Artist"} highResUrl={defaultAvatar} useIntersectionObserver={true} />
             <div>
               <h2 className="font-headline-md text-headline-md text-on-surface mb-4 font-bold uppercase tracking-tight">Sobre Mí</h2>
@@ -919,7 +919,7 @@ export default function Profile() {
                 <details key={index} className="bg-surface-container border border-outline-variant/30 group">
                 <summary className="font-label-md text-on-surface uppercase font-bold p-6 cursor-pointer flex justify-between items-center list-none">
                     {faq.question}
-                    <span className="material-symbols-outlined text-primary group-open:rotate-180 transition-transform">expand_more</span>
+                    <span className="material-symbols-outlined text-on-surface-variant group-open:text-primary group-open:rotate-180 transition-transform">expand_more</span>
                 </summary>
                 <div className="p-6 pt-0 text-on-surface-variant font-body-md">
                     <p>{faq.answer}</p>
@@ -959,9 +959,9 @@ export default function Profile() {
 
       {/* Modal */}
       {modalOpen && visibleTattoos.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center p-2 md:p-8 transition-opacity duration-300 overscroll-none">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center p-2 md:p-8 transition-opacity duration-300 overscroll-none modal-backdrop">
           <div className="absolute inset-0 z-0 cursor-pointer" onClick={closeModal}></div>
-          <div className="relative z-10 w-full max-w-6xl h-[100dvh] md:h-auto md:max-h-[95vh] md:min-h-[80vh] flex flex-col bg-surface-container border border-outline-variant/20 shadow-2xl transform transition-transform duration-300">
+          <div className="relative z-10 w-full max-w-6xl h-[100dvh] md:h-auto md:max-h-[95vh] md:min-h-[80vh] flex flex-col bg-surface-container border border-outline-variant/20 shadow-2xl transform transition-transform duration-300 modal-container">
             <button type="button" className="absolute top-1 right-1 md:top-3 md:right-3 z-[110] p-1 md:p-1.5 text-on-surface hover:text-primary transition-colors duration-200 focus:outline-none bg-surface/50 backdrop-blur-sm rounded-lg" onClick={closeModal}>
               <span className="material-symbols-outlined text-lg md:text-xl">close</span>
             </button>
@@ -971,7 +971,7 @@ export default function Profile() {
               <div className="w-full h-[45vh] md:h-auto md:w-2/3 bg-black flex items-center justify-center p-2 md:p-4 relative overflow-hidden flex-shrink-0 group">
                 {/* Navigation Left */}
                 <button type="button"
-                  className="hidden md:flex absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-[110] w-10 h-10 md:w-12 md:h-12 items-center justify-center p-0 text-white/90 bg-black/40 md:bg-black/20 hover:bg-black/70 border border-white/20 backdrop-blur-md rounded-full transition-all duration-300 focus:outline-none hover:scale-110 shadow-lg md:opacity-0 md:group-hover:opacity-100" 
+                  className="hidden md:flex absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-[110] w-10 h-10 md:w-12 md:h-12 items-center justify-center p-0 text-white/90 bg-black/40 md:bg-black/20 hover:bg-black/70 border border-white/20 backdrop-blur-md rounded-full transition-all duration-300 focus:outline-none hover:scale-110 shadow-lg md:opacity-0 md:group-hover:opacity-100 modal-nav-arrow" 
                   onClick={prevPhoto}
                 >
                   <span className="material-symbols-outlined text-2xl md:text-3xl">chevron_left</span>
@@ -979,7 +979,7 @@ export default function Profile() {
                 
                 {/* Navigation Right */}
                 <button type="button"
-                  className="hidden md:flex absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-[110] w-10 h-10 md:w-12 md:h-12 items-center justify-center p-0 text-white/90 bg-black/40 md:bg-black/20 hover:bg-black/70 border border-white/20 backdrop-blur-md rounded-full transition-all duration-300 focus:outline-none hover:scale-110 shadow-lg md:opacity-0 md:group-hover:opacity-100" 
+                  className="hidden md:flex absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-[110] w-10 h-10 md:w-12 md:h-12 items-center justify-center p-0 text-white/90 bg-black/40 md:bg-black/20 hover:bg-black/70 border border-white/20 backdrop-blur-md rounded-full transition-all duration-300 focus:outline-none hover:scale-110 shadow-lg md:opacity-0 md:group-hover:opacity-100 modal-nav-arrow" 
                   onClick={nextPhoto}
                 >
                   <span className="material-symbols-outlined text-2xl md:text-3xl">chevron_right</span>
@@ -1048,24 +1048,24 @@ export default function Profile() {
                     {(visibleTattoos[activeTattooIndex].hours || visibleTattoos[activeTattooIndex].sessions || visibleTattoos[activeTattooIndex].size) && (
                       <div className="flex justify-center md:justify-center flex-wrap gap-4 md:gap-6 w-full border-t border-outline-variant/10 pt-4 md:pt-6">
                         {visibleTattoos[activeTattooIndex].hours && (
-                          <div className="flex flex-col items-center justify-center text-center py-1.5 px-2 md:px-4 border border-outline-variant/10 bg-surface-container-high rounded-lg transition-colors hover:bg-surface-container-highest min-w-[80px] md:min-w-[95px]">
-                            <span className="material-symbols-outlined text-primary mb-0.5 text-base">schedule</span>
-                            <span className="text-[9px] font-bold tracking-widest text-on-surface-variant/70 uppercase">Horas</span>
-                            <span className="font-bold text-on-surface text-[11px] mt-0.5">{visibleTattoos[activeTattooIndex].hours}h</span>
+                          <div className="flex flex-col items-center justify-center text-center py-2 px-3 md:px-4 border border-white/10 bg-black/40 backdrop-blur-md rounded-lg transition-colors hover:bg-black/60 min-w-[80px] md:min-w-[95px] tech-stat-card shadow-xl">
+                            <span className="material-symbols-outlined text-primary mb-0.5 text-base stat-icon">schedule</span>
+                            <span className="text-[9px] font-bold tracking-widest text-white/70 uppercase">Horas</span>
+                            <span className="font-bold text-white text-[11px] mt-0.5">{visibleTattoos[activeTattooIndex].hours}h</span>
                           </div>
                         )}
                         {visibleTattoos[activeTattooIndex].sessions && (
-                          <div className="flex flex-col items-center justify-center text-center py-1.5 px-2 md:px-4 border border-outline-variant/10 bg-surface-container-high rounded-lg transition-colors hover:bg-surface-container-highest min-w-[80px] md:min-w-[95px]">
-                            <span className="material-symbols-outlined text-primary mb-0.5 text-base">layers</span>
-                            <span className="text-[9px] font-bold tracking-widest text-on-surface-variant/70 uppercase">Sesiones</span>
-                            <span className="font-bold text-on-surface text-[11px] mt-0.5">{visibleTattoos[activeTattooIndex].sessions}</span>
+                          <div className="flex flex-col items-center justify-center text-center py-2 px-3 md:px-4 border border-white/10 bg-black/40 backdrop-blur-md rounded-lg transition-colors hover:bg-black/60 min-w-[80px] md:min-w-[95px] tech-stat-card shadow-xl">
+                            <span className="material-symbols-outlined text-primary mb-0.5 text-base stat-icon">layers</span>
+                            <span className="text-[9px] font-bold tracking-widest text-white/70 uppercase">Sesiones</span>
+                            <span className="font-bold text-white text-[11px] mt-0.5">{visibleTattoos[activeTattooIndex].sessions}</span>
                           </div>
                         )}
                         {visibleTattoos[activeTattooIndex].size && (
-                          <div className="flex flex-col items-center justify-center text-center py-1.5 px-2 md:px-4 border border-outline-variant/10 bg-surface-container-high rounded-lg transition-colors hover:bg-surface-container-highest min-w-[80px] md:min-w-[95px]">
-                            <span className="material-symbols-outlined text-primary mb-0.5 text-base">straighten</span>
-                            <span className="text-[9px] font-bold tracking-widest text-on-surface-variant/70 uppercase">Tamaño</span>
-                            <span className="font-bold text-on-surface text-[11px] mt-0.5">{visibleTattoos[activeTattooIndex].size}</span>
+                          <div className="flex flex-col items-center justify-center text-center py-2 px-3 md:px-4 border border-white/10 bg-black/40 backdrop-blur-md rounded-lg transition-colors hover:bg-black/60 min-w-[80px] md:min-w-[95px] tech-stat-card shadow-xl">
+                            <span className="material-symbols-outlined text-primary mb-0.5 text-base stat-icon">straighten</span>
+                            <span className="text-[9px] font-bold tracking-widest text-white/70 uppercase">Tamaño</span>
+                            <span className="font-bold text-white text-[11px] mt-0.5">{visibleTattoos[activeTattooIndex].size}</span>
                           </div>
                         )}
                       </div>
@@ -1073,7 +1073,7 @@ export default function Profile() {
 
                     <div className="mt-0">
                       <button type="button"
-                        className="w-full py-3 bg-primary text-on-primary font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-[#065f46] transition-all duration-300 group shadow-lg animate-button-pop"
+                        className="w-full py-3 bg-primary text-on-primary font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-[#065f46] transition-all duration-300 group shadow-lg animate-button-pop primary-action-btn"
                         onClick={() => {
                            if (artistData?.isAvailable !== false) {
                                if (artistData?.whatsapp) {

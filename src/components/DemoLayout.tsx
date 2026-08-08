@@ -24,6 +24,27 @@ export default function DemoLayout
     const [animateHighlight, setAnimateHighlight] = useState(false);
 
     const [waitlistCount, setWaitlistCount] = useState(3);
+    const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+    const [theme, setTheme] = useState('default');
+
+    const handleSaveTheme = async (newTheme) => {
+        setTheme(newTheme);
+        const demoUserId = authUid || localStorage.getItem('demoUserId');
+        if (demoUserId) {
+            try {
+                await updateDoc(doc(db, 'users', demoUserId), { theme: newTheme });
+                const cacheKey = 'demoArtistData_' + demoUserId;
+                const existingCache = localStorage.getItem(cacheKey);
+                if (existingCache) {
+                    const parsed = JSON.parse(existingCache);
+                    parsed.theme = newTheme;
+                    localStorage.setItem(cacheKey, JSON.stringify(parsed));
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    };
 
     useEffect(() => {
         let unsubscribe = () => {};
@@ -39,6 +60,7 @@ export default function DemoLayout
                         if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);
                         if (data.displayName) setArtistName(data.displayName);
                         if (data.bio) setArtistBio(data.bio);
+                        if (data.theme) setTheme(data.theme);
                     }
                 }).catch(e => console.error(e));
 
@@ -364,7 +386,7 @@ export default function DemoLayout
                     <button onClick={() => handleNav(currentUserTag ? '/' + (currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag) : (authUid ? '/' + authUid : '/@victor_ink'))} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-2 py-1.5 rounded hover:text-primary border border-outline-variant/30 transition-all mr-1">
                         Ver Perfil
                     </button>
-                    <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">
+                    <button onClick={() => setIsThemeModalOpen(true)} className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">
                         <span className="material-symbols-outlined text-[20px]">palette</span>
                     </button>
                     <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95 relative" onClick={() => setIsNotificationsOpen(true)}>
@@ -392,7 +414,7 @@ export default function DemoLayout
                         </button>
                     </div>
                     <div className="flex-1 flex items-center justify-end space-x-6">
-                        <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">
+                        <button onClick={() => setIsThemeModalOpen(true)} className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">
                             <span className="material-symbols-outlined">palette</span>
                         </button>
                         <button className="text-on-surface-variant hover:text-primary transition-all active:scale-95 relative" onClick={() => setIsNotificationsOpen(true)}>
@@ -624,6 +646,87 @@ export default function DemoLayout
                 </div>
             )}
 
+
+            {/* Theme Modal in Layout */}
+            {isThemeModalOpen && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setIsThemeModalOpen(false)}>
+                    <div className="bg-surface-container border border-outline-variant w-full max-w-4xl p-6 relative flex flex-col gap-6 overflow-y-auto max-h-[90vh] rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <button type="button" onClick={() => setIsThemeModalOpen(false)} className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10 p-1 bg-black/40 rounded-full">
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
+                        <div>
+                            <h2 className="font-headline-md text-xl font-bold mb-2">Estilo de Diseño</h2>
+                            <p className="text-sm text-gray-400">Selecciona la apariencia visual de tu perfil público. Los cambios se guardarán automáticamente.</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                            <div 
+                                onClick={() => handleSaveTheme('default')}
+                                className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col gap-3 transition-all ${theme === 'default' ? 'border-primary bg-primary/10' : 'border-outline-variant hover:border-gray-500 bg-surface'}`}
+                            >
+                                <div className="h-16 md:h-24 rounded-lg bg-surface-variant flex items-center justify-center border border-outline-variant overflow-hidden relative">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent"></div>
+                                    <span className="material-symbols-outlined text-primary text-2xl md:text-3xl z-10">water_drop</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold">Predeterminado</h3>
+                                    <p className="text-xs text-gray-400 mt-1">Verde esmeralda, elegante y profesional.</p>
+                                </div>
+                                {theme === 'default' && <div className="absolute top-2 right-2 text-primary"><span className="material-symbols-outlined text-sm">check_circle</span></div>}
+                            </div>
+
+                            <div 
+                                onClick={() => handleSaveTheme('pink_neon')}
+                                className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col gap-3 transition-all ${theme === 'pink_neon' ? 'border-[#FF2A85] bg-[#FF2A85]/10' : 'border-outline-variant hover:border-gray-500 bg-surface'}`}
+                            >
+                                <div className="h-16 md:h-24 rounded-lg bg-surface-variant flex items-center justify-center border border-outline-variant overflow-hidden relative">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-[#FF2A85]/20 to-transparent"></div>
+                                    <span className="material-symbols-outlined text-[#FF2A85] text-2xl md:text-3xl z-10">bolt</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold">Neo-Traditional Pink</h3>
+                                    <p className="text-xs text-gray-400 mt-1">Rosa fucsia neón, vibrante y llamativo.</p>
+                                </div>
+                                {theme === 'pink_neon' && <div className="absolute top-2 right-2 text-[#FF2A85]"><span className="material-symbols-outlined text-sm">check_circle</span></div>}
+                            </div>
+                            <div 
+                                onClick={() => handleSaveTheme('minimal_clean')}
+                                className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col gap-3 transition-all ${theme === 'minimal_clean' ? 'border-primary bg-primary/10' : 'border-outline-variant hover:border-gray-500 bg-surface'}`}
+                            >
+                                <div className="h-16 md:h-24 rounded-lg bg-surface-variant flex items-center justify-center border border-outline-variant overflow-hidden relative">
+                                    <div className="absolute inset-0 bg-[#F9F9FB]"></div>
+                                    <span className="material-symbols-outlined text-[#111111] text-2xl md:text-3xl z-10">water_drop</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-on-surface">Minimal Clean</h3>
+                                    <p className="text-xs text-gray-400 mt-1">Blanco puro, tipografía fina, profesional y elegante.</p>
+                                </div>
+                                {theme === 'minimal_clean' && <div className="absolute top-2 right-2 text-primary"><span className="material-symbols-outlined text-sm">check_circle</span></div>}
+                            </div>
+                            <div 
+                                onClick={() => handleSaveTheme('cyber_neon')}
+                                className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col gap-3 transition-all ${theme === 'cyber_neon' ? 'border-[#00F0FF] bg-[#00F0FF]/10' : 'border-outline-variant hover:border-gray-500 bg-surface'}`}
+                            >
+                                <div className="h-16 md:h-24 rounded-lg bg-[#0A0A0C] flex items-center justify-center border border-outline-variant overflow-hidden relative">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-[#00F0FF]/20 to-transparent"></div>
+                                    <span className="material-symbols-outlined text-[#00F0FF] text-2xl md:text-3xl z-10" style={{textShadow: '0 0 10px rgba(0,240,255,0.8)'}}>memory</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-on-surface">Cyber Neon</h3>
+                                    <p className="text-xs text-gray-400 mt-1">Negro profundo y cian eléctrico. Estética futurista.</p>
+                                </div>
+                                {theme === 'cyber_neon' && <div className="absolute top-2 right-2 text-[#00F0FF]"><span className="material-symbols-outlined text-sm">check_circle</span></div>}
+                            </div>
+
+
+                        </div>
+
+                        <div className="flex justify-end mt-2">
+                            <button onClick={() => setIsThemeModalOpen(false)} className="px-6 py-2 bg-surface-variant text-white font-bold hover:bg-gray-700 transition-colors rounded-lg">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

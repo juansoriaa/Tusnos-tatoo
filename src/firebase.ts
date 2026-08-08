@@ -22,8 +22,7 @@ export const auth = getAuth(app);
 let firestoreDb;
 try {
   firestoreDb = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-    localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+        localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
   }, "ai-studio-e02f872d-9aaa-41a2-8b00-28bd5eb4d807");
 } catch (e) {
   firestoreDb = getFirestore(app, "ai-studio-e02f872d-9aaa-41a2-8b00-28bd5eb4d807");

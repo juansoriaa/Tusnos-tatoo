@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { OptimizedImage } from './OptimizedImage';
 import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged, db } from '../firebase';
-import { collection, query, where, getDocs, doc, getDoc, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, orderBy, limit, setDoc, serverTimestamp } from 'firebase/firestore';
 
 
 const fallbackPhotos = [
@@ -240,8 +240,6 @@ export default function Landing() {
     }
 
     try {
-      const { collection, query, where, getDocs, doc, setDoc, serverTimestamp } = await import('firebase/firestore');
-      
       let loginEmail = trimEmail;
       let userDoc = null;
       
