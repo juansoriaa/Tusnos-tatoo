@@ -355,7 +355,17 @@
     color: white;
     border-color: #FF2A85;
   }
-  .theme-pink-neon .category-filter-btn {
+  .theme-pink-neon .social-btn {
+  border-color: rgba(255, 42, 133, 0.5);
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 42, 133, 0.05);
+}
+.theme-pink-neon .social-btn:hover {
+  background: rgba(255, 42, 133, 0.2);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 42, 133, 0.3);
+}
+.theme-pink-neon .category-filter-btn {
     border-color: rgba(255, 42, 133, 0.4);
   }
 
@@ -442,7 +452,16 @@
   /* ========================================================
      ESTILO 1: Minimal Clean & Professional (Profile View)
      ======================================================== */
-  .theme-minimal-clean .profile-photo-container {
+  .theme-minimal-clean .social-btn {
+  border-color: rgba(17, 17, 17, 0.2);
+  color: #111111;
+  background: rgba(17, 17, 17, 0.03);
+}
+.theme-minimal-clean .social-btn:hover {
+  background: rgba(17, 17, 17, 0.08);
+  color: #111111 !important;
+}
+.theme-minimal-clean .profile-photo-container {
     border: 1px solid #E5E5EA !important;
     box-shadow: none !important;
   }
@@ -541,6 +560,12 @@
     background: #FFFFFF !important;
     border: 1px solid #EFEFF4 !important;
   }
+  .theme-minimal-clean .tech-stat-card span.text-white {
+    color: #111111 !important;
+  }
+  .theme-minimal-clean .tech-stat-card span.text-white\/70 {
+    color: #666666 !important;
+  }
   .theme-minimal-clean .stat-icon {
     color: #111111 !important;
     font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24 !important; /* thin clean icon */
@@ -564,8 +589,9 @@
 
 @layer utilities {
   .theme-cyber-neon {
-    --color-primary: #00F0FF;
-    --color-primary-container: #0077FF;
+    font-family: 'Space Grotesk', 'Syne', 'Inter', sans-serif;
+    --color-primary: #FF1E38;
+    --color-primary-container: #B91C1C;
     --color-background: #0A0A0C;
     --color-surface-container-lowest: #0A0A0C;
     --color-deep-black: #0A0A0C;
@@ -588,69 +614,79 @@
   .theme-minimal-clean .profile-logo-primary { color: rgba(255,255,255,0.8) !important; }
 
   /* ========================================================
-     ESTILO 2: Cyber Dark & Electric Neon (Profile View)
+     ESTILO 2: Dark Crimson & Electric Underground (Profile View)
      ======================================================== */
   .theme-cyber-neon .profile-photo-container {
-    border: 1px solid #00F0FF !important;
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4) !important;
+    border: 1px solid #FF1E38 !important;
+    box-shadow: 0 0 15px rgba(255, 30, 56, 0.4) !important;
   }
 
   .theme-cyber-neon h1, .theme-cyber-neon h2, .theme-cyber-neon h3 {
-    text-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+    text-shadow: 0 0 10px rgba(255, 30, 56, 0.2);
     font-weight: 700 !important;
     text-transform: uppercase;
   }
 
   .theme-cyber-neon .specialty-badge {
-    background: rgba(0, 240, 255, 0.05) !important;
-    color: #00F0FF !important;
-    border: 1px solid #00F0FF !important;
-    border-radius: 4px !important;
-    box-shadow: inset 0 0 5px rgba(0, 240, 255, 0.2);
+    background: rgba(255, 30, 56, 0.05) !important;
+    color: #FF1E38 !important;
+    border: 1px solid #FF1E38 !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 0 5px rgba(255, 30, 56, 0.2);
   }
 
   .theme-cyber-neon .specialty-badge.active,
   .theme-cyber-neon .category-filter-btn.active {
-    background: #00F0FF !important;
-    color: #000000 !important;
-    border: 1px solid #00F0FF !important;
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.6) !important;
+    background: #FF1E38 !important;
+    color: #FFFFFF !important;
+    border: 1px solid #FF1E38 !important;
+    box-shadow: 0 0 10px rgba(255, 30, 56, 0.6) !important;
   }
 
-  .theme-cyber-neon .category-filter-btn {
-    border: 1px solid rgba(0, 240, 255, 0.3) !important;
-    color: #00F0FF !important;
+  .theme-cyber-neon .social-btn {
+  border-color: rgba(255, 30, 56, 0.5);
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 30, 56, 0.05);
+}
+.theme-cyber-neon .social-btn:hover {
+  background: rgba(255, 30, 56, 0.2);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 30, 56, 0.3);
+}
+.theme-cyber-neon .category-filter-btn {
+    border: 1px solid rgba(255, 30, 56, 0.3) !important;
+    color: #FF1E38 !important;
     background: transparent !important;
   }
 
   .theme-cyber-neon .primary-action-btn {
-    background: linear-gradient(135deg, #00F0FF 0%, #0077FF 100%) !important;
+    background: linear-gradient(135deg, #FF1E38 0%, #B91C1C 100%) !important;
     color: #FFFFFF !important;
-    border: none !important;
-    border-radius: 4px !important;
+    border: 1px solid #FF1E38 !important;
+    border-radius: 12px !important;
     font-weight: 800 !important;
     text-transform: uppercase;
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.3) !important;
+    box-shadow: 0 0 15px rgba(255, 30, 56, 0.3) !important;
     transition: all 0.3s ease;
   }
 
   .theme-cyber-neon .primary-action-btn:hover,
   .theme-cyber-neon .primary-action-btn:active {
-    box-shadow: 0 0 25px rgba(0, 240, 255, 0.8) !important;
+    box-shadow: 0 0 25px rgba(255, 30, 56, 0.8) !important;
     transform: scale(1.02) !important;
   }
 
   /* Grilla de obras */
   .theme-cyber-neon .tattoo-card {
-    border-radius: 4px !important;
+    border-radius: 12px !important;
     overflow: hidden !important;
-    border: 1px solid rgba(0, 240, 255, 0.15) !important;
+    border: 1px solid rgba(255, 30, 56, 0.15) !important;
     transition: all 0.3s ease;
   }
   
   .theme-cyber-neon .tattoo-card:hover {
-    border-color: rgba(0, 240, 255, 0.5) !important;
-    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2) !important;
+    border-color: rgba(255, 30, 56, 0.5) !important;
+    box-shadow: 0 0 15px rgba(255, 30, 56, 0.2) !important;
   }
 
   .theme-cyber-neon .tattoo-card::before {
@@ -661,14 +697,14 @@
   .theme-cyber-neon .info-section {
     background: rgba(255, 255, 255, 0.03) !important;
     border: none !important;
-    border-left: 3px solid #00F0FF !important;
+    border-left: 3px solid #FF1E38 !important;
     border-radius: 0 8px 8px 0 !important;
     padding: 2rem !important;
     box-shadow: none !important;
   }
 
   .theme-cyber-neon .info-section details {
-    border-bottom: 1px solid rgba(0, 240, 255, 0.1) !important;
+    border-bottom: 1px solid rgba(255, 30, 56, 0.1) !important;
     border: none;
     border-radius: 0;
   }
@@ -678,7 +714,7 @@
   }
   
   .theme-cyber-neon .info-section details[open] summary {
-     color: #00F0FF !important;
+     color: #FF1E38 !important;
   }
 
   /* Modal de Detalle */
@@ -690,23 +726,23 @@
   
   .theme-cyber-neon .modal-container {
      background: #0A0A0C !important;
-     border: 1px solid rgba(0, 240, 255, 0.2) !important;
-     box-shadow: 0 0 40px rgba(0, 240, 255, 0.1) !important;
+     border: 1px solid rgba(255, 30, 56, 0.2) !important;
+     box-shadow: 0 0 40px rgba(255, 30, 56, 0.1) !important;
   }
 
   .theme-cyber-neon .modal-nav-arrow {
     background: #0A0A0C !important;
-    border: 1px solid rgba(0, 240, 255, 0.3) !important;
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2) !important;
+    border: 1px solid rgba(255, 30, 56, 0.3) !important;
+    box-shadow: 0 0 10px rgba(255, 30, 56, 0.2) !important;
   }
 
   .theme-cyber-neon .modal-nav-arrow span {
-    color: #00F0FF !important;
-    text-shadow: 0 0 5px rgba(0, 240, 255, 0.5) !important;
+    color: #FF1E38 !important;
+    text-shadow: 0 0 5px rgba(255, 30, 56, 0.5) !important;
   }
 
   .theme-cyber-neon .stat-icon {
-    color: #00F0FF !important;
-    filter: drop-shadow(0 0 3px rgba(0, 240, 255, 0.6));
+    color: #FF1E38 !important;
+    filter: drop-shadow(0 0 3px rgba(255, 30, 56, 0.6));
   }
 }

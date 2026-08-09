@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { OptimizedImage } from './OptimizedImage';
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, startAfter } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, startAfter, onSnapshot } from 'firebase/firestore';
 import { db, auth, onAuthStateChanged } from '../firebase';
 import { globalPreloadCache } from '../lib/cache';
 
@@ -65,6 +65,36 @@ const DEMO_FALLBACK_PHOTOS = [
       hours: 8,
       sessions: 2,
       size: "15x15 cm"
+    },
+    {
+      id: "fallback_6",
+      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuBiWtwSf0Fh3AWm01LAlMfj3JGoOdHldaVkVIRDRpbavMRKQEt_SI7cvqZB7R56dQt7nuInHJM7V0a74racFxJT0E12v57KMBnC09rQOtg5YVpvOdglwy8KnhHl1H0tFedvuBum6LD2ADyKGFqdnQ3lUJqIhOZj6bJPzlLI4S7L2n9tqn9wZ6t8smG60s2wvnHM3NabsjD_rMrUmix943Tdd_CAZDTFaQeq5FEq8IXpsVkSLkJ24K0VpV9R4GRF2SDH8cwWPwwNjXI",
+      alt: "Intricate mandala design",
+      title: "Mandala Dotwork",
+      categories: ["Dotwork", "Minimalista"],
+      hours: 5,
+      sessions: 1,
+      size: "10x10 cm"
+    },
+    {
+      id: "fallback_7",
+      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ",
+      alt: "Geometric wolf tattoo",
+      title: "Geometric Wolf",
+      categories: ["Geométrico", "Blackwork"],
+      hours: 6,
+      sessions: 1,
+      size: "12x15 cm"
+    },
+    {
+      id: "fallback_8",
+      src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE9qEOTq3DlR_Z_PI95eeZBU5YHIAzEqTN6zzltLD_41wX6e4LCHu8sREZZ4N_qV-XW271u6bCjyo14IHISQRVRhCSBJdX_ICJvg9EM-iYGcv1owFVPqatY3-0uESdozTCTcvTib8fe2Um_CI2L6mxqWeMg8IoYm0FYaTzlqISISzi52HOylwmgk_IxCrKp2vueZ90nk1bGHhgH3ybo0PI5u7VOpkB_kQTPzrRjD2-N3hC-9IB-OKvuic1rp7_8b4w562jI2tcCKA",
+      alt: "Traditional snake and dagger",
+      title: "Snake & Dagger",
+      categories: ["Tradicional"],
+      hours: 4,
+      sessions: 1,
+      size: "10x18 cm"
     }
 ];
 
@@ -163,6 +193,11 @@ export default function Profile() {
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(6);
+  
+  useEffect(() => {
+    setVisibleCount(6);
+  }, [activeCategory]);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeTattooIndex, setActiveTattooIndex] = useState(0);
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
@@ -205,9 +240,11 @@ export default function Profile() {
 
   useEffect(() => {
     let authUnsub = () => {};
+    let profileUnsub = () => {};
+    let tattoosUnsub = () => {};
     let isMounted = true;
     
-    const loadProfileData = async (authUid: string | undefined) => {
+        const loadProfileData = async (authUid: string | undefined) => {
         let targetId = id;
         if (!targetId) targetId = authUid;
         if (!targetId) targetId = localStorage.getItem('demoUserId');
@@ -218,161 +255,118 @@ export default function Profile() {
             if (allTattoos.length === 0) setIsTattoosLoading(true);
             
             let artistUid = targetId;
-            let currentArtistData = null;
             let currentArtistDocId = null;
 
             // Resolve ID if it's a tag
             if (artistUid.startsWith('@') || artistUid.length < 20) {
                 let tag = artistUid.startsWith('@') ? artistUid : '@' + artistUid;
+                
                 const q = query(collection(db, 'users'), where('userTag', '==', tag));
                 const snap = await getDocs(q);
                 if (!snap.empty) {
                     artistUid = snap.docs[0].id;
-                    currentArtistData = snap.docs[0].data();
                     currentArtistDocId = artistUid;
                 }
-            } 
-            
-            // Now that we definitely have the UID, we can fetch BOTH artist profile (if we don't have it yet) and tattoos in parallel using Promise.all!
-            const promises = [];
-            
-            if (!currentArtistData && artistUid !== 'anonymous_demo' && artistUid !== 'demo') {
-                promises.push(getDoc(doc(db, 'users', artistUid)).then(docSnap => {
-                    if (docSnap.exists()) {
-                        currentArtistData = docSnap.data();
-                        currentArtistDocId = docSnap.id;
-                    }
-                }));
-            } else {
-                promises.push(Promise.resolve());
             }
+            if (!currentArtistDocId) currentArtistDocId = artistUid;
+            
+            if (currentArtistDocId && currentArtistDocId !== 'anonymous_demo' && currentArtistDocId !== 'demo') {
+                
+                
+                profileUnsub(); // clear previous
+                profileUnsub = onSnapshot(doc(db, 'users', currentArtistDocId), (docSnap) => {
+                    if (docSnap.exists() && isMounted) {
+                        const data = { ...docSnap.data(), uid: docSnap.id };
+                        
+                        // Prevent reverting to older theme if localStorage has a newer optimistic update
+                        const saved = localStorage.getItem('demoArtistData_' + currentArtistDocId);
+                        if (saved) {
+                            try {
+                                const parsed = JSON.parse(saved);
+                                // If the server doc has an older theme and we just updated it, prefer local.
+                                // Actually onSnapshot with includeMetadataChanges or just local cache handles this.
+                                // But to be safe:
+                                if (parsed.theme && !docSnap.metadata?.fromCache && (data as any).theme !== parsed.theme) {
+                                   // We'll just trust onSnapshot, local cache is always provided first with optimistic updates!
+                                }
+                            } catch(e) {}
+                        }
+                        
+                        setArtistData(data);
+                        globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], artistData: data };
+                        try {
+                            localStorage.setItem('demoArtistData_' + currentArtistDocId, JSON.stringify(data));
+                        } catch(e) {}
+                        setIsProfileLoading(false);
+                    }
+                }, (error) => {
+                    console.error(error);
+                    if (isMounted) setIsProfileLoading(false);
+                });
 
-
-            // Start Tattoos Query Independently
-            const fetchTattoos = async () => {
-                try {
-                    const qTattoos = query(
-                        collection(db, 'photos'),
-                        where('createdBy', '==', artistUid),
-                        orderBy('createdAt', 'desc'),
-                        limit(12)
-                    );
-                    const tattoosSnapshot = await getDocs(qTattoos);
+                tattoosUnsub();
+                const qTattoos = query(
+                    collection(db, 'photos'),
+                    where('createdBy', '==', currentArtistDocId),
+                    orderBy('createdAt', 'desc'),
+                    limit(12)
+                );
+                tattoosUnsub = onSnapshot(qTattoos, (snap) => {
                     if (isMounted) {
-                        if (tattoosSnapshot.docs.length > 0) {
-                            setLastDoc(tattoosSnapshot.docs[tattoosSnapshot.docs.length - 1]);
-                        }
-                        if (tattoosSnapshot.docs.length < 12) {
-                            setHasMore(false);
-                        }
-                        let finalPhotos: any[] = [];
-                        finalPhotos = tattoosSnapshot.docs.map(doc => {
-                            const data = doc.data();
+                        let finalPhotos: any[] = snap.docs.map(d => {
+                            const pData = d.data();
                             return {
-                                id: doc.id,
-                                src: data.url || data.imageUrl || data.src,
-                                previewUrl: data.previewUrl,
-                                thumbnailUrl: data.thumbnailUrl,
-                                alt: data.info || data.title,
-                                title: data.title || 'Foto de Tatuaje',
-                                categories: data.tags || data.categories || ['Portfolio'],
-                                filters: data.filters || [],
-                                hours: data.hours,
-                                sessions: data.sessions,
-                                size: data.size,
-                                pinnedOrder: data.pinnedOrder,
-                                originalFallbackId: data.originalFallbackId
+                                id: d.id,
+                                src: pData.url || pData.imageUrl || pData.src,
+                                previewUrl: pData.previewUrl,
+                                alt: pData.title || pData.description || "Tattoo photo",
+                                title: pData.title || "Tattoo",
+                                categories: pData.categories || pData.tags || ["Blackwork"],
+                                hours: pData.hours || null,
+                                sessions: pData.sessions || null,
+                                size: pData.size || null,
+                                originalFallbackId: pData.originalFallbackId || null
                             };
                         });
-                        
-                        let isDemoUser = false;
-                        if (artistUid === '@victor_ink' || artistUid === 'victor_ink' || artistUid === 'demo' || artistUid === '@demo' || artistUid === 'anonymous_demo') isDemoUser = true;
-                        if (currentArtistData && (currentArtistData.userTag === '@demo' || currentArtistData.userTag === '@victor_ink' || currentArtistData.userTag === 'victor_ink' || currentArtistData.userTag === 'demo')) {
-                            isDemoUser = true;
-                        }
-                        if (isDemoUser) {
-                            const limitedFallback = DEMO_FALLBACK_PHOTOS.slice(0, 5);
+
+                        // Fallback logic
+                        if (finalPhotos.length < 12) {
+                            const limitedFallback = DEMO_FALLBACK_PHOTOS.slice(0, 12 - finalPhotos.length);
                             const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
                             const addedFallbackPhotos = limitedFallback.filter(f => !finalPhotos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id));
                             finalPhotos = [...finalPhotos, ...addedFallbackPhotos];
                         }
                         
-                        const sharedPhotoId = searchParams.get('obra');
-                        if (sharedPhotoId && !finalPhotos.find(p => p.id === sharedPhotoId)) {
-                            // Check if it's a fallback photo first
-                            const fbMatch = DEMO_FALLBACK_PHOTOS.find(f => f.id === sharedPhotoId);
-                            if (fbMatch) {
-                                finalPhotos.unshift(fbMatch);
-                            } else {
-                                try {
-                                    const { doc, getDoc } = await import('firebase/firestore');
-                                    const pDoc = await getDoc(doc(db, 'photos', sharedPhotoId));
-                                    if (pDoc.exists()) {
-                                        const pData = pDoc.data();
-                                        finalPhotos.unshift({
-                                            id: pDoc.id,
-                                            src: pData.url || pData.imageUrl || pData.src,
-                                            previewUrl: pData.previewUrl,
-                                            thumbnailUrl: pData.thumbnailUrl,
-                                            alt: pData.alt || pData.title || '',
-                                            title: pData.title || '',
-                                            categories: pData.tags || pData.categories || [],
-                                            hours: pData.hours || 0,
-                                            sessions: pData.sessions || 1,
-                                            size: pData.size || '',
-                                            pinnedOrder: pData.pinnedOrder
-                                        });
-                                    }
-                                } catch (e) {}
-                            }
+                        if (snap.docs.length > 0) {
+                            setLastDoc(snap.docs[snap.docs.length - 1]);
+                            setHasMore(snap.docs.length >= 12);
+                        } else {
+                            setHasMore(false);
                         }
-
-                        finalPhotos.sort((a, b) => {
-                            const aPinned = typeof a.pinnedOrder === 'number' && a.pinnedOrder > 0;
-                            const bPinned = typeof b.pinnedOrder === 'number' && b.pinnedOrder > 0;
-                            if (aPinned && bPinned) return a.pinnedOrder - b.pinnedOrder;
-                            if (aPinned) return -1;
-                            if (bPinned) return 1;
-                            return 0;
-                        });
                         
                         setAllTattoos(finalPhotos);
+                        globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], allTattoos: finalPhotos };
                         try {
-                            localStorage.setItem('demoAllTattoos_' + artistUid, JSON.stringify(finalPhotos));
+                            localStorage.setItem('demoAllTattoos_' + currentArtistDocId, JSON.stringify(finalPhotos));
                         } catch(e) {}
                         setIsTattoosLoading(false);
                     }
-                } catch(e) {
-                    if(isMounted) setIsTattoosLoading(false);
-                }
-            };
-            
-            promises.push(fetchTattoos());
+                }, (error) => {
+                    if (isMounted) setIsTattoosLoading(false);
+                });
 
-            await Promise.all(promises);
-
-            if (isMounted) {
-                if (currentArtistData) {
-                    const data = { ...currentArtistData, uid: currentArtistDocId };
-                    setArtistData(data);
-                    globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], artistData: data };
+            } else if (targetId === 'demo' || targetId === 'anonymous_demo') {
+                const saved = localStorage.getItem('demoArtistData_demo');
+                if (saved) {
                     try {
-                        localStorage.setItem('demoArtistData_' + artistUid, JSON.stringify(data));
-                    } catch(e) {}
-                } else if (targetId === 'demo' || targetId === 'anonymous_demo') {
-                    const saved = localStorage.getItem('demoArtistData_demo');
-                    if (saved) {
-                        try {
-                            const parsed = JSON.parse(saved);
-                            currentArtistData = parsed;
-                            setArtistData(parsed);
-                        } catch (e) {}
-                    }
+                        const parsed = JSON.parse(saved);
+                        setArtistData(parsed);
+                    } catch (e) {}
                 }
                 setIsProfileLoading(false);
+                setIsTattoosLoading(false);
             }
         } catch (error) {
-
             console.error(error);
             if (isMounted) {
                 setIsProfileLoading(false);
@@ -402,6 +396,8 @@ export default function Profile() {
     return () => {
         isMounted = false;
         authUnsub();
+        profileUnsub();
+        tattoosUnsub();
         window.removeEventListener('profileDataChanged', handleProfileDataChanged);
     };
   }, [id]);
@@ -436,9 +432,13 @@ export default function Profile() {
   };
 
   const filteredTattoos = allTattoos.filter(t => activeCategory === "All" || t.categories.includes(activeCategory));
-  const visibleTattoos = filteredTattoos;
+  const visibleTattoos = filteredTattoos.slice(0, visibleCount);
 
   const loadMoreTattoos = async () => {
+    if (visibleCount < filteredTattoos.length) {
+        setVisibleCount(prev => prev + 6);
+        return;
+    }
     if (!hasMore || !lastDoc || isLoadingMore) return;
     
     setIsLoadingMore(true);
@@ -481,6 +481,7 @@ export default function Profile() {
         });
         
         setAllTattoos(prev => [...prev, ...newPhotos]);
+        setVisibleCount(prev => prev + 6);
     } catch(e) {
         console.error("Error loading more tattoos", e);
     } finally {
@@ -489,7 +490,7 @@ export default function Profile() {
   };
 
   const openModal = (index: number) => {
-    const photoId = visibleTattoos[index]?.id;
+    const photoId = filteredTattoos[index]?.id;
     if (photoId) {
       setSearchParams({ obra: photoId }); // Pushes to history so back button closes modal
     } else {
@@ -514,8 +515,8 @@ export default function Profile() {
   const prevPhoto = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const newIndex = activeTattooIndex > 0 ? activeTattooIndex - 1 : visibleTattoos.length - 1;
-    const photoId = visibleTattoos[newIndex]?.id;
+    const newIndex = activeTattooIndex > 0 ? activeTattooIndex - 1 : filteredTattoos.length - 1;
+    const photoId = filteredTattoos[newIndex]?.id;
     if (photoId) {
       setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('obra', photoId); return p; }, { replace: true });
     } else {
@@ -526,8 +527,8 @@ export default function Profile() {
   const nextPhoto = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const newIndex = activeTattooIndex < visibleTattoos.length - 1 ? activeTattooIndex + 1 : 0;
-    const photoId = visibleTattoos[newIndex]?.id;
+    const newIndex = activeTattooIndex < filteredTattoos.length - 1 ? activeTattooIndex + 1 : 0;
+    const photoId = filteredTattoos[newIndex]?.id;
     if (photoId) {
       setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('obra', photoId); return p; }, { replace: true });
     } else {
@@ -538,7 +539,7 @@ export default function Profile() {
   useEffect(() => {
     const photoId = searchParams.get('obra');
     if (photoId && allTattoos.length > 0) {
-      const vIndex = visibleTattoos.findIndex(t => t.id === photoId);
+      const vIndex = filteredTattoos.findIndex(t => t.id === photoId);
       if (vIndex !== -1) {
         if (!modalOpen || activeTattooIndex !== vIndex) {
           setActiveTattooIndex(vIndex);
@@ -559,7 +560,7 @@ export default function Profile() {
       setModalOpen(false);
       document.body.classList.remove('overflow-hidden');
     }
-  }, [searchParams, allTattoos, visibleTattoos, modalOpen, activeTattooIndex]);
+  }, [searchParams, allTattoos, filteredTattoos, modalOpen, activeTattooIndex]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -567,14 +568,14 @@ export default function Profile() {
       if (e.key === 'Escape') {
         closeModal();
       } else if (e.key === 'ArrowRight') {
-        const newIndex = activeTattooIndex < visibleTattoos.length - 1 ? activeTattooIndex + 1 : 0;
-        const photoId = visibleTattoos[newIndex]?.id;
+        const newIndex = activeTattooIndex < filteredTattoos.length - 1 ? activeTattooIndex + 1 : 0;
+        const photoId = filteredTattoos[newIndex]?.id;
         if (photoId) {
           setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('obra', photoId); return p; }, { replace: true });
         }
       } else if (e.key === 'ArrowLeft') {
-        const newIndex = activeTattooIndex > 0 ? activeTattooIndex - 1 : visibleTattoos.length - 1;
-        const photoId = visibleTattoos[newIndex]?.id;
+        const newIndex = activeTattooIndex > 0 ? activeTattooIndex - 1 : filteredTattoos.length - 1;
+        const photoId = filteredTattoos[newIndex]?.id;
         if (photoId) {
           setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('obra', photoId); return p; }, { replace: true });
         }
@@ -582,14 +583,14 @@ export default function Profile() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalOpen, activeTattooIndex, visibleTattoos, setSearchParams]);
+  }, [modalOpen, activeTattooIndex, filteredTattoos, setSearchParams]);
 
 
 
   useEffect(() => {
-    if (modalOpen && visibleTattoos.length > 0) {
-      const nextIndex = activeTattooIndex < visibleTattoos.length - 1 ? activeTattooIndex + 1 : 0;
-      const prevIndex = activeTattooIndex > 0 ? activeTattooIndex - 1 : visibleTattoos.length - 1;
+    if (modalOpen && filteredTattoos.length > 0) {
+      const nextIndex = activeTattooIndex < filteredTattoos.length - 1 ? activeTattooIndex + 1 : 0;
+      const prevIndex = activeTattooIndex > 0 ? activeTattooIndex - 1 : filteredTattoos.length - 1;
       
       const preloadUrl = (url) => {
         if (url) {
@@ -599,11 +600,11 @@ export default function Profile() {
       };
       
       // Preload next
-      preloadUrl(visibleTattoos[nextIndex]?.previewUrl || visibleTattoos[nextIndex]?.src);
+      preloadUrl(filteredTattoos[nextIndex]?.previewUrl || filteredTattoos[nextIndex]?.src);
       // Preload prev
-      preloadUrl(visibleTattoos[prevIndex]?.previewUrl || visibleTattoos[prevIndex]?.src);
+      preloadUrl(filteredTattoos[prevIndex]?.previewUrl || filteredTattoos[prevIndex]?.src);
     }
-  }, [modalOpen, activeTattooIndex, visibleTattoos]);
+  }, [modalOpen, activeTattooIndex, filteredTattoos]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -651,7 +652,7 @@ export default function Profile() {
       </Helmet>
       <main className="pb-8 md:pb-16">
         <div className="top-0 left-0 z-40 px-3 py-1 bg-black/30 backdrop-blur-sm fixed rounded-br-lg border-b border-r border-white/5 profile-logo-container">
-          <span className="text-[10px] font-medium text-white/70 uppercase tracking-widest profile-logo-text drop-shadow-md">Turnos <span className="text-primary/80 profile-logo-primary">Tattoo</span></span>
+          <span className="font-label-md text-label-md font-extrabold text-white/70 uppercase tracking-tighter profile-logo-text drop-shadow-md">Turnos <span className="text-primary/80 profile-logo-primary">Tattoo</span></span>
         </div>
         {/* Banner Section */}
         <section className="relative w-full h-64 md:h-96 overflow-hidden bg-surface-container">
@@ -702,28 +703,28 @@ export default function Profile() {
             <div className="flex items-center gap-2">
               
               { (artistData?.instagram || isDemoProfile) && (
-              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" href={artistData?.instagram || "https://instagram.com"} aria-label="Instagram">
+              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white hover:bg-primary/10 social-btn" href={artistData?.instagram || "https://instagram.com"} aria-label="Instagram">
                               <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                                 <path fillRule="evenodd" clipRule="evenodd" d="M12 7C9.24 7 7 9.24 7 12C7 14.76 9.24 17 12 17C14.76 17 17 14.76 17 12C17 9.24 14.76 7 12 7ZM12 15C10.34 15 9 13.66 9 12C9 10.34 10.34 9 12 9C13.66 9 15 10.34 15 12C15 13.66 13.66 15 12 15ZM17 6C17 6.55 16.55 7 16 7C15.45 7 15 6.55 15 6C15 5.45 15.45 5 16 5C16.55 5 17 5.45 17 6ZM12 2.16C15.2 2.16 15.58 2.17 16.89 2.23C18.11 2.29 18.77 2.49 19.22 2.66C19.82 2.9 20.25 3.2 20.7 3.65C21.15 4.1 21.46 4.53 21.69 5.13C21.87 5.58 22.07 6.24 22.13 7.46C22.19 8.77 22.2 9.15 22.2 12C22.2 14.85 22.19 15.23 22.13 16.54C22.07 17.76 21.87 18.42 21.69 18.87C21.46 19.47 21.15 19.9 20.7 20.35C20.25 20.8 19.82 21.1 19.22 21.34C18.77 21.51 18.11 21.71 16.89 21.77C15.58 21.83 15.2 21.84 12 21.84C8.8 21.84 8.42 21.83 7.11 21.77C5.89 21.71 5.23 21.51 4.78 21.34C4.18 21.1 3.75 20.8 3.3 20.35C2.85 19.9 2.54 19.47 2.31 18.87C2.13 18.42 1.93 17.76 1.87 16.54C1.81 15.23 1.8 14.85 1.8 12C1.8 9.15 1.81 8.77 1.87 7.46C1.93 6.24 2.13 5.58 2.31 5.13C2.54 4.53 2.85 4.1 3.3 3.65C3.75 3.2 4.18 2.9 4.78 2.66C5.23 2.49 5.89 2.29 7.11 2.23C8.42 2.17 8.8 2.16 12 2.16ZM12 0C8.74 0 8.33 0.01 7.05 0.07C5.77 0.13 4.9 0.33 4.14 0.63C3.36 0.93 2.69 1.32 2.02 1.99C1.35 2.66 0.96 3.33 0.66 4.11C0.36 4.87 0.16 5.74 0.1 7.02C0.04 8.3 0.03 8.71 0.03 11.97C0.03 15.23 0.04 15.64 0.1 16.92C0.16 18.2 0.36 19.07 0.66 19.83C0.96 20.61 1.35 21.28 2.02 21.95C2.69 22.62 3.36 23.01 4.14 23.31C4.9 23.61 5.77 23.81 7.05 23.87C8.33 23.93 8.74 23.94 12 23.94C15.26 23.94 15.67 23.93 16.95 23.87C18.23 23.81 19.1 23.61 19.86 23.31C20.64 23.01 21.31 22.62 21.98 21.95C22.65 21.28 23.04 20.61 23.34 19.83C23.64 19.07 23.84 18.2 23.9 16.92C23.96 15.64 23.97 15.23 23.97 11.97C23.97 8.71 23.96 8.3 23.9 7.02C23.84 5.74 23.64 4.87 23.34 4.11C23.04 3.33 22.65 2.66 21.98 1.99C21.31 1.32 20.64 0.93 19.86 0.63C19.1 0.33 18.23 0.13 16.95 0.07C15.67 0.01 15.26 0 12 0Z"/>
                               </svg>
                             </a>
             )}
               { (artistData?.tiktok || isDemoProfile) && (
-              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" href={artistData?.tiktok || "https://tiktok.com"} aria-label="TikTok">
+              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white hover:bg-primary/10 social-btn" href={artistData?.tiktok || "https://tiktok.com"} aria-label="TikTok">
                               <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                                 <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.12-3.44-3.17-3.66-5.46-.22-2.39.54-4.78 2.15-6.44 1.8-1.88 4.37-2.65 6.9-2.21 1.02.17 2.04.5 2.95 1.05V10.3c-.52-.3-1.08-.54-1.68-.69-1.2-.3-2.5-.15-3.62.4-1.3.62-2.22 1.8-2.54 3.2-.23 1.03-.02 2.14.53 3.02.58.94 1.53 1.57 2.6 1.77 1.6.31 3.3-.23 4.33-1.47.82-.99 1.2-2.3 1.23-3.6.08-3.92.03-7.85.03-11.78.01-.39-.02-.79.03-1.18z"/>
                               </svg>
                             </a>
             )}
               { (artistData?.facebook || isDemoProfile) && (
-              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" href={artistData?.facebook || "https://facebook.com"} aria-label="Facebook">
+              <a className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white hover:bg-primary/10 social-btn" href={artistData?.facebook || "https://facebook.com"} aria-label="Facebook">
                               <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                                 <path d="M14 13.5h2.5l1-4H14v-2c0-1.03 0-2 2-2h1.5V2.14c-.326-.043-1.557-.14-2.857-.14C11.928 2 10 3.657 10 6.7v2.8H7v4h3V22h4v-8.5z" />
                               </svg>
                             </a>
             )}
               <button type="button"
-                className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white" 
+                className="w-12 h-12 flex items-center justify-center rounded-full border border-outline-variant hover:border-primary text-on-surface-variant transition-all hover:text-white hover:bg-primary/10 social-btn" 
                 aria-label="Compartir perfil"
                 onClick={async () => {
                   try {
@@ -824,7 +825,7 @@ export default function Profile() {
             {visibleTattoos.map((tattoo, index) => (
               <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 tattoo-card ${index === 0 ? 'interactive-cue' : ''}`}>
                 <OptimizedImage 
-                  className="w-full h-full grayscale hover:grayscale-0 transition-all duration-700 cursor-pointer object-cover aspect-square" 
+                  className="w-full h-full transition-all duration-700 cursor-pointer object-cover aspect-square" 
                   alt={tattoo.alt} 
                   onClick={() => openModal(index)} 
                   lowResUrl={tattoo.thumbnailUrl}
@@ -844,7 +845,7 @@ export default function Profile() {
           )}
 
           <div className="flex justify-center mt-12 gap-4">
-            {hasMore && (
+            {(hasMore || visibleCount < filteredTattoos.length) && (
               <button type="button"
                 className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all uppercase tracking-widest border-b border-outline-variant hover:border-primary py-2 font-bold flex items-center gap-2" 
                 onClick={loadMoreTattoos}
@@ -853,7 +854,15 @@ export default function Profile() {
                 {isLoadingMore ? (
                     <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                 ) : null}
-                {isLoadingMore ? 'Cargando...' : 'Cargar más'}
+                {isLoadingMore ? 'Cargando...' : 'Ver más fotos'}
+              </button>
+            )}
+            {visibleCount > 6 && (
+              <button type="button"
+                className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all uppercase tracking-widest border-b border-outline-variant hover:border-primary py-2 font-bold flex items-center gap-2" 
+                onClick={() => setVisibleCount(6)}
+              >
+                Ver menos
               </button>
             )}
           </div>
@@ -958,7 +967,7 @@ export default function Profile() {
       </footer>
 
       {/* Modal */}
-      {modalOpen && visibleTattoos.length > 0 && (
+      {modalOpen && filteredTattoos.length > 0 && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center p-2 md:p-8 transition-opacity duration-300 overscroll-none modal-backdrop">
           <div className="absolute inset-0 z-0 cursor-pointer" onClick={closeModal}></div>
           <div className="relative z-10 w-full max-w-6xl h-[100dvh] md:h-auto md:max-h-[95vh] md:min-h-[80vh] flex flex-col bg-surface-container border border-outline-variant/20 shadow-2xl transform transition-transform duration-300 modal-container">
@@ -989,12 +998,12 @@ export default function Profile() {
                 
                 {/* Main Image */}
                 <OptimizedImage 
-                  key={visibleTattoos[activeTattooIndex].id}
-                  alt={visibleTattoos[activeTattooIndex].alt} 
+                  key={filteredTattoos[activeTattooIndex].id}
+                  alt={filteredTattoos[activeTattooIndex].alt} 
                   className="max-w-full max-h-[45vh] md:max-h-[85vh] object-contain animate-fade-in relative z-10 shadow-2xl" 
-                  lowResUrl={visibleTattoos[activeTattooIndex].previewUrl || visibleTattoos[activeTattooIndex].thumbnailUrl}
-                  highResUrl={visibleTattoos[activeTattooIndex].src} 
-                  style={{ filter: getFilterStr(visibleTattoos[activeTattooIndex].filters) }}
+                  lowResUrl={filteredTattoos[activeTattooIndex].previewUrl || filteredTattoos[activeTattooIndex].thumbnailUrl}
+                  highResUrl={filteredTattoos[activeTattooIndex].src} 
+                  style={{ filter: getFilterStr(filteredTattoos[activeTattooIndex].filters) }}
                   useIntersectionObserver={false}
                   loading="eager"
                 />
@@ -1013,7 +1022,7 @@ export default function Profile() {
                         </button>
                         
                         <div className="w-full px-10 md:px-0 flex flex-wrap items-center justify-center gap-3 md:gap-4">
-                          {visibleTattoos[activeTattooIndex].categories.map((cat, idx) => (
+                          {filteredTattoos[activeTattooIndex].categories.map((cat, idx) => (
                             <div key={idx} className="flex justify-center">
                               <span className="inline-flex items-center justify-center px-4 py-1.5 min-h-[28px] text-[10px] md:text-xs font-bold bg-primary/20 text-primary border border-primary/30 rounded uppercase tracking-widest text-center whitespace-nowrap">
                                 {cat}
@@ -1030,7 +1039,7 @@ export default function Profile() {
                         </button>
                       </div>
                       
-                      <h2 className="text-lg md:text-xl font-bold uppercase tracking-tight text-on-surface mb-3">{visibleTattoos[activeTattooIndex].title}</h2>
+                      <h2 className="text-lg md:text-xl font-bold uppercase tracking-tight text-on-surface mb-3">{filteredTattoos[activeTattooIndex].title}</h2>
                       
                       <div className="w-full flex items-center justify-center mb-6 opacity-90 px-4 md:px-0">
                         <div className="h-[3px] flex-1 w-full max-w-[200px] bg-gradient-to-r from-transparent via-primary/60 to-primary rounded-full"></div>
@@ -1040,32 +1049,32 @@ export default function Profile() {
                     </div>
                     
                     <div className="mt-2 md:mt-4">
-                      <p className="text-center text-on-surface-variant text-xs md:text-sm leading-relaxed">{visibleTattoos[activeTattooIndex].alt}</p>
+                      <p className="text-center text-on-surface-variant text-xs md:text-sm leading-relaxed">{filteredTattoos[activeTattooIndex].alt}</p>
                     </div>
                   </div>
 
                   <div className="mt-auto pt-4 md:pt-10 flex flex-col gap-4 md:gap-8 shrink-0">
-                    {(visibleTattoos[activeTattooIndex].hours || visibleTattoos[activeTattooIndex].sessions || visibleTattoos[activeTattooIndex].size) && (
+                    {(filteredTattoos[activeTattooIndex].hours || filteredTattoos[activeTattooIndex].sessions || filteredTattoos[activeTattooIndex].size) && (
                       <div className="flex justify-center md:justify-center flex-wrap gap-4 md:gap-6 w-full border-t border-outline-variant/10 pt-4 md:pt-6">
-                        {visibleTattoos[activeTattooIndex].hours && (
+                        {filteredTattoos[activeTattooIndex].hours && (
                           <div className="flex flex-col items-center justify-center text-center py-2 px-3 md:px-4 border border-white/10 bg-black/40 backdrop-blur-md rounded-lg transition-colors hover:bg-black/60 min-w-[80px] md:min-w-[95px] tech-stat-card shadow-xl">
                             <span className="material-symbols-outlined text-primary mb-0.5 text-base stat-icon">schedule</span>
                             <span className="text-[9px] font-bold tracking-widest text-white/70 uppercase">Horas</span>
-                            <span className="font-bold text-white text-[11px] mt-0.5">{visibleTattoos[activeTattooIndex].hours}h</span>
+                            <span className="font-bold text-white text-[11px] mt-0.5">{filteredTattoos[activeTattooIndex].hours}h</span>
                           </div>
                         )}
-                        {visibleTattoos[activeTattooIndex].sessions && (
+                        {filteredTattoos[activeTattooIndex].sessions && (
                           <div className="flex flex-col items-center justify-center text-center py-2 px-3 md:px-4 border border-white/10 bg-black/40 backdrop-blur-md rounded-lg transition-colors hover:bg-black/60 min-w-[80px] md:min-w-[95px] tech-stat-card shadow-xl">
                             <span className="material-symbols-outlined text-primary mb-0.5 text-base stat-icon">layers</span>
                             <span className="text-[9px] font-bold tracking-widest text-white/70 uppercase">Sesiones</span>
-                            <span className="font-bold text-white text-[11px] mt-0.5">{visibleTattoos[activeTattooIndex].sessions}</span>
+                            <span className="font-bold text-white text-[11px] mt-0.5">{filteredTattoos[activeTattooIndex].sessions}</span>
                           </div>
                         )}
-                        {visibleTattoos[activeTattooIndex].size && (
+                        {filteredTattoos[activeTattooIndex].size && (
                           <div className="flex flex-col items-center justify-center text-center py-2 px-3 md:px-4 border border-white/10 bg-black/40 backdrop-blur-md rounded-lg transition-colors hover:bg-black/60 min-w-[80px] md:min-w-[95px] tech-stat-card shadow-xl">
                             <span className="material-symbols-outlined text-primary mb-0.5 text-base stat-icon">straighten</span>
                             <span className="text-[9px] font-bold tracking-widest text-white/70 uppercase">Tamaño</span>
-                            <span className="font-bold text-white text-[11px] mt-0.5">{visibleTattoos[activeTattooIndex].size}</span>
+                            <span className="font-bold text-white text-[11px] mt-0.5">{filteredTattoos[activeTattooIndex].size}</span>
                           </div>
                         )}
                       </div>
@@ -1079,10 +1088,10 @@ export default function Profile() {
                                if (artistData?.whatsapp) {
                                    const num = artistData.whatsapp.replace(/[^0-9]/g, '');
                                    trackMetric('whatsappClicks');
-                                   const photoId = visibleTattoos[activeTattooIndex].id;
-                                   const photoUrl = visibleTattoos[activeTattooIndex].src;
+                                   const photoId = filteredTattoos[activeTattooIndex].id;
+                                   const photoUrl = filteredTattoos[activeTattooIndex].src;
                                    const profileUrl = window.location.origin + window.location.pathname;
-                                   const tattooTitle = visibleTattoos[activeTattooIndex].title || visibleTattoos[activeTattooIndex].alt || 'Diseño';
+                                   const tattooTitle = filteredTattoos[activeTattooIndex].title || filteredTattoos[activeTattooIndex].alt || 'Diseño';
                                    const message = `Hola ${artistData?.displayName || 'artista'}, vengo de tu página web y me encantó este tatuaje. Me gustaría hacerme algo similar o saber más al respecto:\n\nObra: ${profileUrl}?obra=${photoId}`;
                                    window.open(`https://wa.me/549${num}?text=${encodeURIComponent(message)}`, '_blank');
                                }
@@ -1091,7 +1100,7 @@ export default function Profile() {
                                  ...waitlistForm,
                                  type: 'idea',
                                  description: '',
-                                 referenceImage: visibleTattoos[activeTattooIndex].src
+                                 referenceImage: filteredTattoos[activeTattooIndex].src
                                });
                                setWaitlistModalOpen(true);
                            }

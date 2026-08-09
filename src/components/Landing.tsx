@@ -126,7 +126,7 @@ export default function Landing() {
           if (userIds.length > 0) {
               const usersData: any = {};
               // Fetch each user sequentially (or you could batch, but standard is fine for small limits)
-              for (const uid of userIds) {
+              for (const uid of userIds as string[]) {
                   const uSnap = await getDoc(doc(db, 'users', uid));
                   if (uSnap.exists()) {
                       usersData[uid] = uSnap.data();

@@ -1,21 +1,16 @@
 import fs from 'fs';
 let code = fs.readFileSync('src/components/ArtistProfile.tsx', 'utf8');
 
-const target1 = `  const [activeCategory, setActiveCategory] = useState("All");
-  const [showMore, setShowMore] = useState(false);
-  const [lastDoc, setLastDoc] = useState<any>(null);`;
-const rep1 = `  const [activeCategory, setActiveCategory] = useState("All");
-  const [lastDoc, setLastDoc] = useState<any>(null);`;
+// Fix theme typing issue
+code = code.replace(
+  /if \(parsed\.theme && !docSnap\.metadata\?\.fromCache && data\.theme !== parsed\.theme\)/,
+  'if (parsed.theme && !docSnap.metadata?.fromCache && (data as any).theme !== parsed.theme)'
+);
 
-const target2 = `        const aIndex = allTattoos.findIndex(t => t.id === photoId);
-        if (aIndex !== -1) {
-          if (activeCategory !== "All") setActiveCategory("All");
-          if (!showMore) setShowMore(true);
-        }`;
-const rep2 = `        const aIndex = allTattoos.findIndex(t => t.id === photoId);
-        if (aIndex !== -1) {
-          if (activeCategory !== "All") setActiveCategory("All");
-        }`;
+// Fix TS2322 for fallback photos typing
+code = code.replace(
+  /let finalPhotos = snap\.docs\.map\(d => \{/g,
+  'let finalPhotos: any[] = snap.docs.map(d => {'
+);
 
-code = code.replace(target1, rep1).replace(target2, rep2);
 fs.writeFileSync('src/components/ArtistProfile.tsx', code);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db, auth, onAuthStateChanged } from '../firebase';
 import { preloadDashboardData, clearDashboardPreload } from '../lib/dashboardPreloader';
 
@@ -39,6 +39,11 @@ export default function DemoLayout
                     const parsed = JSON.parse(existingCache);
                     parsed.theme = newTheme;
                     localStorage.setItem(cacheKey, JSON.stringify(parsed));
+                    import('../lib/cache').then((m) => {
+                        if (m.globalPreloadCache[demoUserId]) {
+                            m.globalPreloadCache[demoUserId].artistData = parsed;
+                        }
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -51,7 +56,7 @@ export default function DemoLayout
         const load = async () => {
             const demoUserId = authUid || localStorage.getItem('demoUserId');
             if (demoUserId) {
-                const { collection, onSnapshot, query, where, doc, getDoc } = await import('firebase/firestore');
+                
                 
                 getDoc(doc(db, 'users', demoUserId)).then(userDoc => {
                     if (userDoc.exists()) {
