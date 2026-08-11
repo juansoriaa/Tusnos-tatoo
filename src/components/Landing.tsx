@@ -333,7 +333,7 @@ export default function Landing() {
     }, observerOptions);
 
     // Observe main sections
-    const sections = document.querySelectorAll('section > div');
+    const sections = document.querySelectorAll('section > div:not(.absolute)');
     sections.forEach(el => {
         el.classList.add('transition-all', 'duration-1000', 'opacity-0', 'translate-y-10');
         observer.observe(el);
@@ -515,16 +515,16 @@ export default function Landing() {
                 <span className="material-symbols-outlined text-4xl text-primary mb-6">analytics</span>
                 <h3 className="text-2xl font-bold text-white mb-4">Métricas Avanzadas</h3>
                 <p className="text-gray-400 mb-8">Descubre qué tatuajes tienen más interacción con datos en tiempo real.</p>
-                <div className="mt-auto overflow-hidden rounded-xl">
-                  <img alt="Vistas Totales y Clicks" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src={landingImages.metrics} referrerPolicy="no-referrer" />
+                <div className="mt-auto overflow-hidden rounded-xl flex justify-center">
+                  <img alt="Vistas Totales y Clicks" className="w-full h-auto md:w-auto md:max-h-64 object-contain group-hover:scale-105 transition-transform duration-500" src={landingImages.metrics} referrerPolicy="no-referrer" />
                 </div>
               </div>
               <div className="md:col-span-5 bg-surface-variant rounded-2xl neon-border p-10 flex flex-col group">
                 <span className="material-symbols-outlined text-4xl text-primary mb-6">gallery_thumbnail</span>
                 <h3 className="text-2xl font-bold text-white mb-4">Diseño Inteligente</h3>
                 <p className="text-gray-400 mb-8">Ahorra tiempo a tus clientes permitiéndoles elegir diseños específicos del catálogo.</p>
-                <div className="mt-auto overflow-hidden rounded-xl">
-                  <img alt="Diseño Inteligente" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" src="https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png" referrerPolicy="no-referrer" />
+                <div className="mt-auto overflow-hidden rounded-xl flex justify-center">
+                  <img alt="Diseño Inteligente" className="w-full h-auto md:w-auto md:max-h-64 object-contain group-hover:scale-105 transition-transform duration-500" src="https://i.ibb.co/vxLrVzCK/Screenshot-20260728-202004.png" referrerPolicy="no-referrer" />
                 </div>
               </div>
               <div className="md:col-span-7 bg-surface-variant rounded-2xl neon-border overflow-hidden relative group">
