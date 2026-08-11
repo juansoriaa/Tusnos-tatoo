@@ -518,7 +518,8 @@
   .theme-minimal-clean .info-section {
     background: #FFFFFF !important;
     border: 1px solid #EFEFF4 !important;
-    border-radius: 8px !important;
+    border-left: 3px solid #111111 !important;
+    border-radius: 0 8px 8px 0 !important;
     padding: 2rem !important;
     box-shadow: none !important;
   }

@@ -161,7 +161,7 @@ export default function DemoLayout
                     const docSnap = await getDoc(doc(db, 'users', demoUserId));
                     if (docSnap.exists()) {
                         setConfigEmail(docSnap.data().email || '');
-                        const uTag = docSnap.data().userTag || '';
+                        const uTag = String(docSnap.data().userTag || '');
                         setCurrentUserTag(uTag);
                         
                         if (uTag && window.location.pathname.startsWith('/demo/') && !window.location.pathname.includes('/@victor_ink') && !window.location.pathname.includes('/demo/preload')) {
@@ -249,6 +249,15 @@ export default function DemoLayout
 
     
 
+    const getNavUrl = (path: string) => {
+        if (path === '/') return '/';
+        if (path.startsWith('/demo/') && path !== '/@victor_ink' && path !== '/demo/preload' && currentUserTag) {
+            const utag = String(currentUserTag).startsWith('@') ? currentUserTag : '@' + currentUserTag;
+            return path.replace('/demo/', '/' + utag + '/');
+        }
+        return path;
+    };
+    
     const handleNav = (path: string) => {
         if (path === '/') {
             clearDashboardPreload();
@@ -261,7 +270,7 @@ export default function DemoLayout
         }
         
         if (path.startsWith('/demo/') && path !== '/@victor_ink' && path !== '/demo/preload' && currentUserTag) {
-            const utag = currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag;
+            const utag = String(currentUserTag).startsWith('@') ? currentUserTag : '@' + currentUserTag;
             path = path.replace('/demo/', '/' + utag + '/');
         }
         
@@ -338,19 +347,19 @@ export default function DemoLayout
                 
                 <ul className="flex-grow space-y-2">
                     <li>
-                        <a className={`flex items-center font-medium pl-4 transition-all duration-200 group py-2 active:scale-95 ${activeTab === 'dashboard' ? 'text-primary border-l-2 border-primary bg-surface-elevation/20 font-bold' : 'text-on-surface-variant hover:text-primary'}`} href="#" onClick={(e) => { e.preventDefault(); handleNav('/demo/dashboard'); }} style={activeTab === 'dashboard' ? {color: '#95d2c6', borderLeftColor: '#95d2c6'} : {}}>
+                        <a className={`flex items-center font-medium pl-4 transition-all duration-200 group py-2 active:scale-95 ${activeTab === 'dashboard' ? 'text-primary border-l-2 border-primary bg-surface-elevation/20 font-bold' : 'text-on-surface-variant hover:text-primary'}`} href={getNavUrl('/demo/dashboard')} onClick={(e) => { e.preventDefault(); handleNav('/demo/dashboard'); }} style={activeTab === 'dashboard' ? {color: '#95d2c6', borderLeftColor: '#95d2c6'} : {}}>
                             <span className={`material-symbols-outlined mr-3 transition-colors ${activeTab === 'dashboard' ? 'text-primary fill' : 'text-on-surface-variant group-hover:text-primary'}`} style={activeTab === 'dashboard' ? {color: '#95d2c6'} : {}}>dashboard</span>
                             <span className="font-label-md">Panel</span>
                         </a>
                     </li>
                     <li>
-                        <a className={`flex items-center font-medium pl-4 transition-all duration-200 group py-2 active:scale-95 ${activeTab === 'portfolio' ? 'text-primary border-l-2 border-primary bg-surface-elevation/20 font-bold' : 'text-on-surface-variant hover:text-primary'}`} href="#" onClick={(e) => { e.preventDefault(); handleNav('/demo/portfolio'); }} style={activeTab === 'portfolio' ? {color: '#95d2c6', borderLeftColor: '#95d2c6'} : {}}>
+                        <a className={`flex items-center font-medium pl-4 transition-all duration-200 group py-2 active:scale-95 ${activeTab === 'portfolio' ? 'text-primary border-l-2 border-primary bg-surface-elevation/20 font-bold' : 'text-on-surface-variant hover:text-primary'}`} href={getNavUrl('/demo/portfolio')} onClick={(e) => { e.preventDefault(); handleNav('/demo/portfolio'); }} style={activeTab === 'portfolio' ? {color: '#95d2c6', borderLeftColor: '#95d2c6'} : {}}>
                             <span className={`material-symbols-outlined mr-3 transition-colors ${activeTab === 'portfolio' ? 'text-primary fill' : 'text-on-surface-variant group-hover:text-primary'}`} style={activeTab === 'portfolio' ? {color: '#95d2c6'} : {}}>photo_library</span>
                             <span className="font-label-md">Portafolio</span>
                         </a>
                     </li>
                     <li>
-                        <a className={`relative flex items-center font-medium pl-4 transition-all duration-200 group py-2 active:scale-95 ${activeTab === 'schedule' ? 'text-primary border-l-2 border-primary bg-surface-elevation/20 font-bold' : 'text-on-surface-variant hover:text-primary'} ${animateHighlight ? 'animate-pulse-ring bg-primary/10' : ''}`} href="#" onClick={(e) => { e.preventDefault(); handleNav('/demo/waitlist'); }} style={activeTab === 'schedule' ? {color: '#95d2c6', borderLeftColor: '#95d2c6'} : {}}>
+                        <a className={`relative flex items-center font-medium pl-4 transition-all duration-200 group py-2 active:scale-95 ${activeTab === 'schedule' ? 'text-primary border-l-2 border-primary bg-surface-elevation/20 font-bold' : 'text-on-surface-variant hover:text-primary'} ${animateHighlight ? 'animate-pulse-ring bg-primary/10' : ''}`} href={getNavUrl('/demo/waitlist')} onClick={(e) => { e.preventDefault(); handleNav('/demo/waitlist'); }} style={activeTab === 'schedule' ? {color: '#95d2c6', borderLeftColor: '#95d2c6'} : {}}>
                             <div className="relative">
                                 <span className={`material-symbols-outlined mr-3 transition-transform duration-300 ${activeTab === 'schedule' ? 'text-primary fill' : 'text-on-surface-variant group-hover:text-primary'} ${animateHighlight ? 'text-emerald-accent scale-125' : ''}`} style={activeTab === 'schedule' ? {color: '#95d2c6'} : {}}>calendar_today</span>
                                 {turnosLlenos && waitlistCount > 0 && (
@@ -363,7 +372,7 @@ export default function DemoLayout
                         </a>
                     </li>
                     <li>
-                        <a className={`flex items-center font-medium pl-4 transition-all duration-200 group py-2 active:scale-95 ${activeTab === 'metrics' ? 'text-primary border-l-2 border-primary bg-surface-elevation/20 font-bold' : 'text-on-surface-variant hover:text-primary'}`} href="#" onClick={(e) => { e.preventDefault(); handleNav('/demo/metrics'); }} style={activeTab === 'metrics' ? {color: '#95d2c6', borderLeftColor: '#95d2c6'} : {}}>
+                        <a className={`flex items-center font-medium pl-4 transition-all duration-200 group py-2 active:scale-95 ${activeTab === 'metrics' ? 'text-primary border-l-2 border-primary bg-surface-elevation/20 font-bold' : 'text-on-surface-variant hover:text-primary'}`} href={getNavUrl('/demo/metrics')} onClick={(e) => { e.preventDefault(); handleNav('/demo/metrics'); }} style={activeTab === 'metrics' ? {color: '#95d2c6', borderLeftColor: '#95d2c6'} : {}}>
                             <span className={`material-symbols-outlined mr-3 transition-colors ${activeTab === 'metrics' ? 'text-primary fill' : 'text-on-surface-variant group-hover:text-primary'}`} style={activeTab === 'metrics' ? {color: '#95d2c6'} : {}}>analytics</span>
                             <span className="font-label-md">Métricas</span>
                         </a>
@@ -377,7 +386,7 @@ export default function DemoLayout
                 </ul>
                 <div className="mt-auto border-t border-border-muted pt-6 space-y-2" style={{borderColor: '#353434'}}>
                     
-                    <a className="flex items-center text-on-surface-variant font-medium pl-4 hover:text-primary transition-all duration-200 group py-2 active:scale-95" href="#" onClick={(e) => { e.preventDefault(); handleNav('/'); }}>
+                    <a className="flex items-center text-on-surface-variant font-medium pl-4 hover:text-primary transition-all duration-200 group py-2 active:scale-95" href="/" onClick={(e) => { e.preventDefault(); handleNav('/'); }}>
                         <span className="material-symbols-outlined mr-3">logout</span>
                         <span className="font-label-md">Cerrar sesión</span>
                     </a>
@@ -388,7 +397,7 @@ export default function DemoLayout
             <header className="md:hidden fixed top-0 w-full h-16 bg-surface-elevation/80 backdrop-blur-md border-b border-border-muted z-50 flex justify-between items-center px-4" style={{backgroundColor: 'rgba(20, 19, 19, 0.8)', borderColor: '#353434'}}>
                 <h1 className="font-headline-md text-on-surface font-bold text-lg uppercase tracking-tighter">Turnos <span className="text-emerald-accent" style={{color: '#054d44'}}>Tattoo</span></h1>
                 <div className="flex gap-3 items-center">
-                    <button onClick={() => handleNav(currentUserTag ? '/' + (currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag) : (authUid ? '/' + authUid : '/@victor_ink'))} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-2 py-1.5 rounded hover:text-primary border border-outline-variant/30 transition-all mr-1">
+                    <button onClick={() => window.open(currentUserTag ? '/' + (String(currentUserTag).startsWith('@') ? currentUserTag : '@' + currentUserTag) : (authUid ? '/' + authUid : '/@victor_ink'), '_blank')} className="text-[10px] font-bold uppercase tracking-widest text-on-surface bg-surface-variant px-2 py-1.5 rounded hover:text-primary border border-outline-variant/30 transition-all mr-1">
                         Ver Perfil
                     </button>
                     <button onClick={() => setIsThemeModalOpen(true)} className="text-on-surface-variant hover:text-primary transition-all active:scale-95" title="Cambiar estilo">
@@ -414,7 +423,7 @@ export default function DemoLayout
                 <header className="hidden md:flex h-16 items-center px-8 bg-surface-elevation/80 backdrop-blur-md sticky top-0 z-40 border-b border-border-muted" style={{backgroundColor: 'rgba(20, 19, 19, 0.8)', borderColor: '#353434'}}>
                     <div className="flex-1"></div>
                     <div className="flex-shrink-0 flex items-center justify-center">
-                        <button onClick={() => handleNav(currentUserTag ? '/' + (currentUserTag.startsWith('@') ? currentUserTag : '@' + currentUserTag) : (authUid ? '/' + authUid : '/@victor_ink'))} className="text-[10px] font-bold uppercase tracking-widest text-emerald-accent bg-surface-variant px-6 py-2 rounded-full hover:bg-emerald-accent/10 border border-emerald-accent transition-all shadow-[0_0_15px_rgba(5,77,68,0.2)]" style={{borderColor: '#054d44', color: '#054d44'}}>
+                        <button onClick={() => window.open(currentUserTag ? '/' + (String(currentUserTag).startsWith('@') ? currentUserTag : '@' + currentUserTag) : (authUid ? '/' + authUid : '/@victor_ink'), '_blank')} className="text-[10px] font-bold uppercase tracking-widest text-emerald-accent bg-surface-variant px-6 py-2 rounded-full hover:bg-emerald-accent/10 border border-emerald-accent transition-all shadow-[0_0_15px_rgba(5,77,68,0.2)]" style={{borderColor: '#054d44', color: '#054d44'}}>
                             Ver Perfil
                         </button>
                     </div>
@@ -454,15 +463,15 @@ export default function DemoLayout
 
             {/* BottomNavBar Mobile */}
             <nav className="md:hidden fixed bottom-0 w-full bg-surface-container-lowest border-t border-border-muted z-50 px-4 py-2 flex justify-around items-center pb-safe" style={{backgroundColor: '#0e0e0e', borderColor: '#353434'}}>
-                <a className={`flex flex-col items-center p-2 active:scale-95 transition-transform ${activeTab === 'dashboard' ? 'text-emerald-accent font-bold' : 'text-on-surface-variant'}`} href="#" onClick={(e) => { e.preventDefault(); handleNav('/demo/dashboard'); }} style={activeTab === 'dashboard' ? {color: '#054d44'} : {}}>
+                <a className={`flex flex-col items-center p-2 active:scale-95 transition-transform ${activeTab === 'dashboard' ? 'text-emerald-accent font-bold' : 'text-on-surface-variant'}`} href={getNavUrl('/demo/dashboard')} onClick={(e) => { e.preventDefault(); handleNav('/demo/dashboard'); }} style={activeTab === 'dashboard' ? {color: '#054d44'} : {}}>
                     <span className={`material-symbols-outlined mb-1 ${activeTab === 'dashboard' ? 'fill' : ''}`} style={activeTab === 'dashboard' ? {color: '#054d44'} : {}}>dashboard</span>
                     <span className="font-label-sm text-[10px]">Inicio</span>
                 </a>
-                <a className={`flex flex-col items-center p-2 active:scale-95 transition-transform ${activeTab === 'portfolio' ? 'text-emerald-accent font-bold' : 'text-on-surface-variant'}`} href="#" onClick={(e) => { e.preventDefault(); handleNav('/demo/portfolio'); }} style={activeTab === 'portfolio' ? {color: '#054d44'} : {}}>
+                <a className={`flex flex-col items-center p-2 active:scale-95 transition-transform ${activeTab === 'portfolio' ? 'text-emerald-accent font-bold' : 'text-on-surface-variant'}`} href={getNavUrl('/demo/portfolio')} onClick={(e) => { e.preventDefault(); handleNav('/demo/portfolio'); }} style={activeTab === 'portfolio' ? {color: '#054d44'} : {}}>
                     <span className={`material-symbols-outlined mb-1 ${activeTab === 'portfolio' ? 'fill' : ''}`} style={activeTab === 'portfolio' ? {color: '#054d44'} : {}}>photo_library</span>
                     <span className="font-label-sm text-[10px]">Portafolio</span>
                 </a>
-                <a className={`flex flex-col items-center p-2 active:scale-95 transition-all duration-300 ${animateHighlight ? 'bg-primary/20 rounded-xl px-6 scale-110 shadow-[0_0_15px_rgba(5,77,68,0.5)]' : ''} ${activeTab === 'schedule' ? 'text-emerald-accent font-bold' : 'text-on-surface-variant'}`} href="#" onClick={(e) => { e.preventDefault(); handleNav('/demo/waitlist'); }} style={activeTab === 'schedule' ? {color: '#054d44'} : {}}>
+                <a className={`flex flex-col items-center p-2 active:scale-95 transition-all duration-300 ${animateHighlight ? 'bg-primary/20 rounded-xl px-6 scale-110 shadow-[0_0_15px_rgba(5,77,68,0.5)]' : ''} ${activeTab === 'schedule' ? 'text-emerald-accent font-bold' : 'text-on-surface-variant'}`} href={getNavUrl('/demo/waitlist')} onClick={(e) => { e.preventDefault(); handleNav('/demo/waitlist'); }} style={activeTab === 'schedule' ? {color: '#054d44'} : {}}>
                     <div className="relative">
                         <span className={`material-symbols-outlined mb-1 transition-transform duration-300 ${activeTab === 'schedule' ? 'fill' : ''} ${animateHighlight ? 'text-emerald-accent scale-125' : ''}`} style={activeTab === 'schedule' ? {color: '#054d44'} : {}}>calendar_today</span>
                         {turnosLlenos && waitlistCount > 0 && (
@@ -473,7 +482,7 @@ export default function DemoLayout
                     </div>
                     <span className={`font-label-sm text-[10px] transition-colors ${animateHighlight ? 'text-emerald-accent' : ''}`}>Agenda</span>
                 </a>
-                <a className={`flex flex-col items-center p-2 active:scale-95 transition-transform ${activeTab === 'metrics' ? 'text-emerald-accent font-bold' : 'text-on-surface-variant'}`} href="#" onClick={(e) => { e.preventDefault(); handleNav('/demo/metrics'); }} style={activeTab === 'metrics' ? {color: '#054d44'} : {}}>
+                <a className={`flex flex-col items-center p-2 active:scale-95 transition-transform ${activeTab === 'metrics' ? 'text-emerald-accent font-bold' : 'text-on-surface-variant'}`} href={getNavUrl('/demo/metrics')} onClick={(e) => { e.preventDefault(); handleNav('/demo/metrics'); }} style={activeTab === 'metrics' ? {color: '#054d44'} : {}}>
                     <span className={`material-symbols-outlined mb-1 ${activeTab === 'metrics' ? 'fill' : ''}`} style={activeTab === 'metrics' ? {color: '#054d44'} : {}}>analytics</span>
                     <span className="font-label-sm text-[10px]">Métricas</span>
                 </a>
@@ -710,17 +719,17 @@ export default function DemoLayout
                             </div>
                             <div 
                                 onClick={() => handleSaveTheme('cyber_neon')}
-                                className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col gap-3 transition-all ${theme === 'cyber_neon' ? 'border-[#00F0FF] bg-[#00F0FF]/10' : 'border-outline-variant hover:border-gray-500 bg-surface'}`}
+                                className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col gap-3 transition-all ${theme === 'cyber_neon' ? 'border-[#FF1E38] bg-[#FF1E38]/10' : 'border-outline-variant hover:border-gray-500 bg-surface'}`}
                             >
                                 <div className="h-16 md:h-24 rounded-lg bg-[#0A0A0C] flex items-center justify-center border border-outline-variant overflow-hidden relative">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-[#00F0FF]/20 to-transparent"></div>
-                                    <span className="material-symbols-outlined text-[#00F0FF] text-2xl md:text-3xl z-10" style={{textShadow: '0 0 10px rgba(0,240,255,0.8)'}}>memory</span>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-[#FF1E38]/20 to-transparent"></div>
+                                    <span className="material-symbols-outlined text-[#FF1E38] text-2xl md:text-3xl z-10" style={{textShadow: '0 0 10px rgba(255,30,56,0.8)'}}>memory</span>
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-on-surface">Cyber Neon</h3>
-                                    <p className="text-xs text-gray-400 mt-1">Negro profundo y cian eléctrico. Estética futurista.</p>
+                                    <h3 className="font-bold text-on-surface">Dark Crimson</h3>
+                                    <p className="text-xs text-gray-400 mt-1">Negro profundo y rojo sangre. Estética underground.</p>
                                 </div>
-                                {theme === 'cyber_neon' && <div className="absolute top-2 right-2 text-[#00F0FF]"><span className="material-symbols-outlined text-sm">check_circle</span></div>}
+                                {theme === 'cyber_neon' && <div className="absolute top-2 right-2 text-[#FF1E38]"><span className="material-symbols-outlined text-sm">check_circle</span></div>}
                             </div>
 
 

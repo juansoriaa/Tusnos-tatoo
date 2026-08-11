@@ -872,7 +872,7 @@ export default function Profile() {
         {artistData?.hasPhysicalStudio !== false && (
           <section className="mt-section-gap px-gutter max-w-container-max mx-auto ">
             <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="text-left info-section">
+              <div className="text-left info-section bg-surface-container p-8 border border-outline-variant/20 border-l-[3px] border-l-primary rounded-l-none rounded-r-lg">
                 <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4 font-bold uppercase tracking-tight">{artistData?.studioName || "El Estudio"}</h2>
                 <p className="font-body-lg text-body-lg text-on-surface-variant mb-8">{artistData?.studioDescription || "Ubicado en el corazón del distrito de diseño, nuestro espacio combina la precisión técnica con una atmósfera de galería de arte."}</p>
                 <div className="space-y-6">
@@ -911,7 +911,7 @@ export default function Profile() {
         )}
 
         <section className="mt-section-gap mb-section-gap px-gutter max-w-container-max mx-auto ">
-          <div className="bg-surface-container p-8 border border-outline-variant/20 flex flex-col gap-8 items-center text-center info-section">
+          <div className="bg-surface-container p-8 border border-outline-variant/20 border-l-[3px] border-l-primary rounded-l-none rounded-r-lg flex flex-col gap-8 items-center text-center info-section">
             <OptimizedImage className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-primary shrink-0" alt={artistData?.displayName || "Artist"} highResUrl={defaultAvatar} useIntersectionObserver={true} />
             <div>
               <h2 className="font-headline-md text-headline-md text-on-surface mb-4 font-bold uppercase tracking-tight">Sobre Mí</h2>
