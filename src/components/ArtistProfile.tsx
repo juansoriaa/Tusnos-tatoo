@@ -266,6 +266,14 @@ export default function Profile() {
                 if (!snap.empty) {
                     artistUid = snap.docs[0].id;
                     currentArtistDocId = artistUid;
+                    
+                    // OPTIMIZACIÓN: Cargar datos inmediatamente desde la consulta del tag
+                    // para evitar esperar al onSnapshot y lograr renderizado casi instantáneo.
+                    if (isMounted) {
+                        const resolvedData = { ...snap.docs[0].data(), uid: artistUid };
+                        setArtistData(resolvedData);
+                        setIsProfileLoading(false);
+                    }
                 }
             }
             if (!currentArtistDocId) currentArtistDocId = artistUid;
