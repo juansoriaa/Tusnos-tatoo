@@ -663,48 +663,69 @@ export default function Profile() {
           <span className="font-label-md text-label-md font-extrabold text-white/70 uppercase tracking-tighter profile-logo-text drop-shadow-md">Turnos <span className="text-primary/80 profile-logo-primary">Tattoo</span></span>
         </div>
         {/* Banner Section */}
-        <section className="relative w-full h-64 md:h-96 overflow-hidden bg-surface-container">
-          <OptimizedImage
-             className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105"
-             highResUrl={defaultBg}
-             alt="Banner"
-             useIntersectionObserver={false}
-             loading="eager"
-          />
-          {/* Filtro oscuro para no perder la estética con fotos claras */}
-          <div className="absolute inset-0 bg-black/40 banner-overlay-1"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-black/50 to-transparent banner-overlay-2"></div>
-        </section>
+        {(isProfileLoading && !artistData) ? (
+          <section className="relative w-full h-64 md:h-96 overflow-hidden bg-surface-container animate-pulse"></section>
+        ) : (
+          <section className="relative w-full h-64 md:h-96 overflow-hidden bg-surface-container">
+            <OptimizedImage
+               className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105"
+               highResUrl={defaultBg}
+               alt="Banner"
+               useIntersectionObserver={false}
+               loading="eager"
+            />
+            {/* Filtro oscuro para no perder la estética con fotos claras */}
+            <div className="absolute inset-0 bg-black/40 banner-overlay-1"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-black/50 to-transparent banner-overlay-2"></div>
+          </section>
+        )}
 
         {/* Profile Header Section */}
         <section className="relative px-gutter -mt-12 md:-mt-20 flex flex-col items-center text-center z-10">
           {/* Profile Photo */}
           <div className="relative p-1 bg-background rounded-full mb-2">
             <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-primary profile-photo-container">
-              <OptimizedImage className="w-full h-full object-cover" alt="Artist profile" highResUrl={defaultAvatar} useIntersectionObserver={false} loading="eager" />
+              {(isProfileLoading && !artistData) ? (
+                 <div className="w-full h-full bg-surface-variant animate-pulse"></div>
+              ) : (
+                 <OptimizedImage className="w-full h-full object-cover" alt="Artist profile" highResUrl={defaultAvatar} useIntersectionObserver={false} loading="eager" />
+              )}
             </div>
           </div>
 
           {/* Artist Info */}
-          <h1 className="font-headline-lg text-headline-lg text-on-surface font-extrabold uppercase tracking-tight text-3xl mb-4">{artistData?.displayName || defaultName}</h1>
-          {(() => {
-            const tags = ((artistData?.specialtyTags && artistData.specialtyTags.length > 0) ? artistData.specialtyTags : ['Realismo', 'Black & Grey']).slice(0, 3);
-            const count = tags.length;
-            let containerClass = "flex justify-center mb-4 w-full px-2 md:px-4 ";
-            if (count === 1) containerClass += "gap-2";
-            else if (count === 2) containerClass += "gap-6 md:gap-8";
-            else containerClass += "gap-2 justify-between md:justify-center md:gap-4";
-            
-            return (
-              <div className={containerClass}>
-                {tags.map((tag: string, index: number) => (
-                  <span key={index} className="px-2 py-1 md:px-3 md:py-1 bg-surface-container border border-outline-variant specialty-badge font-caption text-[9px] md:text-xs text-on-surface-variant uppercase tracking-widest whitespace-nowrap truncate max-w-[32%] md:max-w-none text-center flex-1 md:flex-none">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            );
-          })()}
+          {(isProfileLoading && !artistData) ? (
+            <div className="h-9 w-48 bg-surface-variant rounded-md animate-pulse mb-4 mt-2"></div>
+          ) : (
+            <h1 className="font-headline-lg text-headline-lg text-on-surface font-extrabold uppercase tracking-tight text-3xl mb-4">{artistData?.displayName || defaultName}</h1>
+          )}
+          
+          {(isProfileLoading && !artistData) ? (
+            <div className="flex justify-center mb-4 w-full px-2 gap-2">
+               <div className="h-6 w-20 bg-surface-variant rounded-sm animate-pulse"></div>
+               <div className="h-6 w-20 bg-surface-variant rounded-sm animate-pulse"></div>
+               <div className="h-6 w-20 bg-surface-variant rounded-sm animate-pulse"></div>
+            </div>
+          ) : (
+            (() => {
+              const tags = ((artistData?.specialtyTags && artistData.specialtyTags.length > 0) ? artistData.specialtyTags : ['Realismo', 'Black & Grey']).slice(0, 3);
+              const count = tags.length;
+              let containerClass = "flex justify-center mb-4 w-full px-2 md:px-4 ";
+              if (count === 1) containerClass += "gap-2";
+              else if (count === 2) containerClass += "gap-6 md:gap-8";
+              else containerClass += "gap-2 justify-between md:justify-center md:gap-4";
+              
+              return (
+                <div className={containerClass}>
+                  {tags.map((tag: string, index: number) => (
+                    <span key={index} className="px-2 py-1 md:px-3 md:py-1 bg-surface-container border border-outline-variant specialty-badge font-caption text-[9px] md:text-xs text-on-surface-variant uppercase tracking-widest whitespace-nowrap truncate max-w-[32%] md:max-w-none text-center flex-1 md:flex-none">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()
+          )}
 
           {/* Social & Stats */}
           <div className="flex justify-center mt-4 mb-4">
@@ -832,14 +853,14 @@ export default function Profile() {
 
             {visibleTattoos.map((tattoo, index) => (
               <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 tattoo-card ${index === 0 ? 'interactive-cue' : ''}`}>
-                <OptimizedImage 
-                  className="w-full h-full transition-all duration-700 cursor-pointer object-cover aspect-square" 
+                <img 
+                  className="w-full h-full transition-all duration-700 cursor-pointer object-cover aspect-square bg-surface-container" 
                   alt={tattoo.alt} 
                   onClick={() => openModal(index)} 
-                  lowResUrl={tattoo.thumbnailUrl}
-                  highResUrl={tattoo.thumbnailUrl || tattoo.previewUrl || tattoo.src} 
+                  src={tattoo.thumbnailUrl || tattoo.previewUrl || tattoo.src} 
+                  loading="lazy"
+                  decoding="async"
                   style={{ filter: getFilterStr(tattoo.filters) }}
-                  useIntersectionObserver={true}
                 />
                 {index === 0 && (
                   <div className="absolute inset-0 flex items-center justify-center flex-col gap-1 pointer-events-none interactive-overlay bg-black/40">
