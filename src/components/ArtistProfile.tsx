@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { OptimizedImage } from './OptimizedImage';
@@ -260,7 +260,7 @@ export default function Profile() {
             if (artistUid.startsWith('@') || artistUid.length < 20) {
                 let tag = artistUid.startsWith('@') ? artistUid : '@' + artistUid;
                 
-                const q = query(collection(db, 'users'), where('userTag', '==', tag));
+                const q = query(collection(db, 'users'), where('userTag', '==', tag), limit(1));
                 const snap = await getDocs(q);
                 if (!snap.empty) {
                     artistUid = snap.docs[0].id;
@@ -410,14 +410,14 @@ export default function Profile() {
   }, [id]);
 
 
-  const categoryCounts = allTattoos.reduce((acc, tattoo) => {
+  const categoryCounts = useMemo(() => allTattoos.reduce((acc, tattoo) => {
     (tattoo.categories || []).forEach((cat) => {
       acc[cat] = (acc[cat] || 0) + 1;
     });
     return acc;
-  }, {});
-  const sortedCategories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
-  const filterCategories = ["All", ...sortedCategories];
+  }, {} as Record<string, number>), [allTattoos]);
+  const sortedCategories = useMemo(() => Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]), [categoryCounts]);
+  const filterCategories = useMemo(() => ["All", ...sortedCategories], [sortedCategories]);
 
   const getFilterStr = (filters: any) => {
     let filterStr = '';
@@ -438,8 +438,9 @@ export default function Profile() {
     return filterStr.trim();
   };
 
-  const filteredTattoos = allTattoos.filter(t => activeCategory === "All" || t.categories.includes(activeCategory));
-  const visibleTattoos = filteredTattoos.slice(0, visibleCount);
+  const filteredTattoos = useMemo(() => allTattoos.filter(t => activeCategory === "All" || t.categories.includes(activeCategory)), [allTattoos, activeCategory]);
+  const visibleTattoos = useMemo(() => filteredTattoos.slice(0, visibleCount), [filteredTattoos, visibleCount]);
+  const refTattoo = useMemo(() => allTattoos.find(t => t.src === waitlistForm.referenceImage), [allTattoos, waitlistForm.referenceImage]);
 
   const loadMoreTattoos = async () => {
     if (visibleCount < filteredTattoos.length) {
@@ -852,13 +853,13 @@ export default function Profile() {
 
             {visibleTattoos.map((tattoo, index) => (
               <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 tattoo-card ${index === 0 ? 'interactive-cue' : ''}`}>
-                <img 
+                <OptimizedImage
                   className="w-full h-full transition-all duration-700 cursor-pointer object-cover aspect-square bg-surface-container" 
                   alt={tattoo.alt} 
                   onClick={() => openModal(index)} 
-                  src={tattoo.thumbnailUrl || tattoo.previewUrl || tattoo.src} 
-                  loading="lazy"
-                  decoding="async"
+                  lowResUrl={tattoo.thumbnailUrl || tattoo.previewUrl}
+                  highResUrl={tattoo.src}
+                  useIntersectionObserver={true}
                   style={{ filter: getFilterStr(tattoo.filters) }}
                 />
                 {index === 0 && (
@@ -1235,7 +1236,7 @@ export default function Profile() {
                   <OptimizedImage highResUrl={waitlistForm.referenceImage || ""} alt="Referencia" className="w-20 h-20 object-cover rounded border border-border-muted shrink-0" useIntersectionObserver={true} />
                   <div className="flex flex-col gap-1.5 overflow-hidden justify-center h-full">
                     {(() => {
-                      const refTattoo = allTattoos.find(t => t.src === waitlistForm.referenceImage);
+
                       if (refTattoo) {
                         return (
                           <>
@@ -1295,10 +1296,10 @@ export default function Profile() {
                   text: waitlistForm.description || 'Sin descripción',
                   hasImage: !!waitlistForm.referenceImage,
                   referenceImage: waitlistForm.referenceImage || null,
-                  referenceTitle: waitlistForm.referenceImage ? (allTattoos.find(t => t.src === waitlistForm.referenceImage)?.title || 'Imagen adjuntada') : null,
+                  referenceTitle: waitlistForm.referenceImage ? (refTattoo?.title || 'Imagen adjuntada') : null,
                   tags: [
                     waitlistForm.type === 'consulta' ? 'Consulta' : 'Idea',
-                    ...(waitlistForm.referenceImage ? [allTattoos.find(t => t.src === waitlistForm.referenceImage) ? 'Refe. del portafolio' : 'Refe. del usuario'] : [])
+                    ...(waitlistForm.referenceImage ? [refTattoo ? 'Refe. del portafolio' : 'Refe. del usuario'] : [])
                   ],
                   type: 'Nueva solicitud',
                   typeClass: 'px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-surface-variant text-on-surface-variant border border-border-muted whitespace-nowrap rounded',
