@@ -390,6 +390,20 @@
     display: none !important;
   }
 
+  .theme-pink-neon .modal-container .modal-submit-btn,
+  .theme-pink-neon .primary-action-btn {
+    background: linear-gradient(135deg, #FF2A85 0%, #D91060 100%) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+  }
+  .theme-pink-neon .modal-container input:focus,
+  .theme-pink-neon .modal-container textarea:focus,
+  .theme-pink-neon .modal-container select:focus {
+    border-color: #FF2A85 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 1px #FF2A85 !important;
+  }
+
   /* Secciones informativas */
   .theme-pink-neon .info-section {
     background: rgba(26, 22, 27, 0.7);
@@ -557,7 +571,20 @@
     color: #111111 !important;
   }
 
-  .theme-minimal-clean .modal-container .modal-submit-btn {
+  .theme-minimal-clean .modal-container input::placeholder,
+  .theme-minimal-clean .modal-container textarea::placeholder {
+    color: #888888 !important;
+  }
+
+  .theme-minimal-clean .modal-container input:focus,
+  .theme-minimal-clean .modal-container textarea:focus,
+  .theme-minimal-clean .modal-container select:focus {
+    border-color: #111111 !important;
+    outline: none !important;
+  }
+
+  .theme-minimal-clean .modal-container .modal-submit-btn,
+  .theme-minimal-clean .primary-action-btn {
     background: #111111 !important;
     color: #FFFFFF !important;
   }
@@ -762,8 +789,18 @@
     filter: drop-shadow(0 0 3px rgba(255, 30, 56, 0.6));
   }
   
-  .theme-cyber-neon .modal-container .modal-submit-btn {
+  .theme-cyber-neon .modal-container .modal-submit-btn,
+  .theme-cyber-neon .primary-action-btn {
     background: linear-gradient(135deg, #FF1E38 0%, #B91C1C 100%) !important;
     color: #FFFFFF !important;
+    border: none !important;
+  }
+  
+  .theme-cyber-neon .modal-container input:focus,
+  .theme-cyber-neon .modal-container textarea:focus,
+  .theme-cyber-neon .modal-container select:focus {
+    border-color: #FF1E38 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 1px #FF1E38 !important;
   }
 }
