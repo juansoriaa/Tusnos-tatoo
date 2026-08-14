@@ -218,15 +218,14 @@ export default function Profile() {
               }
           }
           if (targetUid && !targetUid.startsWith('@')) {
-              const { doc, updateDoc, increment } = await import('firebase/firestore');
-              const statRef = doc(db, 'users', targetUid, 'stats', 'metrics');
+              const { doc, setDoc, increment } = await import('firebase/firestore');
+              const userRef = doc(db, 'users', targetUid);
               
               const updates: any = {
-                  [metricKey]: increment(1),
-                  lastUpdated: new Date()
+                  [metricKey]: increment(1)
               };
               
-              await updateDoc(statRef, updates).catch(() => {});
+              await setDoc(userRef, updates, { merge: true }).catch(() => {});
           }
       } catch(e) {}
   };
@@ -1184,7 +1183,7 @@ export default function Profile() {
                   <input 
                     type="text" 
                     placeholder="Ej. Juan Pérez"
-                    className="bg-deep-black border border-border-muted text-silver-text font-label-md py-3 px-4 focus:outline-none focus:border-emerald-accent w-full"
+                    className="modal-input bg-deep-black border border-border-muted text-silver-text font-label-md py-3 px-4 focus:outline-none focus:border-emerald-accent w-full"
                     value={waitlistForm.name}
                     onChange={e => setWaitlistForm({...waitlistForm, name: e.target.value})}
                   />
@@ -1196,7 +1195,7 @@ export default function Profile() {
                     <input 
                   type="text" 
                   placeholder="11..."
-                  className="bg-deep-black border border-border-muted text-silver-text font-label-md py-3 px-4 focus:outline-none focus:border-emerald-accent w-full pr-10"
+                  className="modal-input bg-deep-black border border-border-muted text-silver-text font-label-md py-3 px-4 focus:outline-none focus:border-emerald-accent w-full pr-10"
                   value={waitlistForm.phone}
                   onChange={e => setWaitlistForm({...waitlistForm, phone: e.target.value})}
                 />
@@ -1209,7 +1208,7 @@ export default function Profile() {
               <div className="flex flex-col gap-1">
                 <label className="font-label-sm text-label-sm text-on-surface-variant uppercase">Título (Consulta o Idea)</label>
                 <select 
-                  className="bg-deep-black border border-border-muted text-silver-text font-label-md py-3 px-4 focus:outline-none focus:border-emerald-accent w-full cursor-pointer appearance-none"
+                  className="modal-input bg-deep-black border border-border-muted text-silver-text font-label-md py-3 px-4 focus:outline-none focus:border-emerald-accent w-full cursor-pointer appearance-none"
                   value={waitlistForm.type}
                   onChange={e => setWaitlistForm({...waitlistForm, type: e.target.value})}
                 >
@@ -1223,7 +1222,7 @@ export default function Profile() {
               <textarea 
                 rows={3}
                 placeholder="Describa su consulta o idea de tatuaje, tamaño y zona del cuerpo."
-                className="bg-deep-black border border-border-muted text-silver-text font-label-md py-3 px-4 focus:outline-none focus:border-emerald-accent w-full resize-none"
+                className="modal-input bg-deep-black border border-border-muted text-silver-text font-label-md py-3 px-4 focus:outline-none focus:border-emerald-accent w-full resize-none"
                 value={waitlistForm.description}
                 onChange={e => setWaitlistForm({...waitlistForm, description: e.target.value})}
               ></textarea>
@@ -1286,8 +1285,7 @@ export default function Profile() {
             )}
 
             <button type="button"
-              className="w-full py-3 mt-2 bg-emerald-accent text-on-surface font-label-md font-extrabold uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all"
-              style={{backgroundColor: '#054d44', color: '#e5e2e1'}}
+              className="modal-submit-btn w-full py-3 mt-2 bg-emerald-accent text-on-surface font-label-md font-extrabold uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all"
               onClick={async () => {
                 const newMessage = {
                   id: Date.now(),

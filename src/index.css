@@ -356,14 +356,14 @@
     border-color: #FF2A85;
   }
   .theme-pink-neon .social-btn {
-  border-color: rgba(255, 42, 133, 0.5);
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 42, 133, 0.05);
+  border-color: rgba(255, 42, 133, 0.8);
+  color: #FF2A85;
+  background: rgba(255, 42, 133, 0.1);
 }
 .theme-pink-neon .social-btn:hover {
-  background: rgba(255, 42, 133, 0.2);
+  background: rgba(255, 42, 133, 0.3);
   color: #fff;
-  box-shadow: 0 0 10px rgba(255, 42, 133, 0.3);
+  box-shadow: 0 0 12px rgba(255, 42, 133, 0.5);
 }
 .theme-pink-neon .category-filter-btn {
     border-color: rgba(255, 42, 133, 0.4);
@@ -387,16 +387,7 @@
     position: relative;
   }
   .theme-pink-neon .tattoo-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 30px;
-    border-top: 2px solid rgba(255, 42, 133, 0.4);
-    border-left: 2px solid rgba(255, 42, 133, 0.4);
-    border-right: 2px solid rgba(255, 42, 133, 0.4);
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-    pointer-events: none;
-    z-index: 10;
+    display: none !important;
   }
 
   /* Secciones informativas */
@@ -546,6 +537,30 @@
      border: 1px solid #EFEFF4 !important;
      box-shadow: 0 10px 40px rgba(0,0,0,0.05) !important;
   }
+  
+  .theme-minimal-clean .modal-container h2,
+  .theme-minimal-clean .modal-container h3,
+  .theme-minimal-clean .modal-container p,
+  .theme-minimal-clean .modal-container label,
+  .theme-minimal-clean .modal-container .text-silver-text,
+  .theme-minimal-clean .modal-container .text-on-surface-variant {
+    color: #111111 !important;
+  }
+
+  .theme-minimal-clean .modal-container .bg-deep-black,
+  .theme-minimal-clean .modal-container .bg-surface-variant\/50,
+  .theme-minimal-clean .modal-container select,
+  .theme-minimal-clean .modal-container textarea,
+  .theme-minimal-clean .modal-container input {
+    background: #F9F9FB !important;
+    border-color: #E5E5EA !important;
+    color: #111111 !important;
+  }
+
+  .theme-minimal-clean .modal-container .modal-submit-btn {
+    background: #111111 !important;
+    color: #FFFFFF !important;
+  }
 
   .theme-minimal-clean .modal-nav-arrow {
     background: rgba(255, 255, 255, 0.8) !important;
@@ -630,18 +645,18 @@
 
   .theme-cyber-neon .specialty-badge {
     background: rgba(255, 30, 56, 0.05) !important;
-    color: #FF1E38 !important;
-    border: 1px solid #FF1E38 !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    border: 1px solid rgba(255, 30, 56, 0.3) !important;
     border-radius: 12px !important;
-    box-shadow: inset 0 0 5px rgba(255, 30, 56, 0.2);
+    box-shadow: inset 0 0 5px rgba(255, 30, 56, 0.1);
   }
 
   .theme-cyber-neon .specialty-badge.active,
   .theme-cyber-neon .category-filter-btn.active {
-    background: #FF1E38 !important;
+    background: rgba(255, 30, 56, 0.8) !important;
     color: #FFFFFF !important;
     border: 1px solid #FF1E38 !important;
-    box-shadow: 0 0 10px rgba(255, 30, 56, 0.6) !important;
+    box-shadow: 0 0 10px rgba(255, 30, 56, 0.4) !important;
   }
 
   .theme-cyber-neon .social-btn {
@@ -745,5 +760,10 @@
   .theme-cyber-neon .stat-icon {
     color: #FF1E38 !important;
     filter: drop-shadow(0 0 3px rgba(255, 30, 56, 0.6));
+  }
+  
+  .theme-cyber-neon .modal-container .modal-submit-btn {
+    background: linear-gradient(135deg, #FF1E38 0%, #B91C1C 100%) !important;
+    color: #FFFFFF !important;
   }
 }

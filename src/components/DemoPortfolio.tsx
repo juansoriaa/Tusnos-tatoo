@@ -32,6 +32,8 @@ export default function DemoPortfolio() {
     const [showHint, setShowHint] = useState(true);
     const [initialFormState, setInitialFormState] = useState<any>(null);
     const [resetUploader, setResetUploader] = useState(0);
+    const [showLimitModal, setShowLimitModal] = useState(false);
+    const [showPinLimitModal, setShowPinLimitModal] = useState(false);
     const [existingPhotos, setExistingPhotos] = useState<any[]>(() => {
         try {
             const uid = localStorage.getItem('demoUserId');
@@ -470,6 +472,12 @@ export default function DemoPortfolio() {
             });
 
             if (!isUnpinning) {
+                const currentPinnedCount = existingPhotos.filter(p => typeof p.pinnedOrder === 'number' && p.pinnedOrder > 0).length;
+                if (currentPinnedCount >= 6) {
+                    setShowPinLimitModal(true);
+                    return;
+                }
+                
                 // Pin the new one
                 if (!photo.id.startsWith('fallback_')) {
                     batch.update(doc(db, 'photos', photo.id), { pinnedOrder: 1 });
@@ -499,8 +507,8 @@ export default function DemoPortfolio() {
         }
     };
 const handleSaveObra = async () => {
-        if (!editingPhoto && existingPhotos.length >= 25) {
-            alert('Has alcanzado el límite máximo de 25 obras. Por favor, elimina algunas antes de subir más.');
+        if (!editingPhoto && existingPhotos.length >= 15) {
+            setShowLimitModal(true);
             return;
         }
         if (!selectedFile && !editingPhoto) {
@@ -1167,6 +1175,48 @@ const handleSaveObra = async () => {
                             <button onClick={() => setShowCancelConfirm(false)} className="px-4 py-2 text-sm text-silver-text hover:text-white transition-colors">Volver</button>
                             <button onClick={cancelEdit} className="px-4 py-2 text-sm bg-[#b91c1c] text-white rounded hover:bg-[#991b1b] transition-colors">Sí, cancelar</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showLimitModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowLimitModal(false)}>
+                    <div className="modal-container bg-surface-elevation border border-error/30 rounded-xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()} style={{backgroundColor: '#141313'}}>
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-error"></div>
+                        <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center mx-auto mb-4">
+                            <span className="material-symbols-outlined text-error text-3xl">warning</span>
+                        </div>
+                        <h3 className="text-xl font-headline-md text-silver-text mb-2">Límite Alcanzado</h3>
+                        <p className="text-on-surface-variant font-body-md text-sm mb-6">
+                            Has alcanzado el límite máximo de <strong>15 obras</strong> permitidas. Por favor, elimina algunas fotos antiguas antes de subir nuevas.
+                        </p>
+                        <button 
+                            onClick={() => setShowLimitModal(false)}
+                            className="modal-submit-btn w-full py-3 bg-error text-white font-label-md uppercase tracking-wider rounded font-bold hover:brightness-110 transition-all"
+                        >
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {showPinLimitModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowPinLimitModal(false)}>
+                    <div className="modal-container bg-surface-elevation border border-amber-500/30 rounded-xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()} style={{backgroundColor: '#141313'}}>
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500"></div>
+                        <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+                            <span className="material-symbols-outlined text-amber-500 text-3xl">push_pin</span>
+                        </div>
+                        <h3 className="text-xl font-headline-md text-silver-text mb-2">Límite de Destacados</h3>
+                        <p className="text-on-surface-variant font-body-md text-sm mb-6">
+                            Solo puedes destacar un máximo de <strong>6 fotos</strong> en tu galería. Desancla alguna otra obra primero para destacar esta.
+                        </p>
+                        <button 
+                            onClick={() => setShowPinLimitModal(false)}
+                            className="modal-submit-btn w-full py-3 bg-amber-500 text-black font-label-md uppercase tracking-wider rounded font-bold hover:brightness-110 transition-all"
+                        >
+                            Entendido
+                        </button>
                     </div>
                 </div>
             )}
