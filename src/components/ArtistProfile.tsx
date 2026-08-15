@@ -326,6 +326,7 @@ export default function Profile() {
                                 id: d.id,
                                 src: pData.url || pData.imageUrl || pData.src,
                                 previewUrl: pData.previewUrl,
+                                thumbnailUrl: pData.thumbnailUrl,
                                 alt: pData.title || pData.description || "Tattoo photo",
                                 title: pData.title || "Tattoo",
                                 categories: pData.categories || pData.tags || ["Blackwork"],
@@ -858,7 +859,7 @@ export default function Profile() {
                   alt={tattoo.alt} 
                   onClick={() => openModal(index)} 
                   lowResUrl={tattoo.thumbnailUrl || tattoo.previewUrl}
-                  highResUrl={tattoo.src}
+                  highResUrl={tattoo.thumbnailUrl || tattoo.previewUrl || tattoo.src}
                   useIntersectionObserver={true}
                   style={{ filter: getFilterStr(tattoo.filters) }}
                 />
@@ -1150,7 +1151,7 @@ export default function Profile() {
 
       {waitlistModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
-          <div className="bg-surface-container border border-outline-variant w-full max-w-md p-6 relative flex flex-col gap-4 overflow-hidden">
+          <div className="bg-surface-container border border-outline-variant w-full max-w-md p-6 relative flex flex-col gap-4 overflow-hidden modal-container">
             <button type="button"
               className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
               onClick={() => {
@@ -1331,7 +1332,7 @@ export default function Profile() {
       {/* Terms Modal */}
       {termsModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
-          <div className="bg-surface-container border border-outline-variant w-full max-w-2xl max-h-[80vh] flex flex-col p-6 relative overflow-hidden">
+          <div className="bg-surface-container border border-outline-variant w-full max-w-2xl max-h-[80vh] flex flex-col p-6 relative overflow-hidden modal-container">
             <button type="button"
               className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
               onClick={() => setTermsModalOpen(false)}
@@ -1368,7 +1369,7 @@ export default function Profile() {
       {/* Privacy Modal */}
       {privacyModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
-          <div className="bg-surface-container border border-outline-variant w-full max-w-2xl max-h-[80vh] flex flex-col p-6 relative overflow-hidden">
+          <div className="bg-surface-container border border-outline-variant w-full max-w-2xl max-h-[80vh] flex flex-col p-6 relative overflow-hidden modal-container">
             <button type="button"
               className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
               onClick={() => setPrivacyModalOpen(false)}
@@ -1405,7 +1406,7 @@ export default function Profile() {
       {/* Contact Modal */}
       {contactModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
-          <div className="bg-surface-container border border-outline-variant w-full max-w-md p-6 relative flex flex-col gap-4 overflow-hidden">
+          <div className="bg-surface-container border border-outline-variant w-full max-w-md p-6 relative flex flex-col gap-4 overflow-hidden modal-container">
             <button type="button"
               className="absolute top-4 right-4 text-on-surface-variant hover:text-white z-10"
               onClick={() => {
