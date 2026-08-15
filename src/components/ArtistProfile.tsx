@@ -336,14 +336,6 @@ export default function Profile() {
                                 originalFallbackId: pData.originalFallbackId || null
                             };
                         });
-
-                        // Fallback logic
-                        if (finalPhotos.length < 12) {
-                            const limitedFallback = DEMO_FALLBACK_PHOTOS.slice(0, 12 - finalPhotos.length);
-                            const deletedFallbacks = JSON.parse(localStorage.getItem('deletedFallbacks') || '[]');
-                            const addedFallbackPhotos = limitedFallback.filter(f => !finalPhotos.some(p => p.originalFallbackId === f.id) && !deletedFallbacks.includes(f.id));
-                            finalPhotos = [...finalPhotos, ...addedFallbackPhotos];
-                        }
                         
                         if (snap.docs.length > 0) {
                             setLastDoc(snap.docs[snap.docs.length - 1]);
