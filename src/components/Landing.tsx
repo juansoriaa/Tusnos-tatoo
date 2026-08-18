@@ -293,6 +293,37 @@ export default function Landing() {
   };
 
   useEffect(() => {
+    // 1. Preload the React chunk for the profile page
+    import('./ArtistProfile').catch(() => {});
+
+    // 2. Preload Firestore data for the demo account
+    const preloadDemo = async () => {
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('tag', '==', 'dani_black'));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const userDoc = querySnapshot.docs[0];
+          const uid = userDoc.id;
+          
+          // Cache the tag mapping to speed up ArtistProfile
+          localStorage.setItem(`tag_uid_map_dani_black`, uid);
+
+          // Preload portfolio photos
+          const portfolioRef = collection(db, 'portfolios');
+          const pQ = query(portfolioRef, where('userId', '==', uid));
+          getDocs(pQ).catch(() => {}); // Cache photos in Firebase local cache
+        }
+      } catch (error) {
+        console.error('Error preloading demo account:', error);
+      }
+    };
+
+    preloadDemo();
+  }, []);
+
+  useEffect(() => {
     // Simple header scroll effect
     const handleScroll = () => {
         const header = document.querySelector('header');
@@ -399,7 +430,7 @@ export default function Landing() {
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-6">
               <button onClick={handleWhatsAppRedirect} className="w-full md:w-auto px-12 py-5 bg-primary text-white font-black text-body-md uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 active:scale-95 shadow-[0_0_30px_rgba(5,77,68,0.4)]">Quiero mi página</button>
-              <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/@victor_ink')}>
+              <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/@dani_black')}>
                 Ver Demo
               </button>
             </div>
