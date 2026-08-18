@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
 import { db, auth, onAuthStateChanged } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useSubscription } from '../hooks/useSubscription';
 
 
 const defaultAvatar = 'https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo';
@@ -86,6 +87,8 @@ const defaultFaqs = [
                 setStudioAddress(data.studioAddress || '');
                 if (data.faqs) setFaqs(data.faqs);
                 setStudioHours(data.studioHours || '');
+                setSubscriptionStatus(data.subscriptionStatus || 'active');
+                setSubscriptionEndsAt(data.subscriptionEndsAt || null);
             
                 setInitialDataStr(JSON.stringify({
                     name: data.displayName || 'Victor Ink',
@@ -178,6 +181,10 @@ const defaultFaqs = [
     const [instagram, setInstagram] = useState('');
     const [facebook, setFacebook] = useState('');
     const [tiktok, setTiktok] = useState('');
+    const [subscriptionStatus, setSubscriptionStatus] = useState('active');
+    const [subscriptionEndsAt, setSubscriptionEndsAt] = useState<any>(null);
+
+    const subscription = useSubscription(subscriptionStatus, subscriptionEndsAt);
     const [avatarUrl, setAvatarUrl] = useState(defaultAvatar);
     const [bannerUrl, setBannerUrl] = useState(defaultBanner);
 
@@ -438,6 +445,26 @@ const defaultFaqs = [
             description="Resumen de tu negocio, estado de turnos y perfil de artista."
         >
             <div className="flex flex-col gap-6">
+                {subscription.status === 'expired' && (
+                    <div className="bg-red-950/40 border border-red-500/30 rounded-xl p-4 text-center">
+                        <p className="text-white font-bold mb-2">Tu perfil público ha sido temporalmente suspendido por falta de pago.</p>
+                        <a href="https://wa.me/5491140679334" target="_blank" rel="noopener noreferrer" className="inline-block bg-red-600 text-white px-4 py-2 rounded font-bold hover:bg-red-500 transition">
+                            Contactar al Administrador
+                        </a>
+                    </div>
+                )}
+                {(subscription.status === 'warning_trial' || subscription.status === 'warning_monthly') && (
+                    <div className="bg-amber-950/20 border border-amber-700/30 rounded-xl p-3 flex flex-col md:flex-row items-center justify-center gap-4 text-center">
+                        <p className="text-amber-200/90 text-sm md:text-base font-medium">
+                            {subscription.status === 'warning_trial' 
+                                ? `Te quedan ${subscription.daysLeft} días de tu período de prueba. Contacta al administrador para activar tu plan.` 
+                                : `Tu mensualidad vence en ${subscription.daysLeft} días. Contacta al administrador para renovar tu suscripción.`}
+                        </p>
+                        <a href="https://wa.me/5491140679334" target="_blank" rel="noopener noreferrer" className="bg-amber-600/80 hover:bg-amber-500 text-white px-3 py-1.5 rounded text-sm font-bold transition whitespace-nowrap">
+                            Renovar ahora
+                        </a>
+                    </div>
+                )}
                 {/* Header / Booking Status */}
                 <header className="flex flex-col gap-6 mb-8">
                     <div>
@@ -774,6 +801,8 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
                 </div>
             </div>
         )}
+
+
 
         {toastMessage && (
             <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] animate-fade-in pointer-events-none w-[90%] max-w-sm">

@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { OptimizedImage } from './OptimizedImage';
 import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, startAfter, onSnapshot } from 'firebase/firestore';
+import { useSubscription } from '../hooks/useSubscription';
 import { db, auth, onAuthStateChanged } from '../firebase';
 import { globalPreloadCache } from '../lib/cache';
 
@@ -112,8 +113,16 @@ export default function Profile() {
   const navigate = useNavigate();
   const { id } = useParams();
   
-  const resolveTargetId = () => {
+   const resolveTargetId = () => {
         let targetId = id || localStorage.getItem('demoUserId') || 'demo';
+        
+        // Fast direct cache lookup for tag -> uid
+        if (targetId && (targetId.startsWith('@') || targetId.length < 20)) {
+            const tag = targetId.startsWith('@') ? targetId : '@' + targetId;
+            const cachedUid = localStorage.getItem('tag_uid_map_' + tag);
+            if (cachedUid) return cachedUid;
+        }
+
         if (id && id.startsWith('@')) {
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
@@ -122,6 +131,9 @@ export default function Profile() {
                         const cached = JSON.parse(localStorage.getItem(key) || '{}');
                         if (cached.userTag === id || cached.userTag === '@' + id || '@' + cached.userTag === id) {
                             targetId = cached.uid || key.replace('demoArtistData_', '');
+                            try {
+                                localStorage.setItem('tag_uid_map_' + (id.startsWith('@') ? id : '@' + id), targetId);
+                            } catch(e) {}
                             break;
                         }
                     } catch(e) {}
@@ -173,6 +185,7 @@ export default function Profile() {
     return isTargetDemo() ? DEMO_FALLBACK_ARTIST_DATA : null;
   });
 
+  const subscription = useSubscription(artistData?.subscriptionStatus, artistData?.subscriptionEndsAt);
 
   const [allTattoos, setAllTattoos] = useState<any[]>(() => {
       try {
@@ -260,18 +273,28 @@ export default function Profile() {
             if (artistUid.startsWith('@') || artistUid.length < 20) {
                 let tag = artistUid.startsWith('@') ? artistUid : '@' + artistUid;
                 
-                const q = query(collection(db, 'users'), where('userTag', '==', tag), limit(1));
-                const snap = await getDocs(q);
-                if (!snap.empty) {
-                    artistUid = snap.docs[0].id;
+                const cachedUid = localStorage.getItem('tag_uid_map_' + tag);
+                if (cachedUid) {
+                    artistUid = cachedUid;
                     currentArtistDocId = artistUid;
-                    
-                    // OPTIMIZACIÓN: Cargar datos inmediatamente desde la consulta del tag
-                    // para evitar esperar al onSnapshot y lograr renderizado casi instantáneo.
-                    if (isMounted) {
-                        const resolvedData = { ...snap.docs[0].data(), uid: artistUid };
-                        setArtistData(resolvedData);
-                        setIsProfileLoading(false);
+                } else {
+                    const q = query(collection(db, 'users'), where('userTag', '==', tag), limit(1));
+                    const snap = await getDocs(q);
+                    if (!snap.empty) {
+                        artistUid = snap.docs[0].id;
+                        currentArtistDocId = artistUid;
+                        
+                        try {
+                            localStorage.setItem('tag_uid_map_' + tag, artistUid);
+                        } catch(e) {}
+                        
+                        // OPTIMIZACIÓN: Cargar datos inmediatamente desde la consulta del tag
+                        // para evitar esperar al onSnapshot y lograr renderizado casi instantáneo.
+                        if (isMounted) {
+                            const resolvedData = { ...snap.docs[0].data(), uid: artistUid };
+                            setArtistData(resolvedData);
+                            setIsProfileLoading(false);
+                        }
                     }
                 }
             }
@@ -640,7 +663,21 @@ export default function Profile() {
   
 
   return (
-    <div className={`bg-background text-on-background font-body-md selection:bg-primary selection:text-on-primary min-h-screen ${artistData?.theme === 'pink_neon' ? 'theme-pink-neon' : ''} ${artistData?.theme === 'minimal_clean' ? 'theme-minimal-clean' : ''} ${artistData?.theme === 'cyber_neon' ? 'theme-cyber-neon' : ''}`}>
+    <div className={`bg-background text-on-background font-body-md selection:bg-primary selection:text-on-primary min-h-screen ${artistData?.theme === 'pink_neon' ? 'theme-pink-neon' : ''} ${artistData?.theme === 'minimal_clean' ? 'theme-minimal-clean' : ''} ${artistData?.theme === 'cyber_neon' ? 'theme-cyber-neon' : ''} ${subscription.status === 'expired' ? 'pointer-events-none select-none h-screen overflow-hidden' : ''}`}>
+      {subscription.status === 'expired' && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center pointer-events-auto">
+          <div className="bg-[#0A0A0C] border border-outline-variant/30 rounded-xl p-8 max-w-md text-center mx-4 shadow-2xl">
+            <span className="material-symbols-outlined text-error text-5xl mb-4">block</span>
+            <h2 className="text-xl font-bold text-white mb-2 uppercase tracking-wide">Perfil Temporalmente Suspendido</h2>
+            <p className="text-on-surface-variant text-sm leading-relaxed mb-6">
+              La cuenta de este artista se encuentra en proceso de renovación o pausada. Si eres el titular, contacta al soporte técnico para restablecer el servicio.
+            </p>
+            <a href="https://wa.me/5491140679334" target="_blank" rel="noopener noreferrer" className="inline-block w-full py-3 bg-white text-black font-bold rounded hover:bg-gray-200 transition-colors uppercase tracking-wider text-xs">
+              Contactar Soporte Técnico
+            </a>
+          </div>
+        </div>
+      )}
       <Helmet>
         <title>{artistData?.displayName ? `${artistData.displayName} - Turnos Tattoo` : 'Perfil de Artista - Turnos Tattoo'}</title>
         <meta name="description" content={artistData?.bio || defaultBio} />
@@ -666,6 +703,7 @@ export default function Profile() {
                alt="Banner"
                useIntersectionObserver={false}
                loading="eager"
+               optimizedSize={1200}
             />
             {/* Filtro oscuro para no perder la estética con fotos claras */}
             <div className="absolute inset-0 bg-black/40 banner-overlay-1"></div>
@@ -681,7 +719,7 @@ export default function Profile() {
               {(isProfileLoading && !artistData) ? (
                  <div className="w-full h-full bg-surface-variant animate-pulse"></div>
               ) : (
-                 <OptimizedImage className="w-full h-full object-cover" alt="Artist profile" highResUrl={defaultAvatar} useIntersectionObserver={false} loading="eager" />
+                 <OptimizedImage className="w-full h-full object-cover" alt="Artist profile" highResUrl={defaultAvatar} useIntersectionObserver={false} loading="eager" optimizedSize={256} />
               )}
             </div>
           </div>
@@ -711,7 +749,7 @@ export default function Profile() {
               return (
                 <div className={containerClass}>
                   {tags.map((tag: string, index: number) => (
-                    <span key={index} className="px-2 py-1 md:px-3 md:py-1 bg-surface-container border border-outline-variant specialty-badge font-caption text-[9px] md:text-xs text-on-surface-variant uppercase tracking-widest whitespace-nowrap truncate max-w-[32%] md:max-w-none text-center flex-1 md:flex-none">
+                    <span key={index} className="px-2 py-1 md:px-3 md:py-1 bg-primary/10 border border-primary/20 rounded-xl specialty-badge font-caption text-[9px] md:text-xs text-primary uppercase tracking-widest whitespace-nowrap truncate max-w-[32%] md:max-w-none text-center flex-1 md:flex-none">
                       {tag}
                     </span>
                   ))}
@@ -814,10 +852,10 @@ export default function Profile() {
                 <button type="button"
                   key={cat}
                   onClick={() => { setActiveCategory(cat); }}
-                  className={`whitespace-nowrap px-4 py-2 border rounded font-label-md text-[10px] md:text-xs uppercase tracking-widest font-bold transition-colors category-filter-btn ${
+                  className={`whitespace-nowrap px-4 py-2 border rounded-xl font-label-md text-[10px] md:text-xs uppercase tracking-widest font-bold transition-colors category-filter-btn ${
                     activeCategory === cat 
-                      ? 'bg-primary/20 text-primary border-primary/30 active' 
-                      : 'border-outline-variant/30 text-on-surface-variant hover:border-primary/30 hover:text-primary'
+                      ? 'bg-primary/20 text-primary border-primary/50 active' 
+                      : 'bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 hover:border-primary/40'
                   }`}
                 >
                   {cat}
@@ -921,7 +959,7 @@ export default function Profile() {
                 className="h-48 md:h-64 w-full mx-auto grayscale border border-outline-variant overflow-hidden hover:grayscale-0 hover:border-primary transition-all duration-500 block relative group"
               >
                 <div className="w-full h-full bg-surface-container flex items-center justify-center relative">
-                  <OptimizedImage className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 transition-opacity duration-500" alt="Map" highResUrl="https://lh3.googleusercontent.com/aida-public/AB6AXuC1MG2dFZwUDUPDIxG_Aln6x7qj7PTFU-nq71Kz_QrgZTsCKbHPWFjx1ECNLxh36R0plsldSaxtyWi1PPUfx4GZVICAiwQXgKFS91w9QB5JPN2AUgGXuwSqPAQHVv_Rrra-Rqlu99MtTqyjx4iIJbH0Xe-XAk9kQyS0DhXbqymKwhMbLjhlxQ9vs6vSgvupRUsYJkHkoWe_Sp9AOCXN0tXfooiYuXTp3PQK0-nvaoIExJsH7e4H5n1iynsgSXS0Bc702RScJbs0uf8" useIntersectionObserver={true} />
+                  <OptimizedImage className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 transition-opacity duration-500" alt="Map" highResUrl="https://lh3.googleusercontent.com/aida-public/AB6AXuC1MG2dFZwUDUPDIxG_Aln6x7qj7PTFU-nq71Kz_QrgZTsCKbHPWFjx1ECNLxh36R0plsldSaxtyWi1PPUfx4GZVICAiwQXgKFS91w9QB5JPN2AUgGXuwSqPAQHVv_Rrra-Rqlu99MtTqyjx4iIJbH0Xe-XAk9kQyS0DhXbqymKwhMbLjhlxQ9vs6vSgvupRUsYJkHkoWe_Sp9AOCXN0tXfooiYuXTp3PQK0-nvaoIExJsH7e4H5n1iynsgSXS0Bc702RScJbs0uf8" useIntersectionObserver={true} optimizedSize={600} />
                   <div className="relative z-10 text-center p-6 border border-primary/30 bg-surface/80 backdrop-blur-md group-hover:bg-primary/90 group-hover:border-primary group-hover:text-on-primary transition-all duration-300">
                     <span className="material-symbols-outlined text-3xl text-primary mb-2 group-hover:text-on-primary transition-colors">map</span>
                     <p className="font-label-md text-label-md text-on-surface font-bold group-hover:text-on-primary transition-colors">Abrir en Google Maps</p>
@@ -934,7 +972,7 @@ export default function Profile() {
 
         <section className="mt-section-gap mb-section-gap px-gutter max-w-container-max mx-auto ">
           <div className="bg-surface-container p-8 border border-outline-variant/20 border-l-[3px] border-l-primary rounded-l-none rounded-r-lg flex flex-col gap-8 items-center text-center info-section">
-            <OptimizedImage className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-primary shrink-0" alt={artistData?.displayName || "Artist"} highResUrl={defaultAvatar} useIntersectionObserver={true} />
+            <OptimizedImage className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-primary shrink-0" alt={artistData?.displayName || "Artist"} highResUrl={defaultAvatar} useIntersectionObserver={true} optimizedSize={256} />
             <div>
               <h2 className="font-headline-md text-headline-md text-on-surface mb-4 font-bold uppercase tracking-tight">Sobre Mí</h2>
               <p className="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto">{artistData?.bio || "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente."}</p>

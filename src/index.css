@@ -346,14 +346,16 @@
   }
 
   .theme-pink-neon .specialty-badge {
-    border-color: rgba(255, 42, 133, 0.4);
-    background: transparent;
+    border-color: rgba(255, 42, 133, 0.3) !important;
+    background: rgba(255, 42, 133, 0.05) !important;
+    color: rgba(255, 42, 133, 0.9) !important;
+    border-radius: 12px !important;
   }
   .theme-pink-neon .specialty-badge.active,
   .theme-pink-neon .category-filter-btn.active {
-    background: #FF2A85;
-    color: white;
-    border-color: #FF2A85;
+    background: #FF2A85 !important;
+    color: white !important;
+    border: 1px solid #FF2A85 !important;
   }
   .theme-pink-neon .social-btn {
   border-color: rgba(255, 42, 133, 0.8);
@@ -365,8 +367,15 @@
   color: #fff;
   box-shadow: 0 0 12px rgba(255, 42, 133, 0.5);
 }
-.theme-pink-neon .category-filter-btn {
-    border-color: rgba(255, 42, 133, 0.4);
+  .theme-pink-neon .category-filter-btn {
+    border: 1px solid rgba(255, 42, 133, 0.3) !important;
+    color: #FF2A85 !important;
+    background: rgba(255, 42, 133, 0.05) !important;
+    border-radius: 12px !important;
+  }
+  .theme-pink-neon .category-filter-btn:not(.active):hover {
+    background: rgba(255, 42, 133, 0.15) !important;
+    border-color: rgba(255, 42, 133, 0.6) !important;
   }
 
   .theme-pink-neon .primary-action-btn {
@@ -474,20 +483,26 @@
   .theme-minimal-clean .specialty-badge {
     background: #EFEFF4 !important;
     color: #333333 !important;
-    border: none !important;
-    border-radius: 6px !important;
+    border: 1px solid #E5E5EA !important;
+    border-radius: 12px !important;
   }
 
   .theme-minimal-clean .specialty-badge.active,
   .theme-minimal-clean .category-filter-btn.active {
     background: #111111 !important;
     color: #FFFFFF !important;
-    border: none !important;
+    border: 1px solid #111111 !important;
   }
 
   .theme-minimal-clean .category-filter-btn {
     border: 1px solid #E5E5EA !important;
     color: #666666 !important;
+    background: #F9F9FB !important;
+    border-radius: 12px !important;
+  }
+  .theme-minimal-clean .category-filter-btn:not(.active):hover {
+    background: #EFEFF4 !important;
+    border-color: #D1D1D6 !important;
   }
 
   .theme-minimal-clean .primary-action-btn {
@@ -700,6 +715,10 @@
     border: 1px solid rgba(255, 30, 56, 0.3) !important;
     color: #FF1E38 !important;
     background: transparent !important;
+  }
+  .theme-cyber-neon .category-filter-btn:not(.active):hover {
+    background: rgba(255, 30, 56, 0.15) !important;
+    border-color: rgba(255, 30, 56, 0.6) !important;
   }
 
   .theme-cyber-neon .primary-action-btn {

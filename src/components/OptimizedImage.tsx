@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getOptimizedGoogleUrl } from '../lib/imageHelper';
 
 interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   lowResUrl?: string;
   highResUrl: string;
   useIntersectionObserver?: boolean;
+  optimizedSize?: number;
 }
 
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({ 
@@ -13,10 +15,14 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   className, 
   style, 
   useIntersectionObserver = false,
+  optimizedSize,
   ...props 
 }) => {
-  const [currentSrc, setCurrentSrc] = useState(lowResUrl || highResUrl);
-  const [loading, setLoading] = useState(!!lowResUrl && lowResUrl !== highResUrl);
+  const optLowRes = lowResUrl ? getOptimizedGoogleUrl(lowResUrl, 256) : '';
+  const optHighRes = getOptimizedGoogleUrl(highResUrl, optimizedSize || 800);
+
+  const [currentSrc, setCurrentSrc] = useState(optLowRes || optHighRes);
+  const [loading, setLoading] = useState(!!optLowRes && optLowRes !== optHighRes);
   const [isVisible, setIsVisible] = useState(!useIntersectionObserver);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -43,24 +49,24 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   useEffect(() => {
     if (!isVisible) return;
 
-    if (lowResUrl && lowResUrl !== highResUrl) {
+    if (optLowRes && optLowRes !== optHighRes) {
       const img = new Image();
-      img.src = highResUrl;
+      img.src = optHighRes;
       img.onload = () => {
-        setCurrentSrc(highResUrl);
+        setCurrentSrc(optHighRes);
         setLoading(false);
       };
     } else {
-        setCurrentSrc(highResUrl);
+        setCurrentSrc(optHighRes);
         setLoading(false);
     }
-  }, [highResUrl, lowResUrl, isVisible]);
+  }, [optHighRes, optLowRes, isVisible]);
 
   return (
     <img
       ref={imgRef}
       {...props}
-      src={isVisible ? (currentSrc || undefined) : (lowResUrl || undefined)}
+      src={isVisible ? (currentSrc || undefined) : (optLowRes || undefined)}
       alt={alt}
       loading={props.loading || "lazy"}
       decoding="async"
