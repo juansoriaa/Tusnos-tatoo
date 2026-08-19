@@ -728,11 +728,41 @@ const handleSaveObra = async () => {
         }
     };
 
-    const handleRemoveCategory = (catToRemove: string) => {
+    const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+
+    const checkAndRemoveCategory = (catToRemove: string) => {
+        const isUsed = photos.some(p => p.tags && p.tags.includes(catToRemove));
+        if (isUsed) {
+            setCategoryToDelete(catToRemove);
+        } else {
+            handleRemoveCategoryConfirm(catToRemove);
+        }
+    };
+
+    const handleRemoveCategoryConfirm = (catToRemove: string) => {
         const newCats = categories.filter(c => c !== catToRemove);
         setCategories(newCats);
         syncCategories(newCats);
         setSelectedCategories(selectedCategories.filter(c => c !== catToRemove));
+        
+        // Also remove this tag from all photos that have it
+        const photosToUpdate = photos.filter(p => p.tags && p.tags.includes(catToRemove));
+        photosToUpdate.forEach(async (photo) => {
+            const newTags = photo.tags.filter(t => t !== catToRemove);
+            if (!photo.id.startsWith('fallback_')) {
+                await updateDoc(doc(db, 'photos', photo.id), { tags: newTags });
+            }
+        });
+        
+        // Update local state
+        setPhotos(prev => prev.map(p => {
+            if (p.tags && p.tags.includes(catToRemove)) {
+                return { ...p, tags: p.tags.filter(t => t !== catToRemove) };
+            }
+            return p;
+        }));
+        
+        setCategoryToDelete(null);
     };
 
     const toggleCategorySelection = (cat: string) => {
@@ -783,7 +813,7 @@ const handleSaveObra = async () => {
             </div>
             <div className="flex flex-wrap gap-2 w-full md:flex-1">
             {categories.map((cat) => (
-                <div key={cat} className="bg-surface-container px-2 py-1.5 md:py-1 rounded flex items-center border border-border-muted/50 group hover:border-emerald-accent transition-colors cursor-pointer" style={{backgroundColor: '#201f1f', borderColor: 'rgba(53,52,52,0.5)'}} onClick={() => handleRemoveCategory(cat)}>
+                <div key={cat} className="bg-surface-container px-2 py-1.5 md:py-1 rounded flex items-center border border-border-muted/50 group hover:border-emerald-accent transition-colors cursor-pointer" style={{backgroundColor: '#201f1f', borderColor: 'rgba(53,52,52,0.5)'}} onClick={() => checkAndRemoveCategory(cat)}>
                 <span className="font-label-sm uppercase text-silver-text mr-1 text-xs md:text-[10px]" style={{color: '#e5e2e1'}}>{cat}</span>
                 <span className="material-symbols-outlined text-sm md:text-[12px] text-on-surface-variant group-hover:text-error transition-colors">close</span>
                 </div>
@@ -1154,7 +1184,7 @@ const handleSaveObra = async () => {
                     </div>
                 </div>
             )}
-{photoToDelete && (
+            {photoToDelete && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
                     <div className="bg-surface-container border border-outline-variant w-full max-w-sm p-6 relative flex flex-col gap-4 overflow-hidden rounded-lg">
                         <h3 className="text-white text-lg font-bold">¿Eliminar foto?</h3>
@@ -1162,6 +1192,18 @@ const handleSaveObra = async () => {
                         <div className="flex justify-end gap-3 mt-2">
                             <button onClick={() => setPhotoToDelete(null)} className="px-4 py-2 text-sm text-silver-text hover:text-white transition-colors">Cancelar</button>
                             <button onClick={handleDeletePhoto} className="px-4 py-2 text-sm bg-[#b91c1c] text-white rounded hover:bg-[#991b1b] transition-colors">Sí, eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {categoryToDelete && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
+                    <div className="bg-surface-container border border-outline-variant w-full max-w-sm p-6 relative flex flex-col gap-4 overflow-hidden rounded-lg">
+                        <h3 className="text-white text-lg font-bold">¿Eliminar categoría en uso?</h3>
+                        <p className="text-on-surface-variant text-sm">El filtro "{categoryToDelete}" está asignado a una o más fotos en tu galería. Si lo eliminas, también se removerá de dichas fotos.</p>
+                        <div className="flex justify-end gap-3 mt-2">
+                            <button onClick={() => setCategoryToDelete(null)} className="px-4 py-2 text-sm text-silver-text hover:text-white transition-colors">Cancelar</button>
+                            <button onClick={() => handleRemoveCategoryConfirm(categoryToDelete)} className="px-4 py-2 text-sm bg-[#b91c1c] text-white rounded hover:bg-[#991b1b] transition-colors">Sí, eliminar filtro</button>
                         </div>
                     </div>
                 </div>

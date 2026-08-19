@@ -1109,7 +1109,7 @@ export default function Profile() {
                     </div>
                     
                     <div className="mt-2 md:mt-4">
-                      <p className="text-center text-on-surface-variant text-xs md:text-sm leading-relaxed">{filteredTattoos[activeTattooIndex].alt}</p>
+                      <p className="text-center text-on-surface-variant text-xs md:text-sm leading-relaxed">{filteredTattoos[activeTattooIndex].description}</p>
                     </div>
                   </div>
 
