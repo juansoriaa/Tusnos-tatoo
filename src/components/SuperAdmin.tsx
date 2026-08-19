@@ -103,7 +103,40 @@ export default function SuperAdmin() {
   }, [isModalOpen]); // refetch when modal closes
 
   const [detailsModalUser, setDetailsModalUser] = useState<any>(null);
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [editUserData, setEditUserData] = useState<any>(null);
 
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editUserData.userTag !== detailsModalUser.userTag) {
+        // Tag changed, check for duplicates
+        const tagToCheck = editUserData.userTag.startsWith('@') ? editUserData.userTag : '@' + editUserData.userTag;
+        const q = query(collection(db, 'users'), where('userTag', '==', tagToCheck));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            alert('¡Ese tag ya está en uso por otro artista! Por favor elige otro.');
+            return;
+        }
+      }
+
+      await updateDoc(doc(db, 'users', editUserData.uid), {
+        displayName: editUserData.displayName,
+        userTag: editUserData.userTag.startsWith('@') ? editUserData.userTag : '@' + editUserData.userTag,
+        whatsapp: editUserData.whatsapp,
+        email: editUserData.email,
+      });
+
+      const updatedUser = { ...detailsModalUser, ...editUserData, userTag: editUserData.userTag.startsWith('@') ? editUserData.userTag : '@' + editUserData.userTag };
+      setDetailsModalUser(updatedUser);
+      setUsers(users.map(u => u.uid === updatedUser.uid ? updatedUser : u));
+      setIsEditingUser(false);
+      alert('Perfil actualizado con éxito');
+    } catch (err) {
+      console.error(err);
+      alert('Error al actualizar el usuario');
+    }
+  };
   const handleUpgradeToMonthly = async (userId: string, currentEndsAt: any) => {
     try {
       const endsDate = currentEndsAt?.toDate ? currentEndsAt.toDate() : new Date();
@@ -341,6 +374,16 @@ export default function SuperAdmin() {
   const handleCrearProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Validar si el tag ya existe
+      const tagToCheck = newUserData.userTag.startsWith('@') ? newUserData.userTag : '@' + newUserData.userTag;
+      const q = query(collection(db, 'users'), where('userTag', '==', tagToCheck));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+          alert('¡Ese tag ya está en uso por otro artista! Por favor elige otro.');
+          return;
+      }
+
       const newUid = crypto.randomUUID(); // generate a mock uid since we can't create Auth user safely client-side
       
       let subscriptionEndsAt = new Date();
@@ -1481,21 +1524,54 @@ export default function SuperAdmin() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-surface-container border border-outline-variant/30 rounded-xl p-6 w-full max-w-md shadow-2xl relative">
             <button 
-              onClick={() => setDetailsModalUser(null)}
+              onClick={() => { setDetailsModalUser(null); setIsEditingUser(false); }}
               className="absolute top-4 right-4 text-secondary hover:text-primary transition-colors"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
-            <h3 className="font-headline-md text-headline-md text-on-surface mb-4">Información del Artista</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-headline-md text-headline-md text-on-surface">Información del Artista</h3>
+              {!isEditingUser && (
+                <button onClick={() => { setEditUserData(detailsModalUser); setIsEditingUser(true); }} className="text-secondary hover:text-primary transition-colors flex items-center pr-8">
+                  <span className="material-symbols-outlined text-sm mr-1">edit</span>
+                  <span className="text-xs uppercase tracking-wider font-bold">Editar</span>
+                </button>
+              )}
+            </div>
             
             <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-4">
-                <img alt="Artista Avatar" className="w-16 h-16 rounded bg-surface object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setDetailsModalUser(null); navigate(`/${detailsModalUser.userTag?.startsWith('@') ? detailsModalUser.userTag : '@' + (detailsModalUser.userTag || detailsModalUser.uid)}`); }} src={detailsModalUser.profilePhotoUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuBBMNHOgO0BFPGX5cKluHezzRBDPJueLyUUOSVbMZdAJNASP32jgHA4OlyC47sQI2OSfmnfWWJhsXilZEsOSBqjgJZonLj5pT-FxqVdN9wf0qc9xnw47B_mrLf_EJOGsPCFdm0ezBohArgfCnAGkL4nmXJbY4CXUXnPHC5HN5i25dYpUqlmKCy9E-GOy0FViiulx7v565DyOKMgONwgdsmF5EhQ9sYDmp7SshK7ecWSiMfVG7yXfsm_Dm9BxUhg4h5sZ-clTBdjYBLi"}/>
-                <div>
-                  <div className="text-on-surface font-bold text-lg">{detailsModalUser.displayName || detailsModalUser.email}</div>
-                  <div className="text-secondary text-sm">{detailsModalUser.userTag}</div>
+              {isEditingUser ? (
+                <form onSubmit={handleUpdateUser} className="flex flex-col gap-3 bg-deep-black p-4 rounded border border-outline-variant/20 mb-2">
+                  <div>
+                    <label className="text-xs text-secondary uppercase tracking-wider mb-1 block">Nombre Artístico</label>
+                    <input type="text" value={editUserData.displayName || ''} onChange={e => setEditUserData({...editUserData, displayName: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded px-2 py-1.5 text-sm text-on-surface focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-secondary uppercase tracking-wider mb-1 block">User Tag</label>
+                    <input type="text" value={editUserData.userTag || ''} onChange={e => setEditUserData({...editUserData, userTag: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded px-2 py-1.5 text-sm text-on-surface focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-secondary uppercase tracking-wider mb-1 block">WhatsApp</label>
+                    <input type="text" value={editUserData.whatsapp || ''} onChange={e => setEditUserData({...editUserData, whatsapp: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded px-2 py-1.5 text-sm text-on-surface focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-secondary uppercase tracking-wider mb-1 block">Email</label>
+                    <input type="email" value={editUserData.email || ''} onChange={e => setEditUserData({...editUserData, email: e.target.value})} className="w-full bg-surface-container border border-outline-variant/50 rounded px-2 py-1.5 text-sm text-on-surface focus:outline-none focus:border-primary" />
+                  </div>
+                  <div className="flex justify-end gap-2 mt-2">
+                    <button type="button" onClick={() => setIsEditingUser(false)} className="px-3 py-1.5 text-xs text-secondary hover:text-white transition-colors">Cancelar</button>
+                    <button type="submit" className="px-3 py-1.5 text-xs bg-primary text-on-primary rounded font-bold hover:bg-primary-fixed transition-colors">Guardar</button>
+                  </div>
+                </form>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <img alt="Artista Avatar" className="w-16 h-16 rounded bg-surface object-cover cursor-pointer hover:opacity-80 transition-opacity" onClick={() => { setDetailsModalUser(null); setIsEditingUser(false); navigate(`/${detailsModalUser.userTag?.startsWith('@') ? detailsModalUser.userTag : '@' + (detailsModalUser.userTag || detailsModalUser.uid)}`); }} src={detailsModalUser.profilePhotoUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuBBMNHOgO0BFPGX5cKluHezzRBDPJueLyUUOSVbMZdAJNASP32jgHA4OlyC47sQI2OSfmnfWWJhsXilZEsOSBqjgJZonLj5pT-FxqVdN9wf0qc9xnw47B_mrLf_EJOGsPCFdm0ezBohArgfCnAGkL4nmXJbY4CXUXnPHC5HN5i25dYpUqlmKCy9E-GOy0FViiulx7v565DyOKMgONwgdsmF5EhQ9sYDmp7SshK7ecWSiMfVG7yXfsm_Dm9BxUhg4h5sZ-clTBdjYBLi"}/>
+                  <div>
+                    <div className="text-on-surface font-bold text-lg">{detailsModalUser.displayName || detailsModalUser.email}</div>
+                    <div className="text-secondary text-sm">{detailsModalUser.userTag}</div>
+                  </div>
                 </div>
-              </div>
+              )}
               
               <div className="grid grid-cols-2 gap-4 mt-2">
                 <div className="bg-deep-black p-3 rounded border border-outline-variant/20">
