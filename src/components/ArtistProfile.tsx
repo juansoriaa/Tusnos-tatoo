@@ -1071,7 +1071,7 @@ export default function Profile() {
                 />
               </div>
 
-              <div className="w-full md:w-1/3 p-4 md:p-6 flex flex-col flex-1 border-l border-outline-variant/10 overflow-y-auto touch-pan-y overscroll-contain">
+              <div className="w-full md:w-1/3 p-4 md:p-6 flex flex-col flex-1 border-l border-outline-variant/10 overflow-hidden">
                 <div className="flex flex-col h-full md:h-auto min-h-full">
                   <div className="flex flex-col justify-start space-y-4 md:mt-4 shrink-0">
                     <div className="text-center flex flex-col items-center w-full">
