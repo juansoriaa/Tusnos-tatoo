@@ -1110,7 +1110,7 @@ export default function Profile() {
                       </div>
                     </div>
                     
-                    <div className="mt-2 md:mt-4">
+                    <div className="mt-2 md:mt-4 overflow-y-auto max-h-[12vh] md:max-h-[25vh] px-2 custom-scrollbar">
                       <p className="text-center text-on-surface-variant text-xs md:text-sm leading-relaxed">{filteredTattoos[activeTattooIndex].description}</p>
                     </div>
                   </div>
