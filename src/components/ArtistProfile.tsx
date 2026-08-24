@@ -1109,10 +1109,10 @@ export default function Profile() {
                         <div className="h-[3px] flex-1 w-full max-w-[200px] bg-gradient-to-l from-transparent via-primary/60 to-primary rounded-full"></div>
                       </div>
                     </div>
+                  </div>
                     
-                    <div className="mt-2 md:mt-4 overflow-y-auto max-h-[12vh] md:max-h-[25vh] px-2 custom-scrollbar">
-                      <p className="text-center text-on-surface-variant text-xs md:text-sm leading-relaxed">{filteredTattoos[activeTattooIndex].description}</p>
-                    </div>
+                  <div className="mt-2 md:mt-4 flex-1 min-h-0 overflow-y-auto px-2 custom-scrollbar">
+                    <p className="text-center text-on-surface-variant text-xs md:text-sm leading-relaxed">{filteredTattoos[activeTattooIndex].description}</p>
                   </div>
 
                   <div className="mt-auto pt-4 md:pt-10 flex flex-col gap-4 md:gap-8 shrink-0">
