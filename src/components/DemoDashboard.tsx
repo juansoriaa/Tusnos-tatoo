@@ -526,8 +526,8 @@ const defaultFaqs = [
                     ]
                 };
                 const stringManifest = JSON.stringify(manifest);
-                const blob = new Blob([stringManifest], { type: 'application/json' });
-                const manifestUrl = URL.createObjectURL(blob);
+                // Utilizar Data URL en lugar de Blob para evitar problemas de permisos/lectura en el proceso de instalación de Android
+                const manifestUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(stringManifest);
                 
                 let link = document.querySelector('link[rel="manifest"]');
                 if (link) {
