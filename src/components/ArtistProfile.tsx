@@ -286,6 +286,13 @@ export default function Profile() {
                         q = query(collection(db, 'users'), where('userTag', '==', artistUid.startsWith('@') ? artistUid : '@' + artistUid), limit(1));
                         snap = await getDocs(q);
                     }
+                    
+                    if (snap.empty) {
+                        // Fallback por si el tag se guardó sin @
+                        let tagWithoutAt = tag.replace('@', '');
+                        q = query(collection(db, 'users'), where('userTag', '==', tagWithoutAt), limit(1));
+                        snap = await getDocs(q);
+                    }
 
                     if (!snap.empty) {
                         artistUid = snap.docs[0].id;

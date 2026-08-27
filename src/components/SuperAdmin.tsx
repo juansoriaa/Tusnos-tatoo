@@ -379,11 +379,13 @@ export default function SuperAdmin() {
           subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 10); // partner
       }
 
+      const formattedUserTag = (newUserData.userTag.startsWith('@') ? newUserData.userTag : '@' + newUserData.userTag).toLowerCase();
+
       const newUserObj = {
         uid: newUid,
         email: newUserData.email.toLowerCase(),
         role: newUserData.role,
-        userTag: newUserData.userTag.toLowerCase(),
+        userTag: formattedUserTag,
         displayName: newUserData.name,
         whatsapp: newUserData.whatsapp,
         customPassword: '123456',

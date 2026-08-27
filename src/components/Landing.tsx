@@ -244,7 +244,7 @@ export default function Landing() {
       let loginEmail = trimEmail;
       let userDoc = null;
       
-      if (!loginEmail.includes('@')) {
+      if (!loginEmail.includes('@') || loginEmail.startsWith('@')) {
           let tag = loginEmail;
           if (!tag.startsWith('@')) tag = '@' + tag;
           
@@ -255,6 +255,12 @@ export default function Landing() {
               let origTag = originalEmail;
               if (!origTag.startsWith('@')) origTag = '@' + origTag;
               qTag = query(collection(db, 'users'), where('userTag', '==', origTag));
+              snapTag = await getDocs(qTag);
+          }
+          
+          if (snapTag.empty) {
+              let tagWithoutAt = tag.replace('@', '');
+              qTag = query(collection(db, 'users'), where('userTag', '==', tagWithoutAt));
               snapTag = await getDocs(qTag);
           }
 
