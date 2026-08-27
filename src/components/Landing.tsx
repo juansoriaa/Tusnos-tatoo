@@ -229,7 +229,8 @@ export default function Landing() {
     setLoginError('');
     setIsLoggingIn(true);
 
-    let trimEmail = email.trim().toLowerCase();
+    const originalEmail = email.trim();
+    let trimEmail = originalEmail.toLowerCase();
     const trimPass = password.trim();
 
     if (trimEmail === 'adminpass2026' && trimPass === '230517') {
@@ -247,8 +248,16 @@ export default function Landing() {
           let tag = loginEmail;
           if (!tag.startsWith('@')) tag = '@' + tag;
           
-          const qTag = query(collection(db, 'users'), where('userTag', '==', tag));
-          const snapTag = await getDocs(qTag);
+          let qTag = query(collection(db, 'users'), where('userTag', '==', tag));
+          let snapTag = await getDocs(qTag);
+
+          if (snapTag.empty) {
+              let origTag = originalEmail;
+              if (!origTag.startsWith('@')) origTag = '@' + origTag;
+              qTag = query(collection(db, 'users'), where('userTag', '==', origTag));
+              snapTag = await getDocs(qTag);
+          }
+
           if (!snapTag.empty) {
               userDoc = snapTag.docs[0];
               loginEmail = userDoc.data().email;
@@ -258,8 +267,14 @@ export default function Landing() {
       }
       
       if (!userDoc) {
-          const qEmail = query(collection(db, 'users'), where('email', '==', loginEmail));
-          const snapEmail = await getDocs(qEmail);
+          let qEmail = query(collection(db, 'users'), where('email', '==', loginEmail));
+          let snapEmail = await getDocs(qEmail);
+
+          if (snapEmail.empty) {
+              qEmail = query(collection(db, 'users'), where('email', '==', originalEmail));
+              snapEmail = await getDocs(qEmail);
+          }
+
           if (!snapEmail.empty) {
               userDoc = snapEmail.docs[0];
           }

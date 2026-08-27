@@ -111,14 +111,17 @@ export default function SuperAdmin() {
     try {
 
 
+      const formattedUserTag = (editUserData.userTag.startsWith('@') ? editUserData.userTag : '@' + editUserData.userTag).toLowerCase();
+      const formattedEmail = editUserData.email.toLowerCase();
+      
       await updateDoc(doc(db, 'users', editUserData.uid), {
         displayName: editUserData.displayName,
-        userTag: editUserData.userTag.startsWith('@') ? editUserData.userTag : '@' + editUserData.userTag,
+        userTag: formattedUserTag,
         whatsapp: editUserData.whatsapp,
-        email: editUserData.email,
+        email: formattedEmail,
       });
 
-      const updatedUser = { ...detailsModalUser, ...editUserData, userTag: editUserData.userTag.startsWith('@') ? editUserData.userTag : '@' + editUserData.userTag };
+      const updatedUser = { ...detailsModalUser, ...editUserData, userTag: formattedUserTag, email: formattedEmail };
       setDetailsModalUser(updatedUser);
       setUsers(users.map(u => u.uid === updatedUser.uid ? updatedUser : u));
       setIsEditingUser(false);
@@ -376,11 +379,11 @@ export default function SuperAdmin() {
           subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 10); // partner
       }
 
-      await setDoc(doc(db, 'users', newUid), {
+      const newUserObj = {
         uid: newUid,
-        email: newUserData.email,
+        email: newUserData.email.toLowerCase(),
         role: newUserData.role,
-        userTag: newUserData.userTag,
+        userTag: newUserData.userTag.toLowerCase(),
         displayName: newUserData.name,
         whatsapp: newUserData.whatsapp,
         customPassword: '123456',
@@ -394,7 +397,9 @@ export default function SuperAdmin() {
             "https://lh3.googleusercontent.com/aida-public/AB6AXuBoS2ZC0vYl1apkGcOhRvhAneP3x1HGeicgjH2XoPh354rwlUh7sNkHFhZzShywlrnEzao7AOBBZBF8woy9SPE1Rk6j8u0UgMxZxXEng7pf1BzooGR74no-wHHdK08zyp6LIy6h6yTXj3eaRDm9b8u68zOCLCPyF6vqVqlie2ZZM42jCx-L9spyBjEA6i17lZIkGra1BJVVL0T83Y7vsBHHDAMfA9XvfLsz9mrsfmOMWS655wsPllTibLD1_alt_GEZLi8m5CLyjeOo"
         ],
         createdAt: serverTimestamp()
-      });
+      };
+
+      await setDoc(doc(db, 'users', newUid), newUserObj);
       // Add 5 fallback photos for the new user's portfolio
       const fallbackPhotos = [
         {
@@ -455,6 +460,7 @@ export default function SuperAdmin() {
       }
       await batch.commit();
 
+      setUsers(prev => [{ ...newUserObj, createdAt: new Date() }, ...prev]);
       setIsModalOpen(false);
       setNewUserData({ name: '', email: '', role: 'admin', userTag: '', whatsapp: '', subscriptionStatus: 'trial' });
       alert('Perfil de Artista creado con éxito.');

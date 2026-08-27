@@ -271,15 +271,22 @@ export default function Profile() {
 
             // Resolve ID if it's a tag
             if (artistUid.startsWith('@') || artistUid.length < 20) {
-                let tag = artistUid.startsWith('@') ? artistUid : '@' + artistUid;
+                let tag = (artistUid.startsWith('@') ? artistUid : '@' + artistUid).toLowerCase();
                 
                 const cachedUid = localStorage.getItem('tag_uid_map_' + tag);
                 if (cachedUid) {
                     artistUid = cachedUid;
                     currentArtistDocId = artistUid;
                 } else {
-                    const q = query(collection(db, 'users'), where('userTag', '==', tag), limit(1));
-                    const snap = await getDocs(q);
+                    let q = query(collection(db, 'users'), where('userTag', '==', tag), limit(1));
+                    let snap = await getDocs(q);
+                    
+                    if (snap.empty && tag !== (artistUid.startsWith('@') ? artistUid : '@' + artistUid)) {
+                        // Fallback para usuarios viejos con tags en mayúsculas
+                        q = query(collection(db, 'users'), where('userTag', '==', artistUid.startsWith('@') ? artistUid : '@' + artistUid), limit(1));
+                        snap = await getDocs(q);
+                    }
+
                     if (!snap.empty) {
                         artistUid = snap.docs[0].id;
                         currentArtistDocId = artistUid;
@@ -327,6 +334,8 @@ export default function Profile() {
                         try {
                             localStorage.setItem('demoArtistData_' + currentArtistDocId, JSON.stringify(data));
                         } catch(e) {}
+                        setIsProfileLoading(false);
+                    } else if (isMounted) {
                         setIsProfileLoading(false);
                     }
                 }, (error) => {

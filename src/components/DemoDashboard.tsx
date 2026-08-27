@@ -247,7 +247,7 @@ const defaultFaqs = [
             specialtyTags: [specialty1, specialty2, specialty3].filter(Boolean),
             isAvailable: isAvailable,
             whatsapp: whatsapp,
-            email: loginEmail,
+            email: loginEmail.toLowerCase(),
             customPassword: customPassword,
             instagram: instagram,
             facebook: facebook,
