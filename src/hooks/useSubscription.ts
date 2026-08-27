@@ -33,6 +33,8 @@ export function useSubscription(
       endDate = subscriptionEndsAt.getTime();
     } else if (typeof subscriptionEndsAt === 'string' || typeof subscriptionEndsAt === 'number') {
       endDate = new Date(subscriptionEndsAt).getTime();
+    } else if (subscriptionEndsAt && typeof subscriptionEndsAt.seconds === 'number') {
+      endDate = subscriptionEndsAt.seconds * 1000;
     } else {
        // Fallback
        return { status: 'active', daysLeft: 999 };
