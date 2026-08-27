@@ -435,6 +435,83 @@ const defaultFaqs = [
             reader.readAsDataURL(file);
         }
     };
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [showPwaPrompt, setShowPwaPrompt] = useState(false);
+
+    useEffect(() => {
+        const handler = (e: any) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            console.log('beforeinstallprompt captured');
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    useEffect(() => {
+        if (deferredPrompt) {
+            const timer = setTimeout(() => {
+                const hasDeclined = localStorage.getItem('pwa_declined');
+                if (!hasDeclined) {
+                    setShowPwaPrompt(true);
+                }
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [deferredPrompt]);
+
+    const handleInstallPwa = async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log('PWA prompt outcome:', outcome);
+            setDeferredPrompt(null);
+            setShowPwaPrompt(false);
+        }
+    };
+
+    const handleDeclinePwa = () => {
+        localStorage.setItem('pwa_declined', 'true');
+        setShowPwaPrompt(false);
+    };
+
+    useEffect(() => {
+        if (name && avatarUrl) {
+            const manifest = {
+                name: `${name} - Turnos Tattoo`,
+                short_name: name,
+                start_url: "/dashboard",
+                display: "standalone",
+                background_color: "#000000",
+                theme_color: "#000000",
+                icons: [
+                    {
+                        src: avatarUrl.startsWith('http') ? avatarUrl : '/default-avatar.png',
+                        sizes: "192x192 512x512",
+                        type: "image/png",
+                        purpose: "any maskable"
+                    }
+                ]
+            };
+            const stringManifest = JSON.stringify(manifest);
+            const blob = new Blob([stringManifest], { type: 'application/json' });
+            const manifestUrl = URL.createObjectURL(blob);
+            
+            let link = document.querySelector('link[rel="manifest"]');
+            if (link) {
+                link.setAttribute('href', manifestUrl);
+            } else {
+                link = document.createElement('link');
+                link.setAttribute('rel', 'manifest');
+                link.setAttribute('href', manifestUrl);
+                document.head.appendChild(link);
+            }
+            
+            return () => {
+                URL.revokeObjectURL(manifestUrl);
+            };
+        }
+    }, [name, avatarUrl]);
 
     return (
         <DemoLayout 
@@ -445,6 +522,27 @@ const defaultFaqs = [
             description="Resumen de tu negocio, estado de turnos y perfil de artista."
         >
             <div className="flex flex-col gap-6">
+                {showPwaPrompt && (
+                    <div className="bg-primary/20 border border-primary/50 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-primary/30">
+                                <img src={avatarUrl.startsWith('http') ? avatarUrl : '/default-avatar.png'} alt="PWA Icon" className="w-full h-full object-cover" />
+                            </div>
+                            <div>
+                                <h3 className="text-white font-bold text-sm">Instalar Aplicación</h3>
+                                <p className="text-on-surface-variant text-xs">Añade un acceso directo para tener todas tus configuraciones a mano.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <button onClick={handleDeclinePwa} className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-secondary hover:text-white transition-colors">
+                                Quizás luego
+                            </button>
+                            <button onClick={handleInstallPwa} className="flex-1 sm:flex-none px-4 py-2 bg-primary text-on-primary rounded text-xs font-bold hover:bg-primary-fixed transition-colors">
+                                Instalar App
+                            </button>
+                        </div>
+                    </div>
+                )}
                 {subscription.status === 'expired' && (
                     <div className="bg-red-950/40 border border-red-500/30 rounded-xl p-4 text-center">
                         <p className="text-white font-bold mb-2">Tu perfil público ha sido temporalmente suspendido por falta de pago.</p>
