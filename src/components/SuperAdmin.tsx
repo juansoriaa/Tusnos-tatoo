@@ -109,16 +109,7 @@ export default function SuperAdmin() {
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editUserData.userTag !== detailsModalUser.userTag) {
-        // Tag changed, check for duplicates
-        const tagToCheck = editUserData.userTag.startsWith('@') ? editUserData.userTag : '@' + editUserData.userTag;
-        const q = query(collection(db, 'users'), where('userTag', '==', tagToCheck));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-            alert('¡Ese tag ya está en uso por otro artista! Por favor elige otro.');
-            return;
-        }
-      }
+
 
       await updateDoc(doc(db, 'users', editUserData.uid), {
         displayName: editUserData.displayName,
@@ -374,16 +365,6 @@ export default function SuperAdmin() {
   const handleCrearProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Validar si el tag ya existe
-      const tagToCheck = newUserData.userTag.startsWith('@') ? newUserData.userTag : '@' + newUserData.userTag;
-      const q = query(collection(db, 'users'), where('userTag', '==', tagToCheck));
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-          alert('¡Ese tag ya está en uso por otro artista! Por favor elige otro.');
-          return;
-      }
-
       const newUid = crypto.randomUUID(); // generate a mock uid since we can't create Auth user safely client-side
       
       let subscriptionEndsAt = new Date();
