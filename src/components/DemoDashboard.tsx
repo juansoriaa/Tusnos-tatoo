@@ -477,39 +477,72 @@ const defaultFaqs = [
 
     useEffect(() => {
         if (name && avatarUrl) {
-            const manifest = {
-                name: `${name} - Turnos Tattoo`,
-                short_name: name,
-                start_url: "/dashboard",
-                display: "standalone",
-                background_color: "#000000",
-                theme_color: "#000000",
-                icons: [
-                    {
-                        src: avatarUrl.startsWith('http') ? avatarUrl : '/default-avatar.png',
-                        sizes: "192x192 512x512",
-                        type: "image/png",
-                        purpose: "any maskable"
+            const generateManifest = async () => {
+                let iconSrc = '/default-avatar.png';
+                if (avatarUrl.startsWith('http') || avatarUrl.startsWith('data:')) {
+                    try {
+                        const img = new Image();
+                        img.crossOrigin = "anonymous";
+                        await new Promise((resolve, reject) => {
+                            img.onload = resolve;
+                            img.onerror = reject;
+                            img.src = avatarUrl;
+                        });
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 512;
+                        canvas.height = 512;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            ctx.fillStyle = '#000000';
+                            ctx.fillRect(0, 0, 512, 512);
+                            const scale = Math.max(512 / img.width, 512 / img.height);
+                            const x = (512 - img.width * scale) / 2;
+                            const y = (512 - img.height * scale) / 2;
+                            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                            iconSrc = canvas.toDataURL('image/png');
+                        }
+                    } catch (e) {
+                        console.error('Error generating PWA icon', e);
+                        iconSrc = avatarUrl.startsWith('http') ? avatarUrl : '/default-avatar.png';
                     }
-                ]
+                }
+                const manifest = {
+                    name: `${name} - Turnos Tattoo`,
+                    short_name: name,
+                    start_url: "/dashboard",
+                    display: "standalone",
+                    background_color: "#000000",
+                    theme_color: "#000000",
+                    icons: [
+                        {
+                            src: iconSrc,
+                            sizes: "512x512",
+                            type: "image/png",
+                            purpose: "any maskable"
+                        },
+                        {
+                            src: iconSrc,
+                            sizes: "192x192",
+                            type: "image/png",
+                            purpose: "any maskable"
+                        }
+                    ]
+                };
+                const stringManifest = JSON.stringify(manifest);
+                const blob = new Blob([stringManifest], { type: 'application/json' });
+                const manifestUrl = URL.createObjectURL(blob);
+                
+                let link = document.querySelector('link[rel="manifest"]');
+                if (link) {
+                    link.setAttribute('href', manifestUrl);
+                } else {
+                    link = document.createElement('link');
+                    link.setAttribute('rel', 'manifest');
+                    link.setAttribute('href', manifestUrl);
+                    document.head.appendChild(link);
+                }
             };
-            const stringManifest = JSON.stringify(manifest);
-            const blob = new Blob([stringManifest], { type: 'application/json' });
-            const manifestUrl = URL.createObjectURL(blob);
-            
-            let link = document.querySelector('link[rel="manifest"]');
-            if (link) {
-                link.setAttribute('href', manifestUrl);
-            } else {
-                link = document.createElement('link');
-                link.setAttribute('rel', 'manifest');
-                link.setAttribute('href', manifestUrl);
-                document.head.appendChild(link);
-            }
-            
-            return () => {
-                URL.revokeObjectURL(manifestUrl);
-            };
+            generateManifest();
         }
     }, [name, avatarUrl]);
 
