@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
-import { db, auth, onAuthStateChanged } from '../firebase';
+import { db, auth, onAuthStateChanged, storage } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useSubscription } from '../hooks/useSubscription';
 
 
@@ -390,22 +391,26 @@ const defaultFaqs = [
     };
 
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, setUrl: React.Dispatch<React.SetStateAction<string>>) => {
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, setUrl: React.Dispatch<React.SetStateAction<string>>, type: 'avatar' | 'banner') => {
         const file = e.target.files?.[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) {
                 alert('El archivo excede el tamaño máximo de 5MB.');
                 return;
             }
+            
+            setIsUploading(true);
             const reader = new FileReader();
             reader.onloadend = () => {
                 const img = new Image();
-                img.onload = () => {
+                img.onload = async () => {
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
                     
-                    // Max dimensions to avoid localStorage quota issues
+                    // Max dimensions
                     const MAX_WIDTH = 1200;
                     const MAX_HEIGHT = 1200;
                     
@@ -426,8 +431,28 @@ const defaultFaqs = [
                     const ctx = canvas.getContext('2d');
                     if (ctx) {
                         ctx.drawImage(img, 0, 0, width, height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                        setUrl(dataUrl);
+                        
+                        canvas.toBlob(async (blob) => {
+                            if (blob) {
+                                try {
+                                    const demoUserId = localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo';
+                                    const timestamp = Date.now();
+                                    const storageRef = ref(storage, `users/${demoUserId}/${type}_${timestamp}.webp`);
+                                    await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
+                                    const downloadUrl = await getDownloadURL(storageRef);
+                                    setUrl(downloadUrl);
+                                } catch (error) {
+                                    console.error('Error uploading to storage:', error);
+                                    alert('Error al subir la imagen.');
+                                } finally {
+                                    setIsUploading(false);
+                                }
+                            } else {
+                                setIsUploading(false);
+                            }
+                        }, 'image/webp', 0.85);
+                    } else {
+                        setIsUploading(false);
                     }
                 };
                 img.src = reader.result as string;
@@ -659,7 +684,7 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
                             <div className="space-y-8">
                                 {/* Banner Upload */}
                                 <label className="group relative h-32 bg-surface-container-lowest border border-dashed border-outline-variant/40 flex items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-primary block">
-                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setBannerUrl)} />
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setBannerUrl, 'banner')} />
                                     <div className="absolute inset-0 opacity-20 grayscale">
                                         <div className="w-full h-full bg-cover bg-center" style={{backgroundImage: `url('${bannerUrl}')`}}></div>
                                     </div>
@@ -674,7 +699,7 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
                                     {/* Profile Pic */}
                                     <div className="shrink-0 mx-auto flex flex-col items-center text-center">
                                         <label className="w-24 h-24 bg-surface-container-highest border border-outline-variant/20 flex items-center justify-center relative group cursor-pointer overflow-hidden block">
-                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setAvatarUrl)} />
+                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setAvatarUrl, 'avatar')} />
                                             <img className="w-full h-full object-cover" src={avatarUrl || undefined} />
                                             <div className="absolute inset-0 bg-surface/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <span className="material-symbols-outlined" data-icon="upload">upload</span>
@@ -896,11 +921,12 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
         {hasUnsavedChanges && (
             <button 
                 onClick={handleSaveAll}
-                className="fixed bottom-24 md:bottom-12 right-6 md:right-12 z-[100] w-14 h-14 rounded-full bg-emerald-accent text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(5,77,68,0.6)] hover:scale-110 active:scale-95 transition-all animate-bounce-slow"
+                disabled={isUploading}
+                className="fixed bottom-24 md:bottom-12 right-6 md:right-12 z-[100] w-14 h-14 rounded-full bg-emerald-accent text-on-primary flex items-center justify-center shadow-[0_0_20px_rgba(5,77,68,0.6)] hover:scale-110 active:scale-95 transition-all animate-bounce-slow disabled:opacity-50 disabled:cursor-not-allowed disabled:animate-none"
                 style={{backgroundColor: '#054d44'}}
                 title="Guardar todos los cambios"
             >
-                <span className="material-symbols-outlined text-2xl">save</span>
+                <span className="material-symbols-outlined text-2xl">{isUploading ? 'hourglass_empty' : 'save'}</span>
             </button>
         )}
 
