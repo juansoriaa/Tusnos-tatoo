@@ -476,7 +476,9 @@ const defaultFaqs = [
     };
 
     useEffect(() => {
-        if (name) {
+        // Only generate the manifest once we have actually loaded user data (initialDataStr is set) 
+        // to avoid caching the default generic "Victor Ink" name when the component first mounts.
+        if (name && initialDataStr !== '') {
             const generateManifest = () => {
                 let iconSrc = '/default-avatar.png';
                 try {
@@ -506,7 +508,7 @@ const defaultFaqs = [
                 const manifest = {
                     name: `${name} - Turnos Tattoo`,
                     short_name: name,
-                    start_url: "/dashboard",
+                    start_url: window.location.pathname, // Ensure we open the exact dashboard path, not a wildcard
                     display: "standalone",
                     background_color: "#000000",
                     theme_color: "#054d44",
@@ -541,7 +543,7 @@ const defaultFaqs = [
             };
             generateManifest();
         }
-    }, [name]);
+    }, [name, initialDataStr]);
 
     return (
         <DemoLayout 
