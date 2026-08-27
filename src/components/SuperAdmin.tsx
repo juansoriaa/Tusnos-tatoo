@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, setDoc, updateDoc, serverTimestamp, collection, getDocs, getDoc, deleteDoc, addDoc, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp, collection, getDocs, getDoc, deleteDoc, addDoc, writeBatch, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function SuperAdmin() {
