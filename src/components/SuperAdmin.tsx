@@ -51,7 +51,7 @@ export default function SuperAdmin() {
         usersSnap.forEach((doc) => {
           total++;
           const data = doc.data();
-          usersData.push(data);
+          usersData.push({ ...data, uid: data.uid || doc.id });
           if (data.subscriptionStatus === 'trial') trial++;
           if (data.subscriptionStatus === 'monthly') monthly++;
           if (data.subscriptionStatus === 'partner') partner++;

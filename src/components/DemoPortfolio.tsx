@@ -731,7 +731,7 @@ const handleSaveObra = async () => {
     const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
 
     const checkAndRemoveCategory = (catToRemove: string) => {
-        const isUsed = photos.some(p => p.tags && p.tags.includes(catToRemove));
+        const isUsed = existingPhotos.some(p => p.tags && p.tags.includes(catToRemove));
         if (isUsed) {
             setCategoryToDelete(catToRemove);
         } else {
@@ -746,7 +746,7 @@ const handleSaveObra = async () => {
         setSelectedCategories(selectedCategories.filter(c => c !== catToRemove));
         
         // Also remove this tag from all photos that have it
-        const photosToUpdate = photos.filter(p => p.tags && p.tags.includes(catToRemove));
+        const photosToUpdate = existingPhotos.filter(p => p.tags && p.tags.includes(catToRemove));
         photosToUpdate.forEach(async (photo) => {
             const newTags = photo.tags.filter(t => t !== catToRemove);
             if (!photo.id.startsWith('fallback_')) {
@@ -755,7 +755,7 @@ const handleSaveObra = async () => {
         });
         
         // Update local state
-        setPhotos(prev => prev.map(p => {
+        setExistingPhotos(prev => prev.map(p => {
             if (p.tags && p.tags.includes(catToRemove)) {
                 return { ...p, tags: p.tags.filter(t => t !== catToRemove) };
             }
