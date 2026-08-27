@@ -476,43 +476,40 @@ const defaultFaqs = [
     };
 
     useEffect(() => {
-        if (name && avatarUrl) {
-            const generateManifest = async () => {
+        if (name) {
+            const generateManifest = () => {
                 let iconSrc = '/default-avatar.png';
-                if (avatarUrl.startsWith('http') || avatarUrl.startsWith('data:')) {
-                    try {
-                        const img = new Image();
-                        img.crossOrigin = "anonymous";
-                        await new Promise((resolve, reject) => {
-                            img.onload = resolve;
-                            img.onerror = reject;
-                            img.src = avatarUrl;
-                        });
-                        const canvas = document.createElement('canvas');
-                        canvas.width = 512;
-                        canvas.height = 512;
-                        const ctx = canvas.getContext('2d');
-                        if (ctx) {
-                            ctx.fillStyle = '#000000';
-                            ctx.fillRect(0, 0, 512, 512);
-                            const scale = Math.max(512 / img.width, 512 / img.height);
-                            const x = (512 - img.width * scale) / 2;
-                            const y = (512 - img.height * scale) / 2;
-                            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-                            iconSrc = canvas.toDataURL('image/png');
-                        }
-                    } catch (e) {
-                        console.error('Error generating PWA icon', e);
-                        iconSrc = avatarUrl.startsWith('http') ? avatarUrl : '/default-avatar.png';
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 512;
+                    canvas.height = 512;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.fillStyle = '#054d44'; // primary color
+                        ctx.fillRect(0, 0, 512, 512);
+                        
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 80px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('Turnos', 256, 210);
+                        
+                        ctx.fillStyle = '#a8ffea'; // accent color
+                        ctx.fillText('Tattoo', 256, 310);
+                        
+                        iconSrc = canvas.toDataURL('image/png');
                     }
+                } catch (e) {
+                    console.error('Error generating brand logo', e);
                 }
+
                 const manifest = {
                     name: `${name} - Turnos Tattoo`,
                     short_name: name,
                     start_url: "/dashboard",
                     display: "standalone",
                     background_color: "#000000",
-                    theme_color: "#000000",
+                    theme_color: "#054d44",
                     icons: [
                         {
                             src: iconSrc,
@@ -544,7 +541,7 @@ const defaultFaqs = [
             };
             generateManifest();
         }
-    }, [name, avatarUrl]);
+    }, [name]);
 
     return (
         <DemoLayout 
