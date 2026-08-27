@@ -271,41 +271,46 @@ export default function Profile() {
 
             // Resolve ID if it's a tag
             if (artistUid.startsWith('@') || artistUid.length < 20) {
-                let tag = (artistUid.startsWith('@') ? artistUid : '@' + artistUid).toLowerCase();
-                
-                const cachedUid = localStorage.getItem('tag_uid_map_' + tag);
+                let baseTagLower = artistUid.replace('@', '').toLowerCase();
+                let baseTagOriginal = artistUid.replace('@', '');
+
+                let tagForMap = ('@' + baseTagLower);
+
+                const cachedUid = localStorage.getItem('tag_uid_map_' + tagForMap);
                 if (cachedUid) {
                     artistUid = cachedUid;
                     currentArtistDocId = artistUid;
                 } else {
-                    let q = query(collection(db, 'users'), where('userTag', '==', tag), limit(1));
-                    let snap = await getDocs(q);
-                    
-                    if (snap.empty && tag !== (artistUid.startsWith('@') ? artistUid : '@' + artistUid)) {
-                        // Fallback para usuarios viejos con tags en mayúsculas
-                        q = query(collection(db, 'users'), where('userTag', '==', artistUid.startsWith('@') ? artistUid : '@' + artistUid), limit(1));
-                        snap = await getDocs(q);
-                    }
-                    
-                    if (snap.empty) {
-                        // Fallback por si el tag se guardó sin @
-                        let tagWithoutAt = tag.replace('@', '');
-                        q = query(collection(db, 'users'), where('userTag', '==', tagWithoutAt), limit(1));
-                        snap = await getDocs(q);
+                    const possibleTags = [
+                        '@' + baseTagLower,
+                        '@' + baseTagOriginal,
+                        baseTagLower,
+                        baseTagOriginal
+                    ];
+                    const uniqueTags = [...new Set(possibleTags)];
+
+                    let foundDoc = null;
+                    for (const t of uniqueTags) {
+                        let q = query(collection(db, 'users'), where('userTag', '==', t), limit(1));
+                        let snap = await getDocs(q);
+                        if (!snap.empty) {
+                            foundDoc = snap.docs[0];
+                            break;
+                        }
                     }
 
-                    if (!snap.empty) {
-                        artistUid = snap.docs[0].id;
+                    if (foundDoc) {
+                        artistUid = foundDoc.id;
                         currentArtistDocId = artistUid;
                         
                         try {
-                            localStorage.setItem('tag_uid_map_' + tag, artistUid);
+                            localStorage.setItem('tag_uid_map_' + tagForMap, artistUid);
                         } catch(e) {}
                         
                         // OPTIMIZACIÓN: Cargar datos inmediatamente desde la consulta del tag
                         // para evitar esperar al onSnapshot y lograr renderizado casi instantáneo.
                         if (isMounted) {
-                            const resolvedData = { ...snap.docs[0].data(), uid: artistUid };
+                            const resolvedData = { ...foundDoc.data(), uid: artistUid };
                             setArtistData(resolvedData);
                             setIsProfileLoading(false);
                         }

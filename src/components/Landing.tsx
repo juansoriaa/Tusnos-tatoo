@@ -245,44 +245,47 @@ export default function Landing() {
       let userDoc = null;
       
       if (!loginEmail.includes('@') || loginEmail.startsWith('@')) {
-          let tag = loginEmail;
-          if (!tag.startsWith('@')) tag = '@' + tag;
-          
-          let qTag = query(collection(db, 'users'), where('userTag', '==', tag));
-          let snapTag = await getDocs(qTag);
+          let origTag = originalEmail.trim();
+          let baseTagLower = trimEmail.replace('@', '');
+          let baseTagOriginal = origTag.replace('@', '');
 
-          if (snapTag.empty) {
-              let origTag = originalEmail;
-              if (!origTag.startsWith('@')) origTag = '@' + origTag;
-              qTag = query(collection(db, 'users'), where('userTag', '==', origTag));
-              snapTag = await getDocs(qTag);
-          }
-          
-          if (snapTag.empty) {
-              let tagWithoutAt = tag.replace('@', '');
-              qTag = query(collection(db, 'users'), where('userTag', '==', tagWithoutAt));
-              snapTag = await getDocs(qTag);
+          const possibleTags = [
+              '@' + baseTagLower,
+              '@' + baseTagOriginal,
+              baseTagLower,
+              baseTagOriginal
+          ];
+          const uniqueTags = [...new Set(possibleTags)];
+
+          for (const t of uniqueTags) {
+              let qTag = query(collection(db, 'users'), where('userTag', '==', t));
+              let snapTag = await getDocs(qTag);
+              if (!snapTag.empty) {
+                  userDoc = snapTag.docs[0];
+                  loginEmail = userDoc.data().email;
+                  break;
+              }
           }
 
-          if (!snapTag.empty) {
-              userDoc = snapTag.docs[0];
-              loginEmail = userDoc.data().email;
-          } else {
+          if (!userDoc) {
               loginEmail = loginEmail + '@demo.com';
           }
       }
       
       if (!userDoc) {
-          let qEmail = query(collection(db, 'users'), where('email', '==', loginEmail));
-          let snapEmail = await getDocs(qEmail);
+          const possibleEmails = [
+              loginEmail,
+              originalEmail.trim()
+          ];
+          const uniqueEmails = [...new Set(possibleEmails)];
 
-          if (snapEmail.empty) {
-              qEmail = query(collection(db, 'users'), where('email', '==', originalEmail));
-              snapEmail = await getDocs(qEmail);
-          }
-
-          if (!snapEmail.empty) {
-              userDoc = snapEmail.docs[0];
+          for (const em of uniqueEmails) {
+              let qEmail = query(collection(db, 'users'), where('email', '==', em));
+              let snapEmail = await getDocs(qEmail);
+              if (!snapEmail.empty) {
+                  userDoc = snapEmail.docs[0];
+                  break;
+              }
           }
       }
       
