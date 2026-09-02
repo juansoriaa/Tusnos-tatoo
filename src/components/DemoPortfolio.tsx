@@ -176,8 +176,19 @@ export default function DemoPortfolio() {
                 }
             });
         }
-        
         // Fetch existing photos when component mounts
+    
+    // CACHE WARMING: Ensure that any modifications to existingPhotos in the Dashboard
+    // immediately overwrite the localStorage cache so that the "Ver Perfil" tab reads the latest state instantly.
+    useEffect(() => {
+        const localUid = localStorage.getItem('demoUserId') || authUid;
+        if (localUid && existingPhotos && existingPhotos.length > 0) {
+            try {
+                localStorage.setItem('demoAllTattoos_' + localUid, JSON.stringify(existingPhotos));
+            } catch(e) {}
+        }
+    }, [existingPhotos, authUid]);
+    
     async function fetchPhotos(userUid: string) {
             let artistUid = userUid || 'anonymous_demo';
             // Resolve tag to actual uid if it's a tag
