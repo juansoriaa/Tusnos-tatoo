@@ -215,6 +215,7 @@ export default function Profile() {
   const [activeTattooIndex, setActiveTattooIndex] = useState(0);
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
   const [waitlistForm, setWaitlistForm] = useState({ name: '', phone: '', email: '', style: '', size: '', placement: '', details: '', referencePhoto: null as File | null, type: 'consulta', description: '', referenceImage: '' });
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
@@ -224,6 +225,12 @@ export default function Profile() {
 
   const trackMetric = async (metricKey: 'views' | 'photoClicks' | 'whatsappClicks' | 'agendaClicks', photoId?: string) => {
       try {
+          if (metricKey === 'photoClicks' && photoId) {
+              const sessionKey = `photo_viewed_${photoId}`;
+              if (sessionStorage.getItem(sessionKey)) return; // Already viewed this session
+              sessionStorage.setItem(sessionKey, 'true');
+          }
+
           let targetUid = id;
           if (targetUid && targetUid.startsWith('@')) {
               if (artistData && artistData.uid) {
@@ -239,6 +246,12 @@ export default function Profile() {
               };
               
               await setDoc(userRef, updates, { merge: true }).catch(() => {});
+
+              // Update individual photo click metric
+              if (metricKey === 'photoClicks' && photoId) {
+                  const photoRef = doc(db, 'photos', photoId);
+                  await setDoc(photoRef, { clicks: increment(1) }, { merge: true }).catch(() => {});
+              }
           }
       } catch(e) {}
   };
@@ -263,8 +276,25 @@ export default function Profile() {
         if (!targetId) targetId = 'anonymous_demo';
         
         try {
-            if (!artistData) setIsProfileLoading(true);
-            if (allTattoos.length === 0) setIsTattoosLoading(true);
+            // --- SWR (Stale-While-Revalidate) Optimistic Cache ---
+            const swrCacheKey = `swr_profile_${targetId}`;
+            const cachedData = localStorage.getItem(swrCacheKey);
+            if (cachedData) {
+                try {
+                    const parsed = JSON.parse(cachedData);
+                    if (parsed.artistData) {
+                        setArtistData(parsed.artistData);
+                        setIsProfileLoading(false);
+                    }
+                    if (parsed.allTattoos) {
+                        setAllTattoos(parsed.allTattoos);
+                        setIsTattoosLoading(false);
+                    }
+                } catch(e) {}
+            } else {
+                if (!artistData) setIsProfileLoading(true);
+                if (allTattoos.length === 0) setIsTattoosLoading(true);
+            }
             
             let artistUid = targetId;
             let currentArtistDocId = null;
@@ -276,44 +306,35 @@ export default function Profile() {
 
                 let tagForMap = ('@' + baseTagLower);
 
-                const cachedUid = localStorage.getItem('tag_uid_map_' + tagForMap);
-                if (cachedUid) {
-                    artistUid = cachedUid;
-                    currentArtistDocId = artistUid;
-                } else {
-                    const possibleTags = [
-                        '@' + baseTagLower,
-                        '@' + baseTagOriginal,
-                        baseTagLower,
-                        baseTagOriginal
-                    ];
-                    const uniqueTags = [...new Set(possibleTags)];
+                // ALWAYS query the latest UID to prevent stale accounts if a user is recreated
+                const possibleTags = [
+                    '@' + baseTagLower,
+                    '@' + baseTagOriginal,
+                    baseTagLower,
+                    baseTagOriginal
+                ];
+                const uniqueTags = [...new Set(possibleTags)];
 
-                    let foundDoc = null;
-                    for (const t of uniqueTags) {
-                        let q = query(collection(db, 'users'), where('userTag', '==', t), limit(1));
-                        let snap = await getDocs(q);
-                        if (!snap.empty) {
-                            foundDoc = snap.docs[0];
-                            break;
-                        }
+                let foundDoc = null;
+                for (const t of uniqueTags) {
+                    let q = query(collection(db, 'users'), where('userTag', '==', t));
+                    let snap = await getDocs(q);
+                    if (!snap.empty) {
+                        foundDoc = snap.docs[0];
+                        break;
                     }
+                }
 
-                    if (foundDoc) {
-                        artistUid = foundDoc.id;
-                        currentArtistDocId = artistUid;
-                        
-                        try {
-                            localStorage.setItem('tag_uid_map_' + tagForMap, artistUid);
-                        } catch(e) {}
-                        
-                        // OPTIMIZACIÓN: Cargar datos inmediatamente desde la consulta del tag
-                        // para evitar esperar al onSnapshot y lograr renderizado casi instantáneo.
-                        if (isMounted) {
-                            const resolvedData = { ...foundDoc.data(), uid: artistUid };
-                            setArtistData(resolvedData);
-                            setIsProfileLoading(false);
-                        }
+                if (foundDoc) {
+                    artistUid = foundDoc.id;
+                    currentArtistDocId = artistUid;
+                    
+                    // OPTIMIZACIÓN: Cargar datos inmediatamente desde la consulta del tag
+                    // para evitar esperar al onSnapshot y lograr renderizado casi instantáneo.
+                    if (isMounted) {
+                        const resolvedData = { ...foundDoc.data(), uid: artistUid };
+                        setArtistData(resolvedData);
+                        setIsProfileLoading(false);
                     }
                 }
             }
@@ -345,6 +366,10 @@ export default function Profile() {
                         globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], artistData: data };
                         try {
                             localStorage.setItem('demoArtistData_' + currentArtistDocId, JSON.stringify(data));
+                            // --- SWR Cache Update ---
+                            const swrCacheKey = `swr_profile_${targetId}`;
+                            const existing = JSON.parse(localStorage.getItem(swrCacheKey) || '{}');
+                            localStorage.setItem(swrCacheKey, JSON.stringify({ ...existing, artistData: data }));
                         } catch(e) {}
                         setIsProfileLoading(false);
                     } else if (isMounted) {
@@ -403,6 +428,10 @@ export default function Profile() {
                         globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], allTattoos: finalPhotos };
                         try {
                             localStorage.setItem('demoAllTattoos_' + currentArtistDocId, JSON.stringify(finalPhotos));
+                            // --- SWR Cache Update ---
+                            const swrCacheKey = `swr_profile_${targetId}`;
+                            const existing = JSON.parse(localStorage.getItem(swrCacheKey) || '{}');
+                            localStorage.setItem(swrCacheKey, JSON.stringify({ ...existing, allTattoos: finalPhotos }));
                         } catch(e) {}
                         setIsTattoosLoading(false);
                     }
@@ -641,6 +670,9 @@ export default function Profile() {
   const defaultBio = artistData?.bio || (isExplicitDemoTarget ? "Conoce a este increíble artista del tatuaje y explora su portafolio en Turnos Tattoo." : "Cargando...");
   const defaultBg = artistData?.backgroundPhotos?.[0] || "https://lh3.googleusercontent.com/aida-public/AB6AXuBiWtwSf0Fh3AWm01LAlMfj3JGoOdHldaVkVIRDRpbavMRKQEt_SI7cvqZB7R56dQt7nuInHJM7V0a74racFxJT0E12v57KMBnC09rQOtg5YVpvOdglwy8KnhHl1H0tFedvuBum6LD2ADyKGFqdnQ3lUJqIhOZj6bJPzlLI4S7L2n9tqn9wZ6t8smG60s2wvnHM3NabsjD_rMrUmix943Tdd_CAZDTFaQeq5FEq8IXpsVkSLkJ24K0VpV9R4GRF2SDH8cwWPwwNjXI";
   const defaultAvatar = artistData?.profilePhotoUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuC_KPGqcJA_LhFIZepjSW5Tf7MtTYEc4iRE4J7SbB3ZSPxSwnEhyd39Iptl8UJFQS6m269Hwwx2KZd5ywVY5a6mTaGP0eKxhhFlOChAey3A8OvJ2X43uTD6BH3bkh9AjFk_ged61veFwFc7XeGxUyraAjawtpIIQxmkRhrpbijpEFfFKyxzuCj7Ltek0mSl4QQtognkqRBrsSC25geKA2JCuif3FBQ8nEvcajl0_fkXLSakiANOEXbVDwi9vnMRrjEXDcc5_qMFBm0";
+  
+  const preloadAvatar = getOptimizedGoogleUrl(defaultAvatar, 256);
+  const preloadBg = getOptimizedGoogleUrl(defaultBg, 1200);
 
 
   
@@ -670,6 +702,8 @@ export default function Profile() {
         <meta name="twitter:card" content="summary_large_image" />
         <link rel="icon" href={defaultAvatar} />
         <link rel="apple-touch-icon" href={defaultAvatar} />
+        {preloadAvatar && <link rel="preload" href={preloadAvatar} as="image" />}
+        {preloadBg && <link rel="preload" href={preloadBg} as="image" />}
       </Helmet>
       <main className="pb-8 md:pb-16">
         <div className="top-0 left-0 z-40 px-3 py-1 bg-black/30 backdrop-blur-sm fixed rounded-br-lg border-b border-r border-white/5 profile-logo-container">
@@ -872,7 +906,8 @@ export default function Profile() {
                   alt={tattoo.alt} 
                   onClick={() => openModal(index)} 
                   lowResUrl={tattoo.thumbnailUrl || tattoo.previewUrl}
-                  highResUrl={tattoo.thumbnailUrl || tattoo.previewUrl || tattoo.src}
+                  highResUrl={tattoo.src}
+                  optimizedSize={400}
                   useIntersectionObserver={true}
                   style={{ filter: getFilterStr(tattoo.filters) }}
                 />
@@ -1300,42 +1335,53 @@ export default function Profile() {
             )}
 
             <button type="button"
-              className="modal-submit-btn w-full py-3 mt-2 bg-emerald-accent text-on-surface font-label-md font-extrabold uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all"
+              className="modal-submit-btn w-full py-3 mt-2 bg-emerald-accent text-on-surface font-label-md font-extrabold uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmittingWaitlist}
               onClick={async () => {
-                const newMessage = {
-                  id: Date.now(),
-                  name: waitlistForm.name || waitlistForm.phone || 'Sin nombre',
-                  time: new Date().toISOString(),
-                  title: waitlistForm.type === 'consulta' ? 'Consulta general' : 'Idea de tatuaje',
-                  text: waitlistForm.description || 'Sin descripción',
-                  hasImage: !!waitlistForm.referenceImage,
-                  referenceImage: waitlistForm.referenceImage || null,
-                  referenceTitle: waitlistForm.referenceImage ? (refTattoo?.title || 'Imagen adjuntada') : null,
-                  tags: [
-                    waitlistForm.type === 'consulta' ? 'Consulta' : 'Idea',
-                    ...(waitlistForm.referenceImage ? [refTattoo ? 'Refe. del portafolio' : 'Refe. del usuario'] : [])
-                  ],
-                  type: 'Nueva solicitud',
-                  typeClass: 'px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-surface-variant text-on-surface-variant border border-border-muted whitespace-nowrap rounded',
-                  read: false
-                };
+                if (isSubmittingWaitlist) return;
+                setIsSubmittingWaitlist(true);
                 
-                const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-                await addDoc(collection(db, 'users', artistData.uid, 'waitlist'), {
-                    ...newMessage,
-                    createdAt: serverTimestamp()
-                });
-                
-                trackMetric('agendaClicks');
-                setWaitlistSuccess(true);
-                setTimeout(() => {
-                  setWaitlistModalOpen(false);
-                  setWaitlistForm({ name: '', phone: '', type: 'consulta', description: '', referenceImage: '' });
-                  setWaitlistSuccess(false);
-                }, 2500);
+                try {
+                    const newMessage = {
+                      id: Date.now(),
+                      name: waitlistForm.name || waitlistForm.phone || 'Sin nombre',
+                      phone: waitlistForm.phone.replace(/[^0-9]/g, ''),
+                      time: new Date().toISOString(),
+                      title: waitlistForm.type === 'consulta' ? 'Consulta general' : 'Idea de tatuaje',
+                      text: waitlistForm.description || 'Sin descripción',
+                      hasImage: !!waitlistForm.referenceImage,
+                      referenceImage: waitlistForm.referenceImage || null,
+                      referenceTitle: waitlistForm.referenceImage ? (refTattoo?.title || 'Imagen adjuntada') : null,
+                      tags: [
+                        waitlistForm.type === 'consulta' ? 'Consulta' : 'Idea',
+                        ...(waitlistForm.referenceImage ? [refTattoo ? 'Refe. del portafolio' : 'Refe. del usuario'] : [])
+                      ],
+                      type: 'Nueva solicitud',
+                      typeClass: 'px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-surface-variant text-on-surface-variant border border-border-muted whitespace-nowrap rounded',
+                      read: false
+                    };
+                    
+                    const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+                    await addDoc(collection(db, 'users', artistData.uid, 'waitlist'), {
+                        ...newMessage,
+                        createdAt: serverTimestamp()
+                    });
+                    
+                    trackMetric('agendaClicks');
+                    setWaitlistSuccess(true);
+                    setTimeout(() => {
+                      setWaitlistModalOpen(false);
+                      setWaitlistForm({ name: '', phone: '', type: 'consulta', description: '', referenceImage: '' });
+                      setWaitlistSuccess(false);
+                      setIsSubmittingWaitlist(false);
+                    }, 2500);
+                } catch (error) {
+                    console.error("Error sending waitlist message:", error);
+                    setIsSubmittingWaitlist(false);
+                }
               }}
             >
-              Agendarme
+              {isSubmittingWaitlist ? 'Enviando...' : 'Agendarme'}
             </button>
             </>
             )}
