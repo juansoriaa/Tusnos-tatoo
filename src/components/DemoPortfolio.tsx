@@ -205,7 +205,6 @@ export default function DemoPortfolio() {
             }
             if (globalCachedPhotos && globalCachedArtistUid === artistUid) {
                 setExistingPhotos(globalCachedPhotos);
-                return;
             }
             try {
                 const q = query(

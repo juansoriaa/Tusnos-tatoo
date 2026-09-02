@@ -36,37 +36,8 @@ const defaultFaqs = [
                 if (user) loadData(user.uid);
             });
         }
-        async function loadData(demoUserId: string) {
-            let data = null;
-            if (demoUserId) {
-                try {
-                    const cacheStr = localStorage.getItem('demoArtistData_' + demoUserId);
-                    if (cacheStr) {
-                        data = JSON.parse(cacheStr);
-                    } else {
-                        const { globalPreloadCache } = await import('../lib/cache');
-                        if (globalPreloadCache[demoUserId]?.artistData) {
-                            data = globalPreloadCache[demoUserId].artistData;
-                        }
-                    }
-                    if (!data) {
-                        const docSnap = await getDoc(doc(db, 'users', demoUserId));
-                    if (docSnap.exists()) {
-                            data = docSnap.data();
-                        }
-                    }
-                } catch (e) {
-                    console.error("Error loading from Firestore", e);
-                }
-            }
-            if (!data) {
-                const saved = localStorage.getItem('demoArtistData_demo');
-                if (saved) {
-                    try { data = JSON.parse(saved); } catch (e) {}
-                }
-            }
-            if (data) {
-                try {
+        const applyData = (data: any) => {
+            try {
                 setName(data.displayName || 'Victor Ink');
                 setBio(data.bio || 'Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.');
                 setSpecialty1((data.specialtyTags && data.specialtyTags.length > 0) ? (data.specialtyTags[0] || '') : 'Realismo');
@@ -114,54 +85,79 @@ const defaultFaqs = [
                     mapLink: data.mapLink || '',
                     faqs: data.faqs || defaultFaqs
                 }));
-            } catch (e) { console.error('Error in setInitialDataStr block', e); }
-        } else {
-            const initData = {
-                name: 'Victor Ink',
-                bio: 'Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.',
-                specialty1: 'Realismo',
-                specialty2: 'Black & Grey',
-                specialty3: '',
-                isAvailable: true,
-                whatsapp: '',
-                loginEmail: '',
-                customPassword: '',
-                instagram: '',
-                facebook: '',
-                tiktok: '',
-                avatarUrl: defaultAvatar,
-                bannerUrl: defaultBanner,
-                hasPhysicalStudio: true,
-                studioName: '',
-                studioDescription: '',
-                studioAddress: '',
-                studioHours: '',
-                mapLink: '',
-                faqs: defaultFaqs
-            };
-            setName(initData.name);
-            setBio(initData.bio);
-            setSpecialty1(initData.specialty1);
-            setSpecialty2(initData.specialty2);
-            setSpecialty3(initData.specialty3);
-            setIsAvailable(initData.isAvailable);
-            setWhatsapp(initData.whatsapp);
-            setLoginEmail(initData.loginEmail);
-            setCustomPassword(initData.customPassword);
-            setInstagram(initData.instagram);
-            setFacebook(initData.facebook);
-            setTiktok(initData.tiktok);
-            setAvatarUrl(initData.avatarUrl);
-            setBannerUrl(initData.bannerUrl);
-            setHasPhysicalStudio(initData.hasPhysicalStudio);
-            setStudioName(initData.studioName);
-            setStudioDescription(initData.studioDescription);
-            setStudioAddress(initData.studioAddress);
-            setStudioHours(initData.studioHours);
-            setMapLink(initData.mapLink);
-            setFaqs(initData.faqs);
-            setInitialDataStr(JSON.stringify(initData));
-        }
+            } catch (e) { console.error('Error in applyData', e); }
+        };
+
+        async function loadData(demoUserId: string) {
+            let hasLoadedData = false;
+            if (demoUserId) {
+                try {
+                    const cacheStr = localStorage.getItem('demoArtistData_' + demoUserId);
+                    if (cacheStr) {
+                        const data = JSON.parse(cacheStr);
+                        if (data) {
+                            applyData(data);
+                            hasLoadedData = true;
+                        }
+                    } else {
+                        const { globalPreloadCache } = await import('../lib/cache');
+                        if (globalPreloadCache[demoUserId]?.artistData) {
+                            const data = globalPreloadCache[demoUserId].artistData;
+                            if (data) {
+                                applyData(data);
+                                hasLoadedData = true;
+                            }
+                        }
+                    }
+                    
+                    // ALWAYS FETCH FROM FIRESTORE TO KEEP DEVICES SYNCED
+                    const docSnap = await getDoc(doc(db, 'users', demoUserId));
+                    if (docSnap.exists()) {
+                        const dbData = docSnap.data();
+                        localStorage.setItem('demoArtistData_' + demoUserId, JSON.stringify(dbData));
+                        applyData(dbData);
+                        hasLoadedData = true;
+                    }
+                } catch (e) {
+                    console.error("Error loading from Firestore", e);
+                }
+            }
+            if (!hasLoadedData) {
+                const saved = localStorage.getItem('demoArtistData_demo');
+                if (saved) {
+                    try { 
+                        const data = JSON.parse(saved); 
+                        if (data) {
+                            applyData(data);
+                            hasLoadedData = true;
+                        }
+                    } catch (e) {}
+                }
+            }
+            if (!hasLoadedData) {
+                const initData = {
+                    displayName: 'Victor Ink',
+                    bio: 'Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.',
+                    specialtyTags: ['Realismo', 'Black & Grey'],
+                    isAvailable: true,
+                    whatsapp: '',
+                    email: '',
+                    customPassword: '',
+                    instagram: '',
+                    facebook: '',
+                    tiktok: '',
+                    profilePhotoUrl: defaultAvatar,
+                    backgroundPhotos: [defaultBanner],
+                    hasPhysicalStudio: true,
+                    studioName: '',
+                    studioDescription: '',
+                    studioAddress: '',
+                    studioHours: '',
+                    mapLink: '',
+                    faqs: defaultFaqs
+                };
+                applyData(initData);
+            }
         };
     }, []); // Subscribe to auth changes instead of manual call
 
