@@ -359,8 +359,7 @@ export default function Profile() {
                 const qTattoos = query(
                     collection(db, 'photos'),
                     where('createdBy', '==', currentArtistDocId),
-                    orderBy('createdAt', 'desc'),
-                    limit(12)
+                    orderBy('createdAt', 'desc')
                 );
                 tattoosUnsub = onSnapshot(qTattoos, (snap) => {
                     if (isMounted) {
@@ -378,8 +377,19 @@ export default function Profile() {
                                 hours: pData.hours || null,
                                 sessions: pData.sessions || null,
                                 size: pData.size || null,
-                                originalFallbackId: pData.originalFallbackId || null
+                                originalFallbackId: pData.originalFallbackId || null,
+                                pinnedOrder: pData.pinnedOrder
                             };
+                        });
+                        
+                        // Sort to match Profile logic (pinned first)
+                        finalPhotos.sort((a, b) => {
+                            const aPinned = typeof a.pinnedOrder === 'number' && a.pinnedOrder > 0;
+                            const bPinned = typeof b.pinnedOrder === 'number' && b.pinnedOrder > 0;
+                            if (aPinned && bPinned) return a.pinnedOrder - b.pinnedOrder;
+                            if (aPinned) return -1;
+                            if (bPinned) return 1;
+                            return 0; 
                         });
                         
                         if (snap.docs.length > 0) {
@@ -482,57 +492,7 @@ export default function Profile() {
 
   const loadMoreTattoos = async () => {
     if (visibleCount < filteredTattoos.length) {
-        setVisibleCount(prev => prev + 6);
-        return;
-    }
-    if (!hasMore || !lastDoc || isLoadingMore) return;
-    
-    setIsLoadingMore(true);
-    try {
-        const uid = artistData?.uid || artistData?.id || resolveTargetId();
-        const { collection, query, where, orderBy, limit, startAfter, getDocs } = await import('firebase/firestore');
-        const qTattoos = query(
-            collection(db, 'photos'),
-            where('createdBy', '==', uid),
-            orderBy('createdAt', 'desc'),
-            startAfter(lastDoc),
-            limit(12)
-        );
-        const tattoosSnapshot = await getDocs(qTattoos);
-        
-        if (tattoosSnapshot.docs.length > 0) {
-            setLastDoc(tattoosSnapshot.docs[tattoosSnapshot.docs.length - 1]);
-        }
-        if (tattoosSnapshot.docs.length < 12) {
-            setHasMore(false);
-        }
-        
-        let newPhotos = tattoosSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                src: data.url || data.imageUrl || data.src,
-                previewUrl: data.previewUrl,
-                thumbnailUrl: data.thumbnailUrl,
-                description: data.info || data.description || data.alt || "",
-                alt: data.title || data.info,
-                title: data.title || 'Foto de Tatuaje',
-                categories: data.tags || data.categories || ['Portfolio'],
-                filters: data.filters || [],
-                hours: data.hours,
-                sessions: data.sessions,
-                size: data.size,
-                pinnedOrder: data.pinnedOrder,
-                originalFallbackId: data.originalFallbackId
-            };
-        });
-        
-        setAllTattoos(prev => [...prev, ...newPhotos]);
-        setVisibleCount(prev => prev + 6);
-    } catch(e) {
-        console.error("Error loading more tattoos", e);
-    } finally {
-        setIsLoadingMore(false);
+        setVisibleCount(prev => prev + 12);
     }
   };
 
@@ -928,7 +888,7 @@ export default function Profile() {
           )}
 
           <div className="flex justify-center mt-12 gap-4">
-            {(hasMore || visibleCount < filteredTattoos.length) && (
+            {(visibleCount < filteredTattoos.length) && (
               <button type="button"
                 className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all uppercase tracking-widest border-b border-outline-variant hover:border-primary py-2 font-bold flex items-center gap-2" 
                 onClick={loadMoreTattoos}

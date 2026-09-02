@@ -460,32 +460,30 @@ export default function DemoPortfolio() {
             const pinnedFallbacks = JSON.parse(localStorage.getItem('pinnedFallbacks') || '{}');
             let isUnpinning = typeof photo.pinnedOrder === 'number' && photo.pinnedOrder > 0;
             
-            // Unpin all currently pinned photos
-            existingPhotos.forEach(p => {
-                if (typeof p.pinnedOrder === 'number' && p.pinnedOrder > 0) {
-                    if (!p.id.startsWith('fallback_')) {
-                        batch.update(doc(db, 'photos', p.id), { pinnedOrder: null });
-                    }
-                    delete pinnedFallbacks[p.id];
+            if (isUnpinning) {
+                if (!photo.id.startsWith('fallback_')) {
+                    batch.update(doc(db, 'photos', photo.id), { pinnedOrder: null });
                 }
-            });
-
-            if (!isUnpinning) {
+                delete pinnedFallbacks[photo.id];
+            } else {
                 const currentPinnedCount = existingPhotos.filter(p => typeof p.pinnedOrder === 'number' && p.pinnedOrder > 0).length;
                 if (currentPinnedCount >= 6) {
                     setShowPinLimitModal(true);
                     return;
                 }
                 
-                // Pin the new one
+                // Find next available order
+                const maxOrder = Math.max(0, ...existingPhotos.filter(p => typeof p.pinnedOrder === 'number' && p.pinnedOrder > 0).map(p => p.pinnedOrder));
+                const nextOrder = maxOrder + 1;
+                
                 if (!photo.id.startsWith('fallback_')) {
-                    batch.update(doc(db, 'photos', photo.id), { pinnedOrder: 1 });
+                    batch.update(doc(db, 'photos', photo.id), { pinnedOrder: nextOrder });
                 }
-                pinnedFallbacks[photo.id] = 1;
+                pinnedFallbacks[photo.id] = nextOrder;
             }
 
-            // Commit batch if there's any non-fallback to update
-            if (existingPhotos.some(p => !p.id.startsWith('fallback_') && typeof p.pinnedOrder === 'number' && p.pinnedOrder > 0) || (!isUnpinning && !photo.id.startsWith('fallback_'))) {
+            // Commit batch if there is a real document being updated
+            if (!photo.id.startsWith('fallback_')) {
                 await batch.commit();
             }
             
@@ -493,14 +491,14 @@ export default function DemoPortfolio() {
             
             setExistingPhotos(prev => {
                 const newPhotos = prev.map(p => {
-                    if (isUnpinning && p.id === photo.id) return { ...p, pinnedOrder: null };
-                    if (!isUnpinning && p.id === photo.id) return { ...p, pinnedOrder: 1 };
-                    return { ...p, pinnedOrder: null };
+                    if (p.id === photo.id) {
+                        return { ...p, pinnedOrder: isUnpinning ? null : pinnedFallbacks[photo.id] };
+                    }
+                    return p;
                 });
                 globalCachedPhotos = newPhotos;
                 return newPhotos;
             });
-            
         } catch (error) {
             console.error("Error toggling pin", error);
         }
