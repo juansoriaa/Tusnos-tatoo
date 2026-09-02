@@ -534,33 +534,45 @@ const handleSaveObra = async () => {
                     photoDataUrl = await createThumbnail(selectedFile, 1920, 1920);
                     previewDataUrl = await createThumbnail(selectedFile, 800, 800);
                     thumbDataUrl = await createThumbnail(selectedFile, 400, 400);
+                    const demoUserId = localStorage.getItem('demoUserId');
+                    const isRealUser = demoUserId && demoUserId !== 'demo';
                     
                     // Upload to Firebase Storage
                     try {
-                        if (!auth.currentUser) throw new Error('Not authenticated, falling back to base64');
-                        const uid = auth.currentUser.uid;
-                        const timestamp = Date.now();
-                        
-                        // Convert base64 to blob
-                        const base64Response = await fetch(photoDataUrl);
-                        const blob = await base64Response.blob();
-                        const storageRef = ref(storage, `users/${uid}/photos/${timestamp}_full.webp`);
-                        await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
-                        photoDataUrl = await getDownloadURL(storageRef);
-                        
-                        const previewResponse = await fetch(previewDataUrl);
-                        const previewBlob = await previewResponse.blob();
-                        const previewRef = ref(storage, `users/${uid}/photos/${timestamp}_preview.webp`);
-                        await uploadBytes(previewRef, previewBlob, { contentType: 'image/webp' });
-                        previewDataUrl = await getDownloadURL(previewRef);
+                        if (!auth.currentUser && isRealUser) {
+                            throw new Error('Tu sesión ha expirado. Por favor, cierra sesión y vuelve a entrar para subir fotos.');
+                        }
+                        if (auth.currentUser) {
+                            const uid = auth.currentUser.uid;
+                            const timestamp = Date.now();
+                            
+                            // Convert base64 to blob
+                            const base64Response = await fetch(photoDataUrl);
+                            const blob = await base64Response.blob();
+                            const storageRef = ref(storage, `users/${uid}/photos/${timestamp}_full.webp`);
+                            await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
+                            photoDataUrl = await getDownloadURL(storageRef);
+                            
+                            const previewResponse = await fetch(previewDataUrl);
+                            const previewBlob = await previewResponse.blob();
+                            const previewRef = ref(storage, `users/${uid}/photos/${timestamp}_preview.webp`);
+                            await uploadBytes(previewRef, previewBlob, { contentType: 'image/webp' });
+                            previewDataUrl = await getDownloadURL(previewRef);
 
-                        const thumbResponse = await fetch(thumbDataUrl);
-                        const thumbBlob = await thumbResponse.blob();
-                        const thumbRef = ref(storage, `users/${uid}/photos/${timestamp}_thumb.webp`);
-                        await uploadBytes(thumbRef, thumbBlob, { contentType: 'image/webp' });
-                        thumbDataUrl = await getDownloadURL(thumbRef);
-                    } catch (err) {
-                        console.error('Error uploading to storage, falling back to base64', err);
+                            const thumbResponse = await fetch(thumbDataUrl);
+                            const thumbBlob = await thumbResponse.blob();
+                            const thumbRef = ref(storage, `users/${uid}/photos/${timestamp}_thumb.webp`);
+                            await uploadBytes(thumbRef, thumbBlob, { contentType: 'image/webp' });
+                            thumbDataUrl = await getDownloadURL(thumbRef);
+                        }
+                    } catch (err: any) {
+                        console.error('Error uploading to storage:', err);
+                        if (isRealUser) {
+                            alert(err.message || 'Error al subir la imagen. Por favor verifica tu conexión y sesión.');
+                            setIsSaving(false);
+                            return; // Prevent saving base64 to Firestore and breaking sync!
+                        }
+                        console.log('Falling back to base64 for demo user');
                     }
                 }
                 
@@ -613,31 +625,45 @@ const handleSaveObra = async () => {
                 let previewDataUrl = await createThumbnail(selectedFile, 800, 800);
                 let thumbDataUrl = await createThumbnail(selectedFile, 400, 400);
 
-                // Upload to Firebase Storage
-                try {
-                    if (!auth.currentUser) throw new Error('Not authenticated, falling back to base64');
-                    const uid = auth.currentUser.uid;
-                    const timestamp = Date.now();
-                    
-                    const base64Response = await fetch(photoDataUrl);
-                    const blob = await base64Response.blob();
-                    const storageRef = ref(storage, `users/${uid}/photos/${timestamp}_full.webp`);
-                    await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
-                    photoDataUrl = await getDownloadURL(storageRef);
-                    
-                    const previewResponse = await fetch(previewDataUrl);
-                    const previewBlob = await previewResponse.blob();
-                    const previewRef = ref(storage, `users/${uid}/photos/${timestamp}_preview.webp`);
-                    await uploadBytes(previewRef, previewBlob, { contentType: 'image/webp' });
-                    previewDataUrl = await getDownloadURL(previewRef);
+                const demoUserId = localStorage.getItem('demoUserId');
+                const isRealUser = demoUserId && demoUserId !== 'demo';
 
-                    const thumbResponse = await fetch(thumbDataUrl);
-                    const thumbBlob = await thumbResponse.blob();
-                    const thumbRef = ref(storage, `users/${uid}/photos/${timestamp}_thumb.webp`);
-                    await uploadBytes(thumbRef, thumbBlob, { contentType: 'image/webp' });
-                    thumbDataUrl = await getDownloadURL(thumbRef);
-                } catch (err) {
-                    console.error('Error uploading to storage, falling back to base64', err);
+                // Upload to Firebase Storage
+                let uploadFailed = false;
+                try {
+                    if (!auth.currentUser && isRealUser) {
+                        throw new Error('Tu sesión ha expirado. Por favor, cierra sesión y vuelve a entrar para subir fotos.');
+                    }
+                    if (auth.currentUser) {
+                        const uid = auth.currentUser.uid;
+                        const timestamp = Date.now();
+                        
+                        const base64Response = await fetch(photoDataUrl);
+                        const blob = await base64Response.blob();
+                        const storageRef = ref(storage, `users/${uid}/photos/${timestamp}_full.webp`);
+                        await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
+                        photoDataUrl = await getDownloadURL(storageRef);
+                        
+                        const previewResponse = await fetch(previewDataUrl);
+                        const previewBlob = await previewResponse.blob();
+                        const previewRef = ref(storage, `users/${uid}/photos/${timestamp}_preview.webp`);
+                        await uploadBytes(previewRef, previewBlob, { contentType: 'image/webp' });
+                        previewDataUrl = await getDownloadURL(previewRef);
+
+                        const thumbResponse = await fetch(thumbDataUrl);
+                        const thumbBlob = await thumbResponse.blob();
+                        const thumbRef = ref(storage, `users/${uid}/photos/${timestamp}_thumb.webp`);
+                        await uploadBytes(thumbRef, thumbBlob, { contentType: 'image/webp' });
+                        thumbDataUrl = await getDownloadURL(thumbRef);
+                    }
+                } catch (err: any) {
+                    console.error('Error uploading to storage:', err);
+                    if (isRealUser) {
+                        alert(err.message || 'Error al subir la imagen. Por favor verifica tu conexión y sesión.');
+                        setIsSaving(false);
+                        return; // Prevent saving base64 to Firestore and breaking sync!
+                    }
+                    console.log('Falling back to base64 for demo user');
                 }
 
                 const newPhotoRef = await addDoc(collection(db, 'photos'), {
