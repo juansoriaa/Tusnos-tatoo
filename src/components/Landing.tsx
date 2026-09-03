@@ -291,7 +291,7 @@ export default function Landing() {
       
       if (userDoc) {
           const data = userDoc.data();
-          if (data.customPassword === trimPass || trimPass === '123456' || trimPass === 'demo') {
+          if (data.customPassword && (data.customPassword === trimPass || trimPass === '123456' || trimPass === 'demo')) {
               localStorage.setItem('demoUserId', userDoc.id);
               setIsLoggingIn(false);
               setShowLoginModal(false);
@@ -299,18 +299,27 @@ export default function Landing() {
               setPassword('');
               navigate('/demo/dashboard');
               return;
-          } else {
-              setLoginError('Usuario o contraseña incorrecta.');
-              setIsLoggingIn(false);
-              return;
           }
-      } else {
-          setLoginError('Usuario no encontrado.');
+      }
+      
+      // Intentar login real con Firebase Auth
+      try {
+          const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
+          localStorage.setItem('demoUserId', userCredential.user.uid);
+          setIsLoggingIn(false);
+          setShowLoginModal(false);
+          setEmail('');
+          setPassword('');
+          navigate('/demo/dashboard');
+          return;
+      } catch (authError: any) {
+          console.error("Firebase auth error", authError);
+          setLoginError('Usuario o contraseña incorrecta.');
           setIsLoggingIn(false);
           return;
       }
     } catch (error: any) {
-      console.error("Login failed", error);
+      console.error("Login process failed", error);
       setIsLoggingIn(false);
       setLoginError('Error inesperado.');
     }
@@ -324,7 +333,7 @@ export default function Landing() {
     const preloadDemo = async () => {
       try {
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('tag', '==', 'dani_black'));
+        const q = query(usersRef, where('userTag', '==', '@daniblack'));
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
@@ -332,7 +341,7 @@ export default function Landing() {
           const uid = userDoc.id;
           
           // Cache the tag mapping to speed up ArtistProfile
-          localStorage.setItem(`tag_uid_map_dani_black`, uid);
+          localStorage.setItem(`tag_uid_map_@daniblack`, uid);
 
           // Preload portfolio photos
           const portfolioRef = collection(db, 'portfolios');
@@ -454,7 +463,7 @@ export default function Landing() {
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-6">
               <button onClick={handleWhatsAppRedirect} className="w-full md:w-auto px-12 py-5 bg-primary text-white font-black text-body-md uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 active:scale-95 shadow-[0_0_30px_rgba(5,77,68,0.4)]">Quiero mi página</button>
-              <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/@dani_black')}>
+              <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/@daniblack')}>
                 Ver Demo
               </button>
             </div>
