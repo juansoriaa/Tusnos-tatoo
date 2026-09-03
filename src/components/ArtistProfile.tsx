@@ -6,6 +6,7 @@ import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, startAf
 import { useSubscription } from '../hooks/useSubscription';
 import { db, auth, onAuthStateChanged } from '../firebase';
 import { globalPreloadCache } from '../lib/cache';
+import { getOptimizedGoogleUrl } from '../lib/imageHelper';
 
 
 const defaultFaqs = [

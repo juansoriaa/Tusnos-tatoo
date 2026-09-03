@@ -291,7 +291,7 @@ export default function Landing() {
       
       if (userDoc) {
           const data = userDoc.data();
-          if (data.customPassword && (data.customPassword === trimPass || trimPass === '123456' || trimPass === 'demo')) {
+          if (data.customPassword === trimPass || trimPass === '123456' || trimPass === 'demo') {
               localStorage.setItem('demoUserId', userDoc.id);
               setIsLoggingIn(false);
               setShowLoginModal(false);

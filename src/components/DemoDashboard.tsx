@@ -38,10 +38,10 @@ const defaultFaqs = [
         }
         const applyData = (data: any) => {
             try {
-                setName(data.displayName || 'Victor Ink');
-                setBio(data.bio || 'Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.');
-                setSpecialty1((data.specialtyTags && data.specialtyTags.length > 0) ? (data.specialtyTags[0] || '') : 'Realismo');
-                setSpecialty2((data.specialtyTags && data.specialtyTags.length > 0) ? (data.specialtyTags[1] || '') : 'Black & Grey');
+                setName(data.displayName || data.userTag || '');
+                setBio(data.bio || '');
+                setSpecialty1((data.specialtyTags && data.specialtyTags.length > 0) ? (data.specialtyTags[0] || '') : '');
+                setSpecialty2((data.specialtyTags && data.specialtyTags.length > 1) ? (data.specialtyTags[1] || '') : '');
                 setSpecialty3(data.specialtyTags?.[2] || '');
                 setIsAvailable(data.isAvailable !== false);
                 setWhatsapp(data.whatsapp || '');
@@ -63,10 +63,10 @@ const defaultFaqs = [
                 setSubscriptionEndsAt(data.subscriptionEndsAt || null);
             
                 setInitialDataStr(JSON.stringify({
-                    name: data.displayName || 'Victor Ink',
-                    bio: data.bio || 'Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.',
-                    specialty1: (data.specialtyTags && data.specialtyTags.length > 0) ? (data.specialtyTags[0] || '') : 'Realismo',
-                    specialty2: (data.specialtyTags && data.specialtyTags.length > 0) ? (data.specialtyTags[1] || '') : 'Black & Grey',
+                    name: data.displayName || data.userTag || '',
+                    bio: data.bio || '',
+                    specialty1: (data.specialtyTags && data.specialtyTags.length > 0) ? (data.specialtyTags[0] || '') : '',
+                    specialty2: (data.specialtyTags && data.specialtyTags.length > 1) ? (data.specialtyTags[1] || '') : '',
                     specialty3: data.specialtyTags?.[2] || '',
                     isAvailable: data.isAvailable !== false,
                     whatsapp: data.whatsapp || '',
@@ -136,9 +136,9 @@ const defaultFaqs = [
             }
             if (!hasLoadedData) {
                 const initData = {
-                    displayName: 'Victor Ink',
-                    bio: 'Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.',
-                    specialtyTags: ['Realismo', 'Black & Grey'],
+                    displayName: '',
+                    bio: '',
+                    specialtyTags: ['', ''],
                     isAvailable: true,
                     whatsapp: '',
                     email: '',
@@ -161,10 +161,10 @@ const defaultFaqs = [
         };
     }, []); // Subscribe to auth changes instead of manual call
 
-    const [name, setName] = useState('Victor Ink');
-    const [bio, setBio] = useState('Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.');
-    const [specialty1, setSpecialty1] = useState('Realismo');
-    const [specialty2, setSpecialty2] = useState('Black & Grey');
+    const [name, setName] = useState('');
+    const [bio, setBio] = useState('');
+    const [specialty1, setSpecialty1] = useState('');
+    const [specialty2, setSpecialty2] = useState('');
     const [specialty3, setSpecialty3] = useState('');
     const [mapLink, setMapLink] = useState('');
     const [hasPhysicalStudio, setHasPhysicalStudio] = useState(true);

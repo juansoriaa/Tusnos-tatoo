@@ -81,7 +81,7 @@ export default function DemoLayout
         const [avatarUrl, setAvatarUrl] = useState('https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo');
     const [turnosLlenos, setTurnosLlenos] = useState(false);
     const [artistName, setArtistName] = useState('Artista');
-    const [artistBio, setArtistBio] = useState('Panel de Control - Turnos Tattoo');
+    const [artistBio, setArtistBio] = useState('Panel de Control');
 
 
     useEffect(() => {
