@@ -181,13 +181,13 @@ export default function DemoPortfolio() {
     // CACHE WARMING: Ensure that any modifications to existingPhotos in the Dashboard
     // immediately overwrite the localStorage cache so that the "Ver Perfil" tab reads the latest state instantly.
     useEffect(() => {
-        const localUid = localStorage.getItem('demoUserId') || authUid;
+        const localUid = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
         if (localUid && existingPhotos && existingPhotos.length > 0) {
             try {
                 localStorage.setItem('demoAllTattoos_' + localUid, JSON.stringify(existingPhotos));
             } catch(e) {}
         }
-    }, [existingPhotos, authUid]);
+    }, [existingPhotos]);
     
     async function fetchPhotos(userUid: string) {
             let artistUid = userUid || 'anonymous_demo';

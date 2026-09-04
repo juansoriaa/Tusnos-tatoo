@@ -69,6 +69,7 @@ export default function Landing() {
   }, []);
   const [user, setUser] = useState<any>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false);
   
   const [email, setEmail] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
