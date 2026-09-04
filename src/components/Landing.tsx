@@ -245,26 +245,14 @@ export default function Landing() {
       let userDoc = null;
       
       if (!loginEmail.includes('@') || loginEmail.startsWith('@')) {
-          let origTag = originalEmail.trim();
-          let baseTagLower = trimEmail.replace('@', '');
-          let baseTagOriginal = origTag.replace('@', '');
-
-          const possibleTags = [
-              '@' + baseTagLower,
-              '@' + baseTagOriginal,
-              baseTagLower,
-              baseTagOriginal
-          ];
-          const uniqueTags = [...new Set(possibleTags)];
-
-          for (const t of uniqueTags) {
-              let qTag = query(collection(db, 'users'), where('userTag', '==', t));
-              let snapTag = await getDocs(qTag);
-              if (!snapTag.empty) {
-                  userDoc = snapTag.docs[0];
-                  loginEmail = userDoc.data().email;
-                  break;
-              }
+          const { getPossibleUserTags } = await import('../lib/tagHelper');
+          const possibleTags = getPossibleUserTags(originalEmail);
+          
+          let qTag = query(collection(db, 'users'), where('userTag', 'in', possibleTags));
+          let snap = await getDocs(qTag);
+          if (!snap.empty) {
+              userDoc = snap.docs[0];
+              loginEmail = userDoc.data().email;
           }
 
           if (!userDoc) {
@@ -325,7 +313,7 @@ export default function Landing() {
     }
   };
 
-  useEffect(() => {
+    useEffect(() => {
     // 1. Preload the React chunk for the profile page
     import('./ArtistProfile').catch(() => {});
 
@@ -333,7 +321,7 @@ export default function Landing() {
     const preloadDemo = async () => {
       try {
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('userTag', '==', '@daniblack'));
+        const q = query(usersRef, where('userTag', '==', '@danii_black'));
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
@@ -341,7 +329,7 @@ export default function Landing() {
           const uid = userDoc.id;
           
           // Cache the tag mapping to speed up ArtistProfile
-          localStorage.setItem(`tag_uid_map_@daniblack`, uid);
+          localStorage.setItem(`tag_uid_map_@danii_black`, uid);
 
           // Preload portfolio photos
           const portfolioRef = collection(db, 'portfolios');
@@ -355,6 +343,13 @@ export default function Landing() {
 
     preloadDemo();
   }, []);
+
+  const navigateToDemo = () => {
+    setIsLoadingDemo(true);
+    setTimeout(() => {
+      navigate('/@danii_black');
+    }, 800);
+  };
 
   useEffect(() => {
     // Simple header scroll effect
@@ -463,8 +458,8 @@ export default function Landing() {
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-6">
               <button onClick={handleWhatsAppRedirect} className="w-full md:w-auto px-12 py-5 bg-primary text-white font-black text-body-md uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all duration-300 active:scale-95 shadow-[0_0_30px_rgba(5,77,68,0.4)]">Quiero mi página</button>
-              <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={() => navigate('/@daniblack')}>
-                Ver Demo
+              <button className="w-full md:w-auto px-12 py-5 border-2 border-primary text-primary font-black text-body-md uppercase tracking-[0.2em] hover:bg-primary/10 transition-colors duration-300 active:scale-95" onClick={navigateToDemo}>
+                {isLoadingDemo ? 'Cargando...' : 'Ver Demo'}
               </button>
             </div>
           </div>

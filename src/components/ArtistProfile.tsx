@@ -302,28 +302,15 @@ export default function Profile() {
 
             // Resolve ID if it's a tag
             if (artistUid.startsWith('@') || artistUid.length < 20) {
-                let baseTagLower = artistUid.replace('@', '').toLowerCase();
-                let baseTagOriginal = artistUid.replace('@', '');
-
-                let tagForMap = ('@' + baseTagLower);
-
-                // ALWAYS query the latest UID to prevent stale accounts if a user is recreated
-                const possibleTags = [
-                    '@' + baseTagLower,
-                    '@' + baseTagOriginal,
-                    baseTagLower,
-                    baseTagOriginal
-                ];
-                const uniqueTags = [...new Set(possibleTags)];
+                const { getPossibleUserTags } = await import('../lib/tagHelper');
+                const possibleTags = getPossibleUserTags(artistUid);
 
                 let foundDoc = null;
-                for (const t of uniqueTags) {
-                    let q = query(collection(db, 'users'), where('userTag', '==', t));
-                    let snap = await getDocs(q);
-                    if (!snap.empty) {
-                        foundDoc = snap.docs[0];
-                        break;
-                    }
+                // Query all possible tags using 'in'
+                let q = query(collection(db, 'users'), where('userTag', 'in', possibleTags));
+                let snap = await getDocs(q);
+                if (!snap.empty) {
+                    foundDoc = snap.docs[0];
                 }
 
                 if (foundDoc) {

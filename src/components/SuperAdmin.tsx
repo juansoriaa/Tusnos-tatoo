@@ -111,7 +111,7 @@ export default function SuperAdmin() {
     try {
 
 
-      const formattedUserTag = (editUserData.userTag.startsWith('@') ? editUserData.userTag : '@' + editUserData.userTag).toLowerCase();
+      const formattedUserTag = ('@' + editUserData.userTag.replace('@', '')).toLowerCase().trim().replace(/\s+/g, '').replace(/-/g, '_');
       const formattedEmail = editUserData.email.toLowerCase();
       
       await updateDoc(doc(db, 'users', editUserData.uid), {
@@ -379,7 +379,7 @@ export default function SuperAdmin() {
           subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 10); // partner
       }
 
-      const formattedUserTag = (newUserData.userTag.startsWith('@') ? newUserData.userTag : '@' + newUserData.userTag).toLowerCase();
+      const formattedUserTag = ('@' + newUserData.userTag.replace('@', '')).toLowerCase().trim().replace(/\s+/g, '').replace(/-/g, '_');
 
       const newUserObj = {
         uid: newUid,

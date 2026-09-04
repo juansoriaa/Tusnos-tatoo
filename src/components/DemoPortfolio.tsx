@@ -1026,13 +1026,13 @@ const handleSaveObra = async () => {
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
             
             {[...existingPhotos].sort((a, b) => {
-                const aPinned = typeof a.pinnedOrder === 'number' && a.pinnedOrder > 0;
-                const bPinned = typeof b.pinnedOrder === 'number' && b.pinnedOrder > 0;
+                const aPinned = typeof a?.pinnedOrder === 'number' && a.pinnedOrder > 0;
+                const bPinned = typeof b?.pinnedOrder === 'number' && b.pinnedOrder > 0;
                 if (aPinned && bPinned) return a.pinnedOrder - b.pinnedOrder;
                 if (aPinned) return -1;
                 if (bPinned) return 1;
                 return 0;
-            }).filter(photo => filterCategory === 'all' || photo.tags?.some((t: string) => t.toLowerCase() === filterCategory.toLowerCase())).map((photo, index) => {
+            }).filter(photo => photo && (filterCategory === 'all' || photo.tags?.some((t: string) => t.toLowerCase() === filterCategory.toLowerCase()))).map((photo, index) => {
                 let filterStr = '';
                 if (photo.filters) {
                     const { activePreset, contrast, brightness, blackIntensity } = photo.filters;
