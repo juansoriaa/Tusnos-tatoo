@@ -104,7 +104,7 @@ export default function Landing() {
             snapshot = await getDocs(q);
         } catch (idxErr) {
             console.warn("Index missing, falling back to local sort", idxErr);
-            const fallbackQ = query(collection(db, 'photos'));
+            const fallbackQ = query(collection(db, 'photos'), limit(30));
             snapshot = await getDocs(fallbackQ);
         }
         
