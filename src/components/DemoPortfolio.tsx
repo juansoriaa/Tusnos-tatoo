@@ -178,18 +178,7 @@ export default function DemoPortfolio() {
         }
         return () => unsubscribe();
     }, []);
-    
-    // CACHE WARMING: Ensure that any modifications to existingPhotos in the Dashboard
-    // immediately overwrite the localStorage cache so that the "Ver Perfil" tab reads the latest state instantly.
-    useEffect(() => {
-        const localUid = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
-        if (localUid && existingPhotos && existingPhotos.length > 0) {
-            try {
-                localStorage.setItem('demoAllTattoos_' + localUid, JSON.stringify(existingPhotos));
-            } catch(e) {}
-        }
-    }, [existingPhotos]);
-    
+
     async function fetchPhotos(userUid: string) {
             let artistUid = userUid || 'anonymous_demo';
             // Resolve tag to actual uid if it's a tag
@@ -433,12 +422,21 @@ export default function DemoPortfolio() {
                 setExistingPhotos(finalPhotos);
                 globalCachedPhotos = finalPhotos;
                 globalCachedArtistUid = artistUid;
-            } catch (error) {
-                console.error("Error fetching photos", error);
-            }
-        };
-        return () => unsubscribe();
-    }, []);
+        } catch (error) {
+            console.error("Error fetching photos", error);
+        }
+    }
+
+    // CACHE WARMING: Ensure that any modifications to existingPhotos in the Dashboard
+    // immediately overwrite the localStorage cache so that the "Ver Perfil" tab reads the latest state instantly.
+    useEffect(() => {
+        const localUid = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
+        if (localUid && existingPhotos && existingPhotos.length > 0) {
+            try {
+                localStorage.setItem('demoAllTattoos_' + localUid, JSON.stringify(existingPhotos));
+            } catch(e) {}
+        }
+    }, [existingPhotos]);
 
     
     const handleDeletePhoto = async () => {
