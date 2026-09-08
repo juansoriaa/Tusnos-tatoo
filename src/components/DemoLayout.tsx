@@ -52,31 +52,49 @@ export default function DemoLayout
     };
 
     useEffect(() => {
-        let unsubscribe = () => {};
+        let unsubscribeUser = () => {};
+        let unsubscribeWaitlist = () => {};
+
         const load = async () => {
             const demoUserId = authUid || localStorage.getItem('demoUserId');
             if (demoUserId) {
+                // Read from cache first for instant UI
+                const cacheStr = localStorage.getItem('demoArtistData_' + demoUserId);
+                if (cacheStr) {
+                    try {
+                        const data = JSON.parse(cacheStr);
+                        setTurnosLlenos(data.isAvailable === false);
+                        if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);
+                        setArtistName(data.displayName || data.userTag || 'Artista');
+                        if (data.bio) setArtistBio(data.bio);
+                        if (data.theme) setTheme(data.theme);
+                    } catch(e) {}
+                }
                 
-                
-                getDoc(doc(db, 'users', demoUserId)).then(userDoc => {
+                // Real-time listener for user data
+                unsubscribeUser = onSnapshot(doc(db, 'users', demoUserId), (userDoc) => {
                     if (userDoc.exists()) {
                         const data = userDoc.data();
                         setTurnosLlenos(data.isAvailable === false);
                         if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);
-                        if (data.displayName) setArtistName(data.displayName);
+                        setArtistName(data.displayName || data.userTag || 'Artista');
                         if (data.bio) setArtistBio(data.bio);
                         if (data.theme) setTheme(data.theme);
+                        localStorage.setItem('demoArtistData_' + demoUserId, JSON.stringify(data));
                     }
-                }).catch(e => console.error(e));
+                }, (error) => console.error("Error en onSnapshot de DemoLayout", error));
 
                 const q = query(collection(db, 'users', demoUserId, 'waitlist'), where('read', '==', false));
-                unsubscribe = onSnapshot(q, (snapshot) => {
+                unsubscribeWaitlist = onSnapshot(q, (snapshot) => {
                     setWaitlistCount(snapshot.docs.length);
                 });
             }
         };
         load();
-        return () => unsubscribe();
+        return () => {
+            unsubscribeUser();
+            unsubscribeWaitlist();
+        };
     }, [authUid]);
         const [avatarUrl, setAvatarUrl] = useState('https://lh3.googleusercontent.com/aida-public/AB6AXuByR4NUyVVJG5GuLGaRtqWjpCad-ssRG7wJNZiOOJeHykIY9S2eAKXt_nFpI-7F2iK5qdsDhGuFSANZwR96NefHXWFWgkMa2FidlBxVLFU0DO3Khup5Pf9Q_MG-vp8HknfP7FmcKogpQ_BM5vOFw6n1k1mUehIFrxuYqUYBYIOy7jV2RuELrtSHo6ByyE3njg-7BtFcOAWsX8GRbNlrtZ82vz663Cvn1wbr_619qMHrZiTBEOFbX9yhCv1oiB67MwD68MZWnGOjnHo');
     const [turnosLlenos, setTurnosLlenos] = useState(false);

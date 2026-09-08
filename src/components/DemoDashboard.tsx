@@ -20,8 +20,20 @@ const defaultFaqs = [
   { question: '¿Duele tatuarse?', answer: 'El dolor es subjetivo y depende de la zona del cuerpo y la tolerancia de cada persona. Generalmente se siente como un rasguño constante, pero es totalmente soportable.' }
 ];
 
-    const [faqs, setFaqs] = useState(defaultFaqs);
-    const [isAvailable, setIsAvailable] = useState(true);
+    const getInitLocalData = () => {
+        try {
+            const uid = localStorage.getItem('demoUserId');
+            if (uid) {
+                const dataStr = localStorage.getItem('demoArtistData_' + uid);
+                if (dataStr) return JSON.parse(dataStr);
+            }
+        } catch(e){}
+        return {};
+    };
+    const initDataCache = getInitLocalData();
+
+    const [faqs, setFaqs] = useState(initDataCache.faqs || defaultFaqs);
+    const [isAvailable, setIsAvailable] = useState(initDataCache.isAvailable !== false);
     const [modalOpen, setModalOpen] = useState<string | null>(null);
     const [animateHighlight, setAnimateHighlight] = useState(false);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -111,13 +123,19 @@ const defaultFaqs = [
                     }
                     
                     // ALWAYS FETCH FROM FIRESTORE TO KEEP DEVICES SYNCED
-                    const docSnap = await getDoc(doc(db, 'users', demoUserId));
-                    if (docSnap.exists()) {
-                        const dbData = docSnap.data();
-                        localStorage.setItem('demoArtistData_' + demoUserId, JSON.stringify(dbData));
-                        applyData(dbData);
-                        hasLoadedData = true;
-                    }
+                    import('firebase/firestore').then(({ onSnapshot, doc }) => {
+                        const unsub = onSnapshot(doc(db, 'users', demoUserId), (docSnap) => {
+                            if (docSnap.exists()) {
+                                const dbData = docSnap.data();
+                                localStorage.setItem('demoArtistData_' + demoUserId, JSON.stringify(dbData));
+                                applyData(dbData);
+                            }
+                        });
+                        // Cleanup will be handled loosely since dashboard is long-lived
+                        // but ideally should be returned in useEffect
+                        (window as any)._dashboardUserUnsub = unsub;
+                    });
+                    hasLoadedData = true;
                 } catch (e) {
                     console.error("Error loading from Firestore", e);
                 }
@@ -159,27 +177,87 @@ const defaultFaqs = [
                 applyData(initData);
             }
         };
-    }, []); // Subscribe to auth changes instead of manual call
+        return () => {
+            unsubscribe();
+            if ((window as any)._dashboardUserUnsub) {
+                (window as any)._dashboardUserUnsub();
+            }
+        };
+    }, []);
 
-    const [name, setName] = useState('');
-    const [bio, setBio] = useState('');
-    const [specialty1, setSpecialty1] = useState('');
-    const [specialty2, setSpecialty2] = useState('');
-    const [specialty3, setSpecialty3] = useState('');
-    const [mapLink, setMapLink] = useState('');
-    const [hasPhysicalStudio, setHasPhysicalStudio] = useState(true);
-    const [studioName, setStudioName] = useState('');
-    const [studioDescription, setStudioDescription] = useState('');
-    const [studioAddress, setStudioAddress] = useState('');
-    const [studioHours, setStudioHours] = useState('');
-    const [whatsapp, setWhatsapp] = useState('');
-    const [loginEmail, setLoginEmail] = useState('');
-    const [customPassword, setCustomPassword] = useState('');
-    const [instagram, setInstagram] = useState('');
-    const [facebook, setFacebook] = useState('');
-    const [tiktok, setTiktok] = useState('');
-    const [subscriptionStatus, setSubscriptionStatus] = useState('active');
-    const [subscriptionEndsAt, setSubscriptionEndsAt] = useState<any>(null);
+    // Sincronización entre pestañas y descongelación del navegador
+    useEffect(() => {
+        const syncFromStorage = () => {
+            const uid = localStorage.getItem('demoUserId');
+            if (uid) {
+                const dataStr = localStorage.getItem('demoArtistData_' + uid);
+                if (dataStr) {
+                    try {
+                        const data = JSON.parse(dataStr);
+                        setName(data.displayName || data.userTag || '');
+                        setBio(data.bio || '');
+                        setSpecialty1((data.specialtyTags && data.specialtyTags.length > 0) ? data.specialtyTags[0] : '');
+                        setSpecialty2((data.specialtyTags && data.specialtyTags.length > 1) ? data.specialtyTags[1] : '');
+                        setSpecialty3(data.specialtyTags?.[2] || '');
+                        setMapLink(data.mapLink || '');
+                        setHasPhysicalStudio(data.hasPhysicalStudio !== false);
+                        setStudioName(data.studioName || '');
+                        setStudioDescription(data.studioDescription || '');
+                        setStudioAddress(data.studioAddress || '');
+                        setStudioHours(data.studioHours || '');
+                        setWhatsapp(data.whatsapp || '');
+                        setLoginEmail(data.email || '');
+                        setCustomPassword(data.customPassword || '');
+                        setInstagram(data.instagram || '');
+                        setFacebook(data.facebook || '');
+                        setTiktok(data.tiktok || '');
+                        setSubscriptionStatus(data.subscriptionStatus || 'active');
+                        setSubscriptionEndsAt(data.subscriptionEndsAt || null);
+                        if (data.faqs) setFaqs(data.faqs);
+                        setIsAvailable(data.isAvailable !== false);
+                        if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);
+                        setBannerUrl((data.backgroundPhotos && data.backgroundPhotos.length > 0) ? data.backgroundPhotos[0] : defaultBanner);
+                    } catch(e) {}
+                }
+            }
+        };
+
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                syncFromStorage();
+            }
+        };
+
+        window.addEventListener('storage', syncFromStorage);
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        return () => {
+            window.removeEventListener('storage', syncFromStorage);
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
+    }, []);
+
+
+
+    const [name, setName] = useState(initDataCache.displayName || initDataCache.userTag || '');
+    const [bio, setBio] = useState(initDataCache.bio || '');
+    const [specialty1, setSpecialty1] = useState((initDataCache.specialtyTags && initDataCache.specialtyTags.length > 0) ? initDataCache.specialtyTags[0] : '');
+    const [specialty2, setSpecialty2] = useState((initDataCache.specialtyTags && initDataCache.specialtyTags.length > 1) ? initDataCache.specialtyTags[1] : '');
+    const [specialty3, setSpecialty3] = useState(initDataCache.specialtyTags?.[2] || '');
+    const [mapLink, setMapLink] = useState(initDataCache.mapLink || '');
+    const [hasPhysicalStudio, setHasPhysicalStudio] = useState(initDataCache.hasPhysicalStudio !== false);
+    const [studioName, setStudioName] = useState(initDataCache.studioName || '');
+    const [studioDescription, setStudioDescription] = useState(initDataCache.studioDescription || '');
+    const [studioAddress, setStudioAddress] = useState(initDataCache.studioAddress || '');
+    const [studioHours, setStudioHours] = useState(initDataCache.studioHours || '');
+    const [whatsapp, setWhatsapp] = useState(initDataCache.whatsapp || '');
+    const [loginEmail, setLoginEmail] = useState(initDataCache.email || '');
+    const [customPassword, setCustomPassword] = useState(initDataCache.customPassword || '');
+    const [instagram, setInstagram] = useState(initDataCache.instagram || '');
+    const [facebook, setFacebook] = useState(initDataCache.facebook || '');
+    const [tiktok, setTiktok] = useState(initDataCache.tiktok || '');
+    const [subscriptionStatus, setSubscriptionStatus] = useState(initDataCache.subscriptionStatus || 'active');
+    const [subscriptionEndsAt, setSubscriptionEndsAt] = useState<any>(initDataCache.subscriptionEndsAt || null);
 
     const subscription = useSubscription(subscriptionStatus, subscriptionEndsAt);
     const [avatarUrl, setAvatarUrl] = useState(defaultAvatar);

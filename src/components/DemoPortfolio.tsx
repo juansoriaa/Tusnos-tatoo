@@ -176,7 +176,8 @@ export default function DemoPortfolio() {
                 }
             });
         }
-        // Fetch existing photos when component mounts
+        return () => unsubscribe();
+    }, []);
     
     // CACHE WARMING: Ensure that any modifications to existingPhotos in the Dashboard
     // immediately overwrite the localStorage cache so that the "Ver Perfil" tab reads the latest state instantly.
