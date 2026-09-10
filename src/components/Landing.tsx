@@ -94,6 +94,18 @@ export default function Landing() {
     const fetchDirectoryWorks = async () => {
       setIsLoadingDirectoryWorks(true);
       try {
+        const cacheStr = localStorage.getItem('landing_directory_works');
+        if (cacheStr) {
+            try {
+                const parsed = JSON.parse(cacheStr);
+                if (Date.now() - parsed.timestamp < 1000 * 60 * 60) { // 1 hour cache
+                    setDirectoryWorks(parsed.data);
+                    setIsLoadingDirectoryWorks(false);
+                    return; // Return early, don't hit DB
+                }
+            } catch (e) {}
+        }
+        
         let snapshot;
         try {
             const q = query(
@@ -146,6 +158,9 @@ export default function Landing() {
                   };
               });
               setDirectoryWorks(combinedWorks);
+              try {
+                  localStorage.setItem('landing_directory_works', JSON.stringify({ timestamp: Date.now(), data: combinedWorks }));
+              } catch(e) {}
           }
         }
       } catch (err) {

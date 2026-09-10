@@ -332,23 +332,10 @@ export default function Profile() {
                 
                 
                 profileUnsub(); // clear previous
-                profileUnsub = onSnapshot(doc(db, 'users', currentArtistDocId), (docSnap) => {
+                // We use getDoc instead of onSnapshot for public profile to save connections and reads
+                getDoc(doc(db, 'users', currentArtistDocId)).then((docSnap) => {
                     if (docSnap.exists() && isMounted) {
                         const data = { ...docSnap.data(), uid: docSnap.id };
-                        
-                        // Prevent reverting to older theme if localStorage has a newer optimistic update
-                        const saved = localStorage.getItem('demoArtistData_' + currentArtistDocId);
-                        if (saved) {
-                            try {
-                                const parsed = JSON.parse(saved);
-                                // If the server doc has an older theme and we just updated it, prefer local.
-                                // Actually onSnapshot with includeMetadataChanges or just local cache handles this.
-                                // But to be safe:
-                                if (parsed.theme && !docSnap.metadata?.fromCache && (data as any).theme !== parsed.theme) {
-                                   // We'll just trust onSnapshot, local cache is always provided first with optimistic updates!
-                                }
-                            } catch(e) {}
-                        }
                         
                         setArtistData(data);
                         globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], artistData: data };
@@ -363,7 +350,7 @@ export default function Profile() {
                     } else if (isMounted) {
                         setIsProfileLoading(false);
                     }
-                }, (error) => {
+                }).catch((error) => {
                     console.error(error);
                     if (isMounted) setIsProfileLoading(false);
                 });
@@ -372,9 +359,11 @@ export default function Profile() {
                 const qTattoos = query(
                     collection(db, 'photos'),
                     where('createdBy', '==', currentArtistDocId),
-                    orderBy('createdAt', 'desc')
+                    orderBy('createdAt', 'desc'),
+                    limit(15) // Limitar la carga inicial para evitar agotar la cuota de lecturas!
                 );
-                tattoosUnsub = onSnapshot(qTattoos, (snap) => {
+                
+                getDocs(qTattoos).then((snap) => {
                     if (isMounted) {
                         let finalPhotos: any[] = snap.docs.map(d => {
                             const pData = d.data();
@@ -407,7 +396,7 @@ export default function Profile() {
                         
                         if (snap.docs.length > 0) {
                             setLastDoc(snap.docs[snap.docs.length - 1]);
-                            setHasMore(snap.docs.length >= 12);
+                            setHasMore(snap.docs.length >= 15);
                         } else {
                             setHasMore(false);
                         }
@@ -423,7 +412,7 @@ export default function Profile() {
                         } catch(e) {}
                         setIsTattoosLoading(false);
                     }
-                }, (error) => {
+                }).catch((error) => {
                     if (isMounted) setIsTattoosLoading(false);
                 });
 
@@ -509,7 +498,47 @@ export default function Profile() {
 
   const loadMoreTattoos = async () => {
     if (visibleCount < filteredTattoos.length) {
-        setVisibleCount(prev => prev + 12);
+        setVisibleCount(prev => prev + 15);
+    } else if (hasMore && lastDoc) {
+        try {
+            const { query, collection, where, orderBy, startAfter, limit, getDocs } = await import('firebase/firestore');
+            const q = query(
+                collection(db, 'photos'),
+                where('createdBy', '==', artistData?.uid || id),
+                orderBy('createdAt', 'desc'),
+                startAfter(lastDoc),
+                limit(15)
+            );
+            const snap = await getDocs(q);
+            if (snap.docs.length > 0) {
+                setLastDoc(snap.docs[snap.docs.length - 1]);
+                setHasMore(snap.docs.length >= 15);
+                let newPhotos = snap.docs.map(d => {
+                    const pData = d.data();
+                    return {
+                        id: d.id,
+                        src: pData.url || pData.imageUrl || pData.src,
+                        previewUrl: pData.previewUrl,
+                        thumbnailUrl: pData.thumbnailUrl,
+                        description: pData.info || pData.description || pData.alt || "",
+                        alt: pData.title || pData.description || "Tattoo photo",
+                        title: pData.title || "Tattoo",
+                        categories: pData.categories || pData.tags || ["Blackwork"],
+                        hours: pData.hours || null,
+                        sessions: pData.sessions || null,
+                        size: pData.size || null,
+                        originalFallbackId: pData.originalFallbackId || null,
+                        pinnedOrder: pData.pinnedOrder
+                    };
+                });
+                setAllTattoos(prev => [...prev, ...newPhotos]);
+                setVisibleCount(prev => prev + 15);
+            } else {
+                setHasMore(false);
+            }
+        } catch (error) {
+            console.error("Error loading more photos", error);
+        }
     }
   };
 
