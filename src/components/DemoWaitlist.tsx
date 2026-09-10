@@ -91,10 +91,9 @@ export default function DemoWaitlist() {
     React.useEffect(() => {
         let unsubscribe = () => {};
         if (targetUserId) {
-            const load = async () => {
-                const { collection, onSnapshot, query, orderBy } = await import('firebase/firestore');
+            import('firebase/firestore').then(({ collection, onSnapshot, query }) => {
                 const q = query(collection(db, 'users', targetUserId, 'waitlist'));
-                unsubscribe = onSnapshot(q, (snapshot) => {
+                const unsub = onSnapshot(q, (snapshot) => {
                     let messages = snapshot.docs.map(doc => ({ ...doc.data(), id: String(doc.id) } as any));
                     messages.sort((a: any, b: any) => {
                         const dateA = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.time || 0).getTime();
@@ -103,10 +102,20 @@ export default function DemoWaitlist() {
                     });
                     setWaitlistMessages(messages as any);
                 });
-            };
-            load();
+                // Check if component already unmounted before promise resolved
+                if (unsubscribe.name === 'cancelled') {
+                    unsub();
+                } else {
+                    unsubscribe = unsub;
+                }
+            });
         }
-        return () => unsubscribe();
+        return () => {
+            if (unsubscribe !== Object.prototype.toString) {
+                unsubscribe();
+                unsubscribe = function cancelled() {} as any;
+            }
+        };
     }, [targetUserId]);
 
     const openMessageModal = (data: any) => {

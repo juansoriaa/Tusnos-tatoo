@@ -100,7 +100,7 @@ export default function SuperAdmin() {
     fetchConfig();
     fetchMetrics();
 
-  }, [isModalOpen]); // refetch when modal closes
+  }, []); // Only fetch once on mount
 
   const [detailsModalUser, setDetailsModalUser] = useState<any>(null);
   const [isEditingUser, setIsEditingUser] = useState(false);

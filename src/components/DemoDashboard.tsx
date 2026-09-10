@@ -131,9 +131,15 @@ const defaultFaqs = [
                                 applyData(dbData);
                             }
                         });
-                        // Cleanup will be handled loosely since dashboard is long-lived
-                        // but ideally should be returned in useEffect
-                        (window as any)._dashboardUserUnsub = unsub;
+                        // Check if cleanup was already called
+                        if ((window as any)._dashboardUserUnsub === 'cancelled') {
+                            unsub();
+                        } else {
+                            if ((window as any)._dashboardUserUnsub && typeof (window as any)._dashboardUserUnsub === 'function') {
+                                (window as any)._dashboardUserUnsub();
+                            }
+                            (window as any)._dashboardUserUnsub = unsub;
+                        }
                     });
                     hasLoadedData = true;
                 } catch (e) {
@@ -179,9 +185,10 @@ const defaultFaqs = [
         };
         return () => {
             unsubscribe();
-            if ((window as any)._dashboardUserUnsub) {
+            if ((window as any)._dashboardUserUnsub && typeof (window as any)._dashboardUserUnsub === 'function') {
                 (window as any)._dashboardUserUnsub();
             }
+            (window as any)._dashboardUserUnsub = 'cancelled';
         };
     }, []);
 
