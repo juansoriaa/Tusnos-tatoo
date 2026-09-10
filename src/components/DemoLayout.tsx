@@ -235,7 +235,9 @@ export default function DemoLayout
         window.addEventListener('agendaStatusChanged', handleStatus);
         
         const loadAvatar = () => {
-            const saved = localStorage.getItem('demoArtistData');
+            const uid = localStorage.getItem('demoUserId');
+            if (!uid) return;
+            const saved = localStorage.getItem('demoArtistData_' + uid);
             if (saved) {
                 try {
                     const data = JSON.parse(saved);
@@ -247,17 +249,20 @@ export default function DemoLayout
         };
         window.addEventListener('profileDataChanged', loadAvatar);
         
-        const saved = localStorage.getItem('demoArtistData');
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
-                if (data.isAvailable === false) {
-                    setTurnosLlenos(true);
-                }
-                if (data.profilePhotoUrl) {
-                    setAvatarUrl(data.profilePhotoUrl);
-                }
-            } catch(e) {}
+        const uid = localStorage.getItem('demoUserId');
+        if (uid) {
+            const saved = localStorage.getItem('demoArtistData_' + uid);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    if (data.isAvailable === false) {
+                        setTurnosLlenos(true);
+                    }
+                    if (data.profilePhotoUrl) {
+                        setAvatarUrl(data.profilePhotoUrl);
+                    }
+                } catch(e) {}
+            }
         }
         return () => {
             window.removeEventListener('agendaStatusChanged', handleStatus);
