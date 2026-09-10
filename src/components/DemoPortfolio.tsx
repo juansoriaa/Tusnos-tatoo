@@ -671,7 +671,40 @@ const handleSaveObra = async () => {
                         setIsSaving(false);
                         return; // Prevent saving base64 to Firestore and breaking sync!
                     }
-                    console.log('Falling back to base64 for demo user');
+                    console.log('Simulando guardado local para usuario Demo...');
+                    
+                    const fakeId = 'demo_temp_' + Date.now();
+                    const newPhoto = {
+                        id: fakeId,
+                        url: photoDataUrl, // Es Base64, pero solo vivirá en la RAM del navegador
+                        previewUrl: previewDataUrl,
+                        thumbnailUrl: thumbDataUrl,
+                        title,
+                        tags: selectedCategories,
+                        info: description,
+                        hours: hours ? Number(hours) : null,
+                        sessions: sessions ? Number(sessions) : null,
+                        size: finalSize,
+                        filters: imageFilters,
+                        createdBy: 'anonymous_demo',
+                    };
+                    
+                    setExistingPhotos(prev => {
+                        const newPhotos = [newPhoto, ...prev];
+                        globalCachedPhotos = newPhotos;
+                        return newPhotos;
+                    });
+                    
+                    setIsSuccess(true);
+                    setTimeout(() => { setIsSuccess(false); cancelEdit(); }, 2000);
+                    return; // VITAL: Sale de la función antes de llegar a addDoc()
+                }
+
+                // === SI LLEGA HASTA AQUÍ, ES UN USUARIO REAL CON URLs HTTPS DE STORAGE ===
+                if (photoDataUrl.startsWith('data:image/')) {
+                    alert("Error crítico: Intentando guardar Base64 en base de datos. Operación abortada.");
+                    setIsSaving(false);
+                    return;
                 }
 
                 const newPhotoRef = await addDoc(collection(db, 'photos'), {
