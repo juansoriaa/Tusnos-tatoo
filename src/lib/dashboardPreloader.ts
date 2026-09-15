@@ -28,8 +28,19 @@ export const preloadDashboardData = (uid: string) => {
             
             // 2. Portfolio Photos
             const { limit } = await import('firebase/firestore');
-            const qPhotos = query(collection(db, 'photos'), where('createdBy', '==', uid), orderBy('createdAt', 'desc'), limit(15));
-            const photosSnap = await getDocs(qPhotos);
+            let photosSnap;
+            try {
+                const qPhotos = query(
+                    collection(db, 'photos'),
+                    where('createdBy', '==', uid),
+                    orderBy('createdAt', 'desc'),
+                    limit(15)
+                );
+                photosSnap = await getDocs(qPhotos);
+            } catch (idxErr) {
+                const fallbackQ = query(collection(db, 'photos'), where('createdBy', '==', uid), limit(15));
+                photosSnap = await getDocs(fallbackQ);
+            }
             if (activePreloadUid !== uid) return;
             
             let photos = photosSnap.docs.map(d => {

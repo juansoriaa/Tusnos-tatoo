@@ -208,12 +208,19 @@ export default function DemoPortfolio() {
                 setExistingPhotos(globalCachedPhotos);
             }
             try {
-                const q = query(
-                    collection(db, 'photos'),
-                    where('createdBy', '==', artistUid),
-                    orderBy('createdAt', 'desc')
-                );
-                const snapshot = await getDocs(q);
+                let snapshot;
+                try {
+                    const q = query(
+                        collection(db, 'photos'),
+                        where('createdBy', '==', artistUid),
+                        orderBy('createdAt', 'desc')
+                    );
+                    snapshot = await getDocs(q);
+                } catch (indexErr) {
+                    console.warn("Index missing in DemoPortfolio, falling back to simple query", indexErr);
+                    const fallbackQ = query(collection(db, 'photos'), where('createdBy', '==', artistUid));
+                    snapshot = await getDocs(fallbackQ);
+                }
                 const photos = snapshot.docs.map(doc => ({ ...doc.data(), id: String(doc.id) } as any));
 
                 let isDemoUser = false;

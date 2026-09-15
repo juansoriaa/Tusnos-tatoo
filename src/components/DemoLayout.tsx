@@ -71,20 +71,18 @@ export default function DemoLayout
                     } catch(e) {}
                 }
                 
-                // Fetch user data (instead of onSnapshot) to save connections
-                import('firebase/firestore').then(({ getDoc, doc }) => {
-                    getDoc(doc(db, 'users', demoUserId)).then((userDoc) => {
-                        if (userDoc.exists()) {
-                            const data = userDoc.data();
-                            setTurnosLlenos(data.isAvailable === false);
-                            if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);
-                            setArtistName(data.displayName || data.userTag || 'Artista');
-                            if (data.bio) setArtistBio(data.bio);
-                            if (data.theme) setTheme(data.theme);
-                            localStorage.setItem('demoArtistData_' + demoUserId, JSON.stringify(data));
-                        }
-                    }).catch(error => console.error("Error fetching DemoLayout user:", error));
-                });
+                // Real-time listener for user data (crucial for Top Nav avatar and theme sync)
+                unsubscribeUser = onSnapshot(doc(db, 'users', demoUserId), (userDoc) => {
+                    if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        setTurnosLlenos(data.isAvailable === false);
+                        if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);
+                        setArtistName(data.displayName || data.userTag || 'Artista');
+                        if (data.bio) setArtistBio(data.bio);
+                        if (data.theme) setTheme(data.theme);
+                        localStorage.setItem('demoArtistData_' + demoUserId, JSON.stringify(data));
+                    }
+                }, (error) => console.error("Error en onSnapshot de DemoLayout", error));
 
                 const q = query(collection(db, 'users', demoUserId, 'waitlist'), where('read', '==', false));
                 unsubscribeWaitlist = onSnapshot(q, (snapshot) => {
