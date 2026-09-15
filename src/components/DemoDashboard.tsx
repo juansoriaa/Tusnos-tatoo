@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
 import { db, auth, onAuthStateChanged, storage } from '../firebase';
@@ -38,13 +38,15 @@ const defaultFaqs = [
     const [animateHighlight, setAnimateHighlight] = useState(false);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+    const unsubRef = useRef<(() => void) | null>(null);
+
     useEffect(() => {
-        let unsubscribe = () => {};
+        let authUnsubscribe = () => {};
         const localUid = localStorage.getItem('demoUserId');
         if (localUid) {
             loadData(localUid);
         } else {
-            unsubscribe = onAuthStateChanged(auth, (user) => {
+            authUnsubscribe = onAuthStateChanged(auth, (user) => {
                 if (user) loadData(user.uid);
             });
         }
@@ -124,22 +126,16 @@ const defaultFaqs = [
                     
                     // ALWAYS FETCH FROM FIRESTORE TO KEEP DEVICES SYNCED
                     import('firebase/firestore').then(({ onSnapshot, doc }) => {
-                        const unsub = onSnapshot(doc(db, 'users', demoUserId), (docSnap) => {
+                        if (unsubRef.current) {
+                            unsubRef.current();
+                        }
+                        unsubRef.current = onSnapshot(doc(db, 'users', demoUserId), (docSnap) => {
                             if (docSnap.exists()) {
                                 const dbData = docSnap.data();
                                 localStorage.setItem('demoArtistData_' + demoUserId, JSON.stringify(dbData));
                                 applyData(dbData);
                             }
                         });
-                        // Check if cleanup was already called
-                        if ((window as any)._dashboardUserUnsub === 'cancelled') {
-                            unsub();
-                        } else {
-                            if ((window as any)._dashboardUserUnsub && typeof (window as any)._dashboardUserUnsub === 'function') {
-                                (window as any)._dashboardUserUnsub();
-                            }
-                            (window as any)._dashboardUserUnsub = unsub;
-                        }
                     });
                     hasLoadedData = true;
                 } catch (e) {
@@ -184,11 +180,11 @@ const defaultFaqs = [
             }
         };
         return () => {
-            unsubscribe();
-            if ((window as any)._dashboardUserUnsub && typeof (window as any)._dashboardUserUnsub === 'function') {
-                (window as any)._dashboardUserUnsub();
+            authUnsubscribe();
+            if (unsubRef.current) {
+                unsubRef.current();
+                unsubRef.current = null;
             }
-            (window as any)._dashboardUserUnsub = 'cancelled';
         };
     }, []);
 
