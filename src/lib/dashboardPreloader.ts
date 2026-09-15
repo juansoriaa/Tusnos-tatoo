@@ -27,7 +27,8 @@ export const preloadDashboardData = (uid: string) => {
             }
             
             // 2. Portfolio Photos
-            const qPhotos = query(collection(db, 'photos'), where('createdBy', '==', uid), orderBy('createdAt', 'desc'));
+            const { limit } = await import('firebase/firestore');
+            const qPhotos = query(collection(db, 'photos'), where('createdBy', '==', uid), orderBy('createdAt', 'desc'), limit(15));
             const photosSnap = await getDocs(qPhotos);
             if (activePreloadUid !== uid) return;
             

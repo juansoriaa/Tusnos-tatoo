@@ -34,22 +34,7 @@ export default function Landing() {
   const [artistName, setArtistName] = useState('Victor Ink');
   const [specialties, setSpecialties] = useState<string[]>(['Realismo', 'Black & Grey']);
 
-  useEffect(() => {
-    const preloadDemo = async () => {
-        try {
-            const { query, collection, where, getDocs } = await import('firebase/firestore');
-            const { db } = await import('../firebase');
-            const q = query(collection(db, 'users'), where('userTag', '==', '@victor_ink'));
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-                const demoUid = snap.docs[0].id;
-                const { preloadDashboardData } = await import('../lib/dashboardPreloader');
-                preloadDashboardData(demoUid);
-            }
-        } catch(e) {}
-    };
-    preloadDemo();
-  }, []);
+  // El preloader fue removido para ahorrar 16 lecturas por visitante en la Landing Page.
 
   useEffect(() => {
     const loadData = () => {
