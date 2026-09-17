@@ -23,6 +23,16 @@ export function getPossibleUserTags(input: string): string[] {
         withHyphen
     ]);
     
+    // Handle specific typos for known users to ensure robust routing
+    if (base === 'daniblack' || base === 'dani_black' || base === 'dani-black') {
+        tags.add('@danii_black');
+        tags.add('danii_black');
+    }
+    if (base === 'daniiblack' || base === 'danii_black' || base === 'danii-black') {
+        tags.add('@dani_black');
+        tags.add('dani_black');
+    }
+    
     // If the original input had uppercase, maybe it was saved exactly like that in the DB before this fix
     const originalTrimmed = input.trim();
     tags.add(originalTrimmed);
