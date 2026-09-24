@@ -219,7 +219,7 @@ export default function PhotoUploader({ onImageSelected, onFiltersChanged, reset
                             </button>
                         )}
                         
-                        <div className="absolute bottom-3 right-3 flex items-center justify-center pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-3 right-3 flex items-center justify-center pointer-events-none z-10 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <button 
                                 type="button"
                                 onClick={handleImageClick}

@@ -9,6 +9,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (url.hostname.includes('googleapis.com') || url.hostname.includes('gstatic.com')) return;
   // Pass-through fetch handler to satisfy PWA requirements
   // We are not aggressively caching assets to avoid conflicts with Vite's dynamic nature
   event.respondWith(fetch(event.request));

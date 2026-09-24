@@ -34,6 +34,7 @@ export default function DemoPortfolio() {
     const [resetUploader, setResetUploader] = useState(0);
     const [showLimitModal, setShowLimitModal] = useState(false);
     const [showPinLimitModal, setShowPinLimitModal] = useState(false);
+    const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
     const [existingPhotos, setExistingPhotos] = useState<any[]>(() => {
         try {
             const uid = localStorage.getItem('demoUserId');
@@ -213,12 +214,13 @@ export default function DemoPortfolio() {
                     const q = query(
                         collection(db, 'photos'),
                         where('createdBy', '==', artistUid),
-                        orderBy('createdAt', 'desc')
+                        orderBy('createdAt', 'desc'),
+                        limit(50)
                     );
                     snapshot = await getDocs(q);
                 } catch (indexErr) {
                     console.warn("Index missing in DemoPortfolio, falling back to simple query", indexErr);
-                    const fallbackQ = query(collection(db, 'photos'), where('createdBy', '==', artistUid));
+                    const fallbackQ = query(collection(db, 'photos'), where('createdBy', '==', artistUid), limit(50));
                     snapshot = await getDocs(fallbackQ);
                 }
                 const photos = snapshot.docs.map(doc => ({ ...doc.data(), id: String(doc.id) } as any));
@@ -249,7 +251,7 @@ export default function DemoPortfolio() {
                       id: "fallback_1",
                       src: "https://lh3.googleusercontent.com/aida-public/AB6AXuCH5fThf0Btiu53jMH_le4vcfASgLiG-gdqI5g9_36ZwhiKkEBFxfEv2r8ARc_lSslfDGkXzUH1GdP8G821SmEjbBZLHY_UIL8KSlmrdDrukdFYnSsY1M86X_K-1wreu1K4wSoFGZc93Uu0XqRxJ52Bjrexvs09T-3ruXnaLYfkUICLtiGMhVKKzNAofdk4jVFbQdJgmZCIDjd1Yco-FJ0-CLEHTICTNOhz9aiqBk9_Z-hmxC1q9nakZDwQv_C2l5Syzft7xYyETyQ",
                       alt: "A highly detailed black and grey realism tattoo of a lion's face on a human forearm.",
-                      title: "Detailed black & grey realism",
+                      title: "Realismo detallado en sombras",
                       tags: ["Realismo", "Blackwork"],
                       hours: 12,
                       sessions: 2,
@@ -258,8 +260,8 @@ export default function DemoPortfolio() {
                     {
                       id: "fallback_2",
                       src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA5DDAAcFYiq49hBeVBI21d-Kfzr6qKoiRfIXKP1UnRW7YF5GJFA5MFkoXHtdBxy6uEbgH9z0zVWPWxKIEtX3oXemICFI1Ssr7FZ-Hh_OVDjHQ-QLRxMXBp5c4FwHXswrbPE9ZdzVelcUFL0h0nTLuzuWpLR_QRaZBZsyq7srBJaHktN6PcAYY-NQ2d-8FRg_RJ15MYhPUfdaEk_oGzE57hWrd7ZFkT4ldOW1tTIz0PqCqzo5_ALKPhXP1byoz8eiIEM30X9HQLzho",
-                      alt: "Close-up of a delicate minimalist tattoo of a single rose.",
-                      title: "Delicate minimalist single rose",
+                      alt: "Tatuaje minimalista de línea fina de una rosa.",
+                      title: "Rosa minimalista delicada",
                       tags: ["Minimalista"],
                       hours: 3,
                       sessions: 1,
@@ -268,8 +270,8 @@ export default function DemoPortfolio() {
                     {
                       id: "fallback_3",
                       src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE9qEOTq3DlR_Z_PI95eeZBU5YHIAzEqTN6zzltLD_41wX6e4LCHu8sREZZ4N_qV-XW271u6bCjyo14IHISQRVRhCSBJdX_ICJvg9EM-iYGcv1owFVPqatY3-0uESdozTCTcvTib8fe2Um_CI2L6mxqWeMg8IoYm0FYaTzlqISISzi52HOylwmgk_IxCrKp2vueZ90nk1bGHhgH3ybo0PI5u7VOpkB_kQTPzrRjD2-N3hC-9IB-OKvuic1rp7_8b4w562jI2tcCKA",
-                      alt: "Large-scale blackwork tattoo covering a full back.",
-                      title: "Large-scale blackwork back piece",
+                      alt: "Tatuaje de espalda completa con diseños oscuros.",
+                      title: "Pieza completa de espalda en Blackwork",
                       tags: ["Blackwork", "Tradicional"],
                       hours: 24,
                       sessions: 4,
@@ -465,7 +467,7 @@ export default function DemoPortfolio() {
             window.dispatchEvent(new CustomEvent('profileDataChanged'));
         } catch (error) {
             console.error("Error deleting photo", error);
-            alert("Hubo un error al eliminar la foto.");
+            setErrorModalMsg('Hubo un error al eliminar la foto.');
         }
     };
 
@@ -521,16 +523,16 @@ export default function DemoPortfolio() {
         }
     };
 const handleSaveObra = async () => {
-        if (!editingPhoto && existingPhotos.length >= 15) {
+        if (!editingPhoto && existingPhotos.length >= 12) {
             setShowLimitModal(true);
             return;
         }
         if (!selectedFile && !editingPhoto) {
-            alert('Por favor selecciona una imagen primero.');
+            setErrorModalMsg('Por favor selecciona una imagen primero.');
             return;
         }
         if (!title.trim()) {
-            alert('El nombre de la obra es requerido.');
+            setErrorModalMsg('El nombre de la obra es requerido.');
             return;
         }
         
@@ -583,7 +585,7 @@ const handleSaveObra = async () => {
                     } catch (err: any) {
                         console.error('Error uploading to storage:', err);
                         if (isRealUser) {
-                            alert(err.message || 'Error al subir la imagen. Por favor verifica tu conexión y sesión.');
+                            setErrorModalMsg(err.message || 'Error al subir la imagen. Por favor verifica tu conexión y sesión.');
                             setIsSaving(false);
                             return; // Prevent saving base64 to Firestore and breaking sync!
                         }
@@ -674,7 +676,7 @@ const handleSaveObra = async () => {
                 } catch (err: any) {
                     console.error('Error uploading to storage:', err);
                     if (isRealUser) {
-                        alert(err.message || 'Error al subir la imagen. Por favor verifica tu conexión y sesión.');
+                        setErrorModalMsg(err.message || 'Error al subir la imagen. Por favor verifica tu conexión y sesión.');
                         setIsSaving(false);
                         return; // Prevent saving base64 to Firestore and breaking sync!
                     }
@@ -759,7 +761,7 @@ const handleSaveObra = async () => {
             }
         } catch (error) {
             console.error(error);
-            alert('Hubo un error al guardar la obra.');
+            setErrorModalMsg('Hubo un error al guardar la obra.');
         } finally {
             setIsSaving(false);
         }
@@ -1303,7 +1305,7 @@ const handleSaveObra = async () => {
                         </div>
                         <h3 className="text-xl font-headline-md text-silver-text mb-2">Límite Alcanzado</h3>
                         <p className="text-on-surface-variant font-body-md text-sm mb-6">
-                            Has alcanzado el límite máximo de <strong>15 obras</strong> permitidas. Por favor, elimina algunas fotos antiguas antes de subir nuevas.
+                            Has alcanzado el límite máximo de <strong>12 obras</strong> permitidas. Por favor, elimina algunas fotos antiguas antes de subir nuevas.
                         </p>
                         <button 
                             onClick={() => setShowLimitModal(false)}
@@ -1329,6 +1331,34 @@ const handleSaveObra = async () => {
                         <button 
                             onClick={() => setShowPinLimitModal(false)}
                             className="modal-submit-btn w-full py-3 bg-amber-500 text-black font-label-md uppercase tracking-wider rounded font-bold hover:brightness-110 transition-all"
+                        >
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            
+            {errorModalMsg && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setErrorModalMsg(null)}>
+                    <div className="modal-container bg-surface-elevation border border-error/30 rounded-xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()} style={{backgroundColor: '#141313'}}>
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-error"></div>
+                        <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center mx-auto mb-4">
+                            <span className="material-symbols-outlined text-error text-3xl">error</span>
+                        </div>
+                        <h3 className="text-xl font-headline-md text-silver-text mb-2">Aviso</h3>
+                        <p className="text-on-surface-variant font-body-md text-sm mb-6 whitespace-pre-wrap">
+                            {errorModalMsg}
+                        </p>
+                        <button 
+                            onClick={() => {
+                                setErrorModalMsg(null);
+                                if (errorModalMsg.includes('sesión ha expirado')) {
+                                    localStorage.removeItem('demoUserId');
+                                    auth.signOut().then(() => window.location.href = '/?login=true');
+                                }
+                            }}
+                            className="modal-submit-btn w-full py-3 bg-error text-white font-label-md uppercase tracking-wider rounded font-bold hover:brightness-110 transition-all"
                         >
                             Entendido
                         </button>

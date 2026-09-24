@@ -307,7 +307,7 @@ export default function Profile() {
 
                 let foundDoc = null;
                 // Query all possible tags using 'in'
-                let q = query(collection(db, 'users'), where('userTag', 'in', possibleTags));
+                let q = query(collection(db, 'users'), where('userTag', 'in', possibleTags), limit(1));
                 let snap = await getDocs(q);
                 if (!snap.empty) {
                     foundDoc = snap.docs[0];
@@ -492,7 +492,7 @@ export default function Profile() {
     return filterStr.trim();
   };
 
-  const filteredTattoos = useMemo(() => allTattoos.filter(t => activeCategory === "All" || t.categories.includes(activeCategory)), [allTattoos, activeCategory]);
+  const filteredTattoos = useMemo(() => allTattoos.filter(t => !t.src?.startsWith('data:image/') && (activeCategory === "All" || t.categories.includes(activeCategory))), [allTattoos, activeCategory]);
   const visibleTattoos = useMemo(() => filteredTattoos.slice(0, visibleCount), [filteredTattoos, visibleCount]);
   const refTattoo = useMemo(() => allTattoos.find(t => t.src === waitlistForm.referenceImage), [allTattoos, waitlistForm.referenceImage]);
 
