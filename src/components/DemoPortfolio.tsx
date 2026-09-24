@@ -711,7 +711,7 @@ const handleSaveObra = async () => {
 
                 // === SI LLEGA HASTA AQUÍ, ES UN USUARIO REAL CON URLs HTTPS DE STORAGE ===
                 if (photoDataUrl.startsWith('data:image/')) {
-                    alert("Error crítico: Intentando guardar Base64 en base de datos. Operación abortada.");
+                    setErrorModalMsg("Error crítico: Intentando guardar Base64 en base de datos. Operación abortada.");
                     setIsSaving(false);
                     return;
                 }
@@ -1340,28 +1340,30 @@ const handleSaveObra = async () => {
 
             
             {errorModalMsg && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setErrorModalMsg(null)}>
-                    <div className="modal-container bg-surface-elevation border border-error/30 rounded-xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()} style={{backgroundColor: '#141313'}}>
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-error"></div>
-                        <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center mx-auto mb-4">
-                            <span className="material-symbols-outlined text-error text-3xl">error</span>
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" onClick={() => setErrorModalMsg(null)}>
+                    <div className="modal-container bg-surface-elevation border border-error/50 rounded-2xl p-8 max-w-sm w-full text-center shadow-[0_0_40px_rgba(255,0,0,0.1)] relative overflow-hidden" onClick={e => e.stopPropagation()} style={{backgroundColor: '#1a1919'}}>
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-error to-error/50"></div>
+                        <div className="w-20 h-20 rounded-full bg-error/10 border border-error/20 flex items-center justify-center mx-auto mb-6 shadow-inner">
+                            <span className="material-symbols-outlined text-error text-4xl">warning</span>
                         </div>
-                        <h3 className="text-xl font-headline-md text-silver-text mb-2">Aviso</h3>
-                        <p className="text-on-surface-variant font-body-md text-sm mb-6 whitespace-pre-wrap">
+                        <h3 className="text-2xl font-headline-md text-white mb-3">Aviso del Sistema</h3>
+                        <p className="text-on-surface-variant font-body-md text-sm mb-8 whitespace-pre-wrap leading-relaxed">
                             {errorModalMsg}
                         </p>
-                        <button 
-                            onClick={() => {
-                                setErrorModalMsg(null);
-                                if (errorModalMsg.includes('sesión ha expirado')) {
-                                    localStorage.removeItem('demoUserId');
-                                    auth.signOut().then(() => window.location.href = '/?login=true');
-                                }
-                            }}
-                            className="modal-submit-btn w-full py-3 bg-error text-white font-label-md uppercase tracking-wider rounded font-bold hover:brightness-110 transition-all"
-                        >
-                            Entendido
-                        </button>
+                        <div className="flex flex-col gap-3">
+                            <button 
+                                onClick={() => {
+                                    setErrorModalMsg(null);
+                                    if (errorModalMsg.includes('sesión') || errorModalMsg.includes('expirado')) {
+                                        localStorage.removeItem('demoUserId');
+                                        auth.signOut().then(() => window.location.href = '/?login=true');
+                                    }
+                                }}
+                                className="w-full py-3.5 bg-error text-white font-label-md uppercase tracking-widest text-sm rounded-lg font-bold hover:bg-error/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
+                            >
+                                {(errorModalMsg.includes('sesión') || errorModalMsg.includes('expirado')) ? 'Cerrar Sesión y Reingresar' : 'Entendido'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
