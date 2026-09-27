@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
 import PhotoUploader, { ImageFilters } from './PhotoUploader';
 import { db, storage, auth, onAuthStateChanged } from '../firebase';
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, where, doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, where, doc, updateDoc, deleteDoc, writeBatch, limit } from 'firebase/firestore';
 import { uploadToImgBB } from '../lib/imgbb';
 import { OptimizedImage } from './OptimizedImage';
 

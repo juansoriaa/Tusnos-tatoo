@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc, collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, orderBy, onSnapshot, where, limit } from 'firebase/firestore';
 import { db, auth, onAuthStateChanged } from '../firebase';
 import { preloadDashboardData, clearDashboardPreload } from '../lib/dashboardPreloader';
 

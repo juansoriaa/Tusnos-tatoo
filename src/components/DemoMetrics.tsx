@@ -4,7 +4,7 @@ import DemoLayout from './DemoLayout';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { db, auth, onAuthStateChanged } from '../firebase';
-import { collection, getDocs, query, orderBy, doc, getDoc, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc, where, limit } from 'firebase/firestore';
 
 
 export default function DemoMetrics() {
