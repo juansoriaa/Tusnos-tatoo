@@ -294,6 +294,20 @@ export default function Landing() {
       // Intentar login real con Firebase Auth
       try {
           const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
+          
+          const uid = userCredential.user.uid;
+          const userRef = doc(db, 'users', uid);
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) {
+              await setDoc(userRef, {
+                  email: loginEmail,
+                  userTag: loginEmail.split('@')[0],
+                  displayName: 'Nuevo Artista',
+                  isAvailable: true,
+                  createdAt: serverTimestamp(),
+                  bio: 'Perfil recién creado. Edita este texto desde tu Panel de Control.'
+              });
+          }
           localStorage.setItem('demoUserId', userCredential.user.uid);
           setIsLoggingIn(false);
           setShowLoginModal(false);
