@@ -553,43 +553,20 @@ const handleSaveObra = async () => {
                     const demoUserId = localStorage.getItem('demoUserId');
                     const isRealUser = demoUserId && demoUserId !== 'demo';
                     
-                    // Upload to Firebase Storage
-                    try {
-                        if (!auth.currentUser && isRealUser) {
-                            throw new Error('Tu sesión ha expirado. Por favor, cierra sesión y vuelve a entrar para subir fotos.');
-                        }
-                        if (auth.currentUser) {
-                            const uid = auth.currentUser.uid;
-                            const timestamp = Date.now();
-                            
-                            // Convert base64 to blob
-                            const base64Response = await fetch(photoDataUrl);
-                            const blob = await base64Response.blob();
-                            const storageRef = ref(storage, `users/${uid}/photos/${timestamp}_full.webp`);
-                            await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
-                            photoDataUrl = await getDownloadURL(storageRef);
-                            
-                            const previewResponse = await fetch(previewDataUrl);
-                            const previewBlob = await previewResponse.blob();
-                            const previewRef = ref(storage, `users/${uid}/photos/${timestamp}_preview.webp`);
-                            await uploadBytes(previewRef, previewBlob, { contentType: 'image/webp' });
-                            previewDataUrl = await getDownloadURL(previewRef);
-
-                            const thumbResponse = await fetch(thumbDataUrl);
-                            const thumbBlob = await thumbResponse.blob();
-                            const thumbRef = ref(storage, `users/${uid}/photos/${timestamp}_thumb.webp`);
-                            await uploadBytes(thumbRef, thumbBlob, { contentType: 'image/webp' });
-                            thumbDataUrl = await getDownloadURL(thumbRef);
-                        }
-                    } catch (err: any) {
-                        console.error('Error uploading to storage:', err);
-                        if (isRealUser) {
-                            setErrorModalMsg(err.message || 'Error al subir la imagen. Por favor verifica tu conexión y sesión.');
-                            setIsSaving(false);
-                            return; // Prevent saving base64 to Firestore and breaking sync!
-                        }
-                        console.log('Falling back to base64 for demo user');
-                    }
+                                          try {
+                          const result = await uploadToImgBB(selectedFile);
+                          photoDataUrl = result.url;
+                          previewDataUrl = result.url;
+                          thumbDataUrl = result.thumbUrl;
+                      } catch (err: any) {
+                          console.error('Error uploading to ImgBB:', err);
+                          if (isRealUser) {
+                              setErrorModalMsg(err.message || 'Error al subir la imagen. Por favor intenta nuevamente.');
+                              setIsSaving(false);
+                              return;
+                          }
+                          console.log('Falling back to base64 for demo user');
+                      }
                 }
                 
                 const updatedData = {
@@ -644,41 +621,18 @@ const handleSaveObra = async () => {
                 const demoUserId = localStorage.getItem('demoUserId');
                 const isRealUser = demoUserId && demoUserId !== 'demo';
 
-                // Upload to Firebase Storage
-                let uploadFailed = false;
-                try {
-                    if (!auth.currentUser && isRealUser) {
-                        throw new Error('Tu sesión ha expirado. Por favor, cierra sesión y vuelve a entrar para subir fotos.');
-                    }
-                    if (auth.currentUser) {
-                        const uid = auth.currentUser.uid;
-                        const timestamp = Date.now();
-                        
-                        const base64Response = await fetch(photoDataUrl);
-                        const blob = await base64Response.blob();
-                        const storageRef = ref(storage, `users/${uid}/photos/${timestamp}_full.webp`);
-                        await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
-                        photoDataUrl = await getDownloadURL(storageRef);
-                        
-                        const previewResponse = await fetch(previewDataUrl);
-                        const previewBlob = await previewResponse.blob();
-                        const previewRef = ref(storage, `users/${uid}/photos/${timestamp}_preview.webp`);
-                        await uploadBytes(previewRef, previewBlob, { contentType: 'image/webp' });
-                        previewDataUrl = await getDownloadURL(previewRef);
-
-                        const thumbResponse = await fetch(thumbDataUrl);
-                        const thumbBlob = await thumbResponse.blob();
-                        const thumbRef = ref(storage, `users/${uid}/photos/${timestamp}_thumb.webp`);
-                        await uploadBytes(thumbRef, thumbBlob, { contentType: 'image/webp' });
-                        thumbDataUrl = await getDownloadURL(thumbRef);
-                    }
-                } catch (err: any) {
-                    console.error('Error uploading to storage:', err);
-                    if (isRealUser) {
-                        setErrorModalMsg(err.message || 'Error al subir la imagen. Por favor verifica tu conexión y sesión.');
-                        setIsSaving(false);
-                        return; // Prevent saving base64 to Firestore and breaking sync!
-                    }
+                                  try {
+                      const result = await uploadToImgBB(selectedFile);
+                      photoDataUrl = result.url;
+                      previewDataUrl = result.url;
+                      thumbDataUrl = result.thumbUrl;
+                  } catch (err: any) {
+                      console.error('Error uploading to ImgBB:', err);
+                      if (isRealUser) {
+                          setErrorModalMsg(err.message || 'Error al subir la imagen. Por favor intenta nuevamente.');
+                          setIsSaving(false);
+                          return;
+                      }
                     console.log('Simulando guardado local para usuario Demo...');
                     
                     const fakeId = 'demo_temp_' + Date.now();
@@ -882,7 +836,7 @@ const handleSaveObra = async () => {
             {categories.map((cat) => (
                 <div key={cat} className="bg-surface-container px-2 py-1.5 md:py-1 rounded flex items-center border border-border-muted/50 group hover:border-emerald-accent transition-colors cursor-pointer" style={{backgroundColor: '#201f1f', borderColor: 'rgba(53,52,52,0.5)'}} onClick={() => checkAndRemoveCategory(cat)}>
                 <span className="font-label-sm uppercase text-silver-text mr-1 text-xs md:text-[10px]" style={{color: '#e5e2e1'}}>{cat}</span>
-                <span className="material-symbols-outlined text-sm md:text-[12px] text-on-surface-variant group-hover:text-error transition-colors">close</span>
+                <span className="material-symbols-outlined text-sm md:text-[12px] text-on-surface-variant group-hover:text-primary transition-colors">close</span>
                 </div>
             ))}
             </div>
@@ -1290,10 +1244,10 @@ const handleSaveObra = async () => {
 
             {showLimitModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowLimitModal(false)}>
-                    <div className="modal-container bg-surface-elevation border border-error/30 rounded-xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()} style={{backgroundColor: '#141313'}}>
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-error"></div>
-                        <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center mx-auto mb-4">
-                            <span className="material-symbols-outlined text-error text-3xl">warning</span>
+                    <div className="modal-container bg-surface-elevation border border-primary/50 rounded-xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()} style={{backgroundColor: '#141313'}}>
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-primary"></div>
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                            <span className="material-symbols-outlined text-primary text-3xl">warning</span>
                         </div>
                         <h3 className="text-xl font-headline-md text-silver-text mb-2">Límite Alcanzado</h3>
                         <p className="text-on-surface-variant font-body-md text-sm mb-6">
@@ -1301,7 +1255,7 @@ const handleSaveObra = async () => {
                         </p>
                         <button 
                             onClick={() => setShowLimitModal(false)}
-                            className="modal-submit-btn w-full py-3 bg-error text-white font-label-md uppercase tracking-wider rounded font-bold hover:brightness-110 transition-all"
+                            className="modal-submit-btn w-full py-3 bg-primary text-white font-label-md uppercase tracking-wider rounded font-bold hover:brightness-110 transition-all"
                         >
                             Entendido
                         </button>
@@ -1333,10 +1287,10 @@ const handleSaveObra = async () => {
             
             {errorModalMsg && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" onClick={() => setErrorModalMsg(null)}>
-                    <div className="modal-container bg-surface-elevation border border-error/50 rounded-2xl p-8 max-w-sm w-full text-center shadow-[0_0_40px_rgba(255,0,0,0.1)] relative overflow-hidden" onClick={e => e.stopPropagation()} style={{backgroundColor: '#1a1919'}}>
-                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-error to-error/50"></div>
-                        <div className="w-20 h-20 rounded-full bg-error/10 border border-error/20 flex items-center justify-center mx-auto mb-6 shadow-inner">
-                            <span className="material-symbols-outlined text-error text-4xl">warning</span>
+                    <div className="modal-container bg-surface-elevation border border-primary/50 rounded-2xl p-8 max-w-sm w-full text-center shadow-[0_0_40px_rgba(5,77,68,0.3)] relative overflow-hidden" onClick={e => e.stopPropagation()} style={{backgroundColor: '#1a1919'}}>
+                        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary to-primary/50"></div>
+                        <div className="w-20 h-20 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6 shadow-inner">
+                            <span className="material-symbols-outlined text-primary text-4xl">warning</span>
                         </div>
                         <h3 className="text-2xl font-headline-md text-white mb-3">Aviso del Sistema</h3>
                         <p className="text-on-surface-variant font-body-md text-sm mb-8 whitespace-pre-wrap leading-relaxed">
@@ -1351,7 +1305,7 @@ const handleSaveObra = async () => {
                                         auth.signOut().then(() => window.location.href = '/?login=true');
                                     }
                                 }}
-                                className="w-full py-3.5 bg-error text-white font-label-md uppercase tracking-widest text-sm rounded-lg font-bold hover:bg-error/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
+                                className="w-full py-3.5 bg-primary text-white font-label-md uppercase tracking-widest text-sm rounded-lg font-bold hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
                             >
                                 {(errorModalMsg.includes('sesión') || errorModalMsg.includes('expirado')) ? 'Cerrar Sesión y Reingresar' : 'Entendido'}
                             </button>

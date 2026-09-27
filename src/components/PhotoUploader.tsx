@@ -183,7 +183,7 @@ export default function PhotoUploader({ onImageSelected, onFiltersChanged, reset
                     onDrop={onDrop}
                     onDragOver={onDragOver}
                     className="w-full h-48 border-2 border-dashed border-border-muted hover:border-emerald-accent rounded-lg transition-colors bg-deep-black flex flex-col items-center justify-center cursor-pointer group p-4 text-center" 
-                    style={{backgroundColor: '#050505', borderColor: uploadState === 'error' ? '#ffb4ab' : '#353434'}}
+                    style={{backgroundColor: '#050505', borderColor: uploadState === 'error' ? '#054d44' : '#353434'}}
                 >
                     <span className="material-symbols-outlined text-3xl text-on-surface-variant group-hover:text-emerald-accent mb-2 transition-colors">
                         {uploadState === 'error' ? 'error' : 'add_photo_alternate'}
