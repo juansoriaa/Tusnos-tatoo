@@ -53,7 +53,7 @@ const defaultFaqs = [
         const applyData = (data: any) => {
             try {
                 setName(data.displayName || data.userTag || '');
-                setBio(data.bio || '');
+                setBio(data.bio || "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.");
                 setSpecialty1((data.specialtyTags && data.specialtyTags.length > 0) ? (data.specialtyTags[0] || '') : '');
                 setSpecialty2((data.specialtyTags && data.specialtyTags.length > 1) ? (data.specialtyTags[1] || '') : '');
                 setSpecialty3(data.specialtyTags?.[2] || '');
@@ -78,7 +78,7 @@ const defaultFaqs = [
             
                 setInitialDataStr(JSON.stringify({
                     name: data.displayName || data.userTag || '',
-                    bio: data.bio || '',
+                    bio: data.bio || "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.",
                     specialty1: (data.specialtyTags && data.specialtyTags.length > 0) ? (data.specialtyTags[0] || '') : '',
                     specialty2: (data.specialtyTags && data.specialtyTags.length > 1) ? (data.specialtyTags[1] || '') : '',
                     specialty3: data.specialtyTags?.[2] || '',
@@ -157,7 +157,7 @@ const defaultFaqs = [
             if (!hasLoadedData) {
                 const initData = {
                     displayName: '',
-                    bio: '',
+                    bio: "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.",
                     specialtyTags: ['', ''],
                     isAvailable: true,
                     whatsapp: '',
@@ -198,7 +198,7 @@ const defaultFaqs = [
                     try {
                         const data = JSON.parse(dataStr);
                         setName(data.displayName || data.userTag || '');
-                        setBio(data.bio || '');
+                        setBio(data.bio || "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.");
                         setSpecialty1((data.specialtyTags && data.specialtyTags.length > 0) ? data.specialtyTags[0] : '');
                         setSpecialty2((data.specialtyTags && data.specialtyTags.length > 1) ? data.specialtyTags[1] : '');
                         setSpecialty3(data.specialtyTags?.[2] || '');
@@ -243,10 +243,11 @@ const defaultFaqs = [
 
 
     const [name, setName] = useState(initDataCache.displayName || initDataCache.userTag || '');
-    const [bio, setBio] = useState(initDataCache.bio || '');
-    const [specialty1, setSpecialty1] = useState((initDataCache.specialtyTags && initDataCache.specialtyTags.length > 0) ? initDataCache.specialtyTags[0] : '');
-    const [specialty2, setSpecialty2] = useState((initDataCache.specialtyTags && initDataCache.specialtyTags.length > 1) ? initDataCache.specialtyTags[1] : '');
-    const [specialty3, setSpecialty3] = useState(initDataCache.specialtyTags?.[2] || '');
+    const [bio, setBio] = useState(initDataCache.bio || "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.");
+    const _defaultTagsState = (initDataCache.specialtyTags && initDataCache.specialtyTags.length > 0) ? initDataCache.specialtyTags : ['Realismo', 'Black & Grey'];
+    const [specialty1, setSpecialty1] = useState(_defaultTagsState[0] || '');
+    const [specialty2, setSpecialty2] = useState(_defaultTagsState[1] || '');
+    const [specialty3, setSpecialty3] = useState(_defaultTagsState[2] || '');
     const [mapLink, setMapLink] = useState(initDataCache.mapLink || '');
     const [hasPhysicalStudio, setHasPhysicalStudio] = useState(initDataCache.hasPhysicalStudio !== false);
     const [studioName, setStudioName] = useState(initDataCache.studioName || '');
