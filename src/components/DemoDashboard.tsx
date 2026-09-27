@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
 import { db, auth, onAuthStateChanged, storage } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadToImgBB } from '../lib/imgbb';
 import { useSubscription } from '../hooks/useSubscription';
 
 
@@ -470,71 +470,23 @@ const defaultFaqs = [
 
     const [isUploading, setIsUploading] = useState(false);
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, setUrl: React.Dispatch<React.SetStateAction<string>>, type: 'avatar' | 'banner') => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setUrl: React.Dispatch<React.SetStateAction<string>>, type: 'avatar' | 'banner') => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                alert('El archivo excede el tamaño máximo de 5MB.');
+            if (file.size > 10 * 1024 * 1024) {
+                alert('El archivo excede el tamaño máximo de 10MB.');
                 return;
             }
-            
             setIsUploading(true);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const img = new Image();
-                img.onload = async () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    
-                    // Max dimensions
-                    const MAX_WIDTH = 1200;
-                    const MAX_HEIGHT = 1200;
-                    
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height = Math.round((height * MAX_WIDTH) / width);
-                            width = MAX_WIDTH;
-                        }
-                    } else {
-                        if (height > MAX_HEIGHT) {
-                            width = Math.round((width * MAX_HEIGHT) / height);
-                            height = MAX_HEIGHT;
-                        }
-                    }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    if (ctx) {
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        canvas.toBlob(async (blob) => {
-                            if (blob) {
-                                try {
-                                    const demoUserId = localStorage.getItem('demoUserId') || auth.currentUser?.uid || 'demo';
-                                    const timestamp = Date.now();
-                                    const storageRef = ref(storage, `users/${demoUserId}/${type}_${timestamp}.webp`);
-                                    await uploadBytes(storageRef, blob, { contentType: 'image/webp' });
-                                    const downloadUrl = await getDownloadURL(storageRef);
-                                    setUrl(downloadUrl);
-                                } catch (error) {
-                                    console.error('Error uploading to storage:', error);
-                                    alert('Error al subir la imagen.');
-                                } finally {
-                                    setIsUploading(false);
-                                }
-                            } else {
-                                setIsUploading(false);
-                            }
-                        }, 'image/webp', 0.85);
-                    } else {
-                        setIsUploading(false);
-                    }
-                };
-                img.src = reader.result as string;
-            };
-            reader.readAsDataURL(file);
+            try {
+                const imgbbRes = await uploadToImgBB(file);
+                setUrl(imgbbRes.url);
+            } catch (err: any) {
+                console.error('Error al subir la imagen:', err);
+                alert('Error al subir la imagen a ImgBB.');
+            } finally {
+                setIsUploading(false);
+            }
         }
     };
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);

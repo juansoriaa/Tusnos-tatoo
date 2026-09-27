@@ -1337,16 +1337,25 @@ export default function Profile() {
                 <label className="cursor-pointer flex items-center gap-2 text-on-surface-variant hover:text-emerald-accent transition-colors">
                   <span className="material-symbols-outlined text-xl">image</span>
                   <span className="font-label-sm text-[10px] uppercase tracking-wider font-bold">Adjunta tu tatuaje de referencia</span>
-                  <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      const file = e.target.files[0];
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setWaitlistForm({...waitlistForm, referenceImage: reader.result as string});
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}/>
+                  <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        if (file.size > 10 * 1024 * 1024) {
+                            alert('La imagen no puede pesar más de 10MB.');
+                            return;
+                        }
+                        setIsSubmittingWaitlist(true);
+                        try {
+                            const res = await uploadToImgBB(file);
+                            setWaitlistForm({...waitlistForm, referenceImage: res.url});
+                        } catch (err) {
+                            console.error(err);
+                            alert('Error al adjuntar imagen.');
+                        } finally {
+                            setIsSubmittingWaitlist(false);
+                        }
+                      }
+                    }}/>
                 </label>
               </div>
             )}
