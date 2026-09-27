@@ -72,7 +72,7 @@ export default function DemoLayout
                 }
                 
                 // Real-time listener for user data (crucial for Top Nav avatar and theme sync)
-                unsubscribeUser = onSnapshot(doc(db, 'users', demoUserId), (userDoc) => {
+                unsubscribeUser = onSnapshot(doc(db, 'users', demoUserId), async (userDoc) => {
                     if (userDoc.exists()) {
                         const data = userDoc.data();
                         setTurnosLlenos(data.isAvailable === false);
@@ -81,8 +81,19 @@ export default function DemoLayout
                         if (data.bio) setArtistBio(data.bio);
                         if (data.theme) setTheme(data.theme);
                         localStorage.setItem('demoArtistData_' + demoUserId, JSON.stringify(data));
-                    }
-                }, (error) => console.error("Error en onSnapshot de DemoLayout", error));
+                      } else {
+                          try {
+                              const { setDoc, serverTimestamp } = await import('firebase/firestore');
+                              await setDoc(doc(db, 'users', demoUserId), {
+                                  userTag: 'nuevo_artista_' + Math.floor(Math.random() * 1000),
+                                  displayName: 'Nuevo Artista',
+                                  isAvailable: true,
+                                  createdAt: serverTimestamp(),
+                                  bio: 'Perfil recién creado.'
+                              });
+                          } catch(e) { console.error("Error auto-creating user", e); }
+                      }
+                  }, (error) => console.error("Error en onSnapshot de DemoLayout", error));
 
                 const q = query(collection(db, 'users', demoUserId, 'waitlist'), where('read', '==', false));
                 unsubscribeWaitlist = onSnapshot(q, (snapshot) => {
