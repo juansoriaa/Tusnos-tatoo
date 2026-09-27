@@ -88,8 +88,15 @@ export default function DemoMetrics() {
             try {
                 const demoUserId = localStorage.getItem('demoUserId') || auth.currentUser?.uid;
                 if (!demoUserId) { setTopPhotos([]); return; }
-                const q = query(collection(db, 'photos'), where('createdBy', '==', demoUserId));
-                const snapshot = await getDocs(q);
+                const q = query(collection(db, 'photos'), where('createdBy', '==', demoUserId), orderBy('createdAt', 'desc'), limit(50));
+                let snapshot;
+                try {
+                    snapshot = await getDocs(q);
+                } catch(e) {
+                    const fallbackQ = query(collection(db, 'photos'), where('createdBy', '==', demoUserId), limit(50));
+                    snapshot = await getDocs(fallbackQ);
+                }
+
                 let dbPhotos = snapshot.docs.map(doc => ({ ...doc.data(), id: String(doc.id) } as any));
                 
 

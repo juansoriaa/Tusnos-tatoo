@@ -139,7 +139,7 @@ export default function DemoLayout
     useEffect(() => {
         const demoUserId = authUid;
         if (demoUserId) {
-            const q = query(collection(db, 'users', demoUserId, 'notifications'), orderBy('date', 'desc'));
+            const q = query(collection(db, 'users', demoUserId, 'notifications'), orderBy('date', 'desc'), limit(30));
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 const notifs: any[] = [];
                 snapshot.forEach((doc) => {

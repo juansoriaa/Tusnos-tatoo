@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, setDoc, updateDoc, serverTimestamp, collection, getDocs, getDoc, deleteDoc, addDoc, writeBatch, query, where } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp, collection, getDocs, getDoc, deleteDoc, addDoc, writeBatch, query, where, limit, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export default function SuperAdmin() {
@@ -41,7 +41,13 @@ export default function SuperAdmin() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const usersSnap = await getDocs(collection(db, 'users'));
+        let usersSnap;
+        try {
+            usersSnap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(150)));
+        } catch(e) {
+            usersSnap = await getDocs(query(collection(db, 'users'), limit(150)));
+        }
+
         let total = 0;
         let trial = 0;
         let monthly = 0;

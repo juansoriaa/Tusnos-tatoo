@@ -92,7 +92,7 @@ export default function DemoWaitlist() {
         let unsubscribe = () => {};
         if (targetUserId) {
             import('firebase/firestore').then(({ collection, onSnapshot, query }) => {
-                const q = query(collection(db, 'users', targetUserId, 'waitlist'));
+                const q = query(collection(db, 'users', targetUserId, 'waitlist'), orderBy('createdAt', 'desc'), limit(50));
                 const unsub = onSnapshot(q, (snapshot) => {
                     let messages = snapshot.docs.map(doc => ({ ...doc.data(), id: String(doc.id) } as any));
                     messages.sort((a: any, b: any) => {
