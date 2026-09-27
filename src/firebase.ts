@@ -15,7 +15,7 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-setLogLevel('silent');
+setLogLevel('debug');
 
 export const auth = getAuth(app);
 
