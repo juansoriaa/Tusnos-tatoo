@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import Landing from "./components/Landing";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const ArtistProfile = lazy(() => import("./components/ArtistProfile"));
 const SuperAdmin = lazy(() => import("./components/SuperAdmin"));
@@ -20,26 +21,27 @@ export default function App() {
   return (
     <HelmetProvider>
       <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            
-            
-            <Route path="/demo/profile" element={<ArtistProfile />} />
-            <Route path="/artist/:id" element={<ArtistProfile />} />
-            <Route path="/:id" element={<ArtistProfile />} />
-            
-            <Route path="/superadmin" element={<SuperAdmin />} />
-            <Route path="/demo/dashboard" element={<DemoDashboard />} />
-            <Route path="/:id/dashboard" element={<DemoDashboard />} />
-            <Route path="/demo/portfolio" element={<DemoPortfolio />} />
-            <Route path="/:id/portfolio" element={<DemoPortfolio />} />
-            <Route path="/demo/waitlist" element={<DemoWaitlist />} />
-            <Route path="/:id/waitlist" element={<DemoWaitlist />} />
-            <Route path="/demo/metrics" element={<DemoMetrics />} />
-            <Route path="/:id/metrics" element={<DemoMetrics />} />
-          </Routes>
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              
+              <Route path="/demo/profile" element={<ArtistProfile />} />
+              <Route path="/artist/:id" element={<ArtistProfile />} />
+              <Route path="/:id" element={<ArtistProfile />} />
+              
+              <Route path="/superadmin" element={<SuperAdmin />} />
+              <Route path="/demo/dashboard" element={<DemoDashboard />} />
+              <Route path="/:id/dashboard" element={<DemoDashboard />} />
+              <Route path="/demo/portfolio" element={<DemoPortfolio />} />
+              <Route path="/:id/portfolio" element={<DemoPortfolio />} />
+              <Route path="/demo/waitlist" element={<DemoWaitlist />} />
+              <Route path="/:id/waitlist" element={<DemoWaitlist />} />
+              <Route path="/demo/metrics" element={<DemoMetrics />} />
+              <Route path="/:id/metrics" element={<DemoMetrics />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </BrowserRouter>
     </HelmetProvider>
   );
