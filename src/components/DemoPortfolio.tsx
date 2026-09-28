@@ -7,6 +7,52 @@ import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, where, do
 import { uploadToImgBB } from '../lib/imgbb';
 import { OptimizedImage } from './OptimizedImage';
 
+
+const applyFiltersToFile = async (file: File, filters: any): Promise<File> => {
+    if (!filters) return file;
+    
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return resolve(file);
+            
+            let filterStr = '';
+            const { activePreset, contrast, brightness, blackIntensity } = filters;
+            const isAnyManualActive = contrast?.active || brightness?.active || blackIntensity?.active;
+            if (activePreset && !isAnyManualActive) {
+                if (activePreset === 'tinta_negra') filterStr = 'contrast(125%) brightness(95%) grayscale(15%)';
+                if (activePreset === 'color') filterStr = 'contrast(110%) brightness(105%) saturate(130%)';
+                if (activePreset === 'piel') filterStr = 'contrast(95%) brightness(105%) saturate(90%)';
+                if (activePreset === 'blanco_y_negro') filterStr = 'grayscale(100%) contrast(130%)';
+            } else {
+                if (contrast?.active) filterStr += `contrast(${contrast.value * 2}%) `;
+                if (brightness?.active) filterStr += `brightness(${brightness.value * 2}%) `;
+                if (blackIntensity?.active) filterStr += `grayscale(${blackIntensity.value}%) `;
+            }
+            
+            if (filterStr) {
+                ctx.filter = filterStr.trim();
+            }
+            ctx.drawImage(img, 0, 0);
+            
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const newFile = new File([blob], file.name || 'image.jpg', { type: 'image/jpeg' });
+                    resolve(newFile);
+                } else {
+                    resolve(file);
+                }
+            }, 'image/jpeg', 0.92);
+        };
+        img.onerror = () => resolve(file);
+        img.src = URL.createObjectURL(file);
+    });
+};
+
 let globalCachedPhotos: any[] | null = null;
 let globalCachedArtistUid: string | null = null;
 
@@ -554,7 +600,8 @@ const handleSaveObra = async () => {
                     const isRealUser = demoUserId && demoUserId !== 'demo';
                     
                                           try {
-                          const result = await uploadToImgBB(selectedFile);
+                          const finalFile = await applyFiltersToFile(selectedFile, imageFilters);
+                        const result = await uploadToImgBB(finalFile);
                           photoDataUrl = result.url;
                           previewDataUrl = result.url;
                           thumbDataUrl = result.thumbUrl;
@@ -579,7 +626,7 @@ const handleSaveObra = async () => {
                     hours: hours ? Number(hours) : null,
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
-                    filters: imageFilters,
+                    filters: null,
                 };
                 
                 if (editingPhoto.id.startsWith('fallback_')) {
@@ -614,15 +661,14 @@ const handleSaveObra = async () => {
                     cancelEdit();
                 }, 2000);
             } else {
-                let photoDataUrl = await createThumbnail(selectedFile, 1920, 1920);
-                let previewDataUrl = await createThumbnail(selectedFile, 800, 800);
-                let thumbDataUrl = await createThumbnail(selectedFile, 400, 400);
+                
 
                 const demoUserId = localStorage.getItem('demoUserId');
                 const isRealUser = demoUserId && demoUserId !== 'demo';
 
                                   try {
-                      const result = await uploadToImgBB(selectedFile);
+                      const finalFile = await applyFiltersToFile(selectedFile, imageFilters);
+                        const result = await uploadToImgBB(finalFile);
                       photoDataUrl = result.url;
                       previewDataUrl = result.url;
                       thumbDataUrl = result.thumbUrl;
@@ -647,7 +693,7 @@ const handleSaveObra = async () => {
                         hours: hours ? Number(hours) : null,
                         sessions: sessions ? Number(sessions) : null,
                         size: finalSize,
-                        filters: imageFilters,
+                        filters: null,
                         createdBy: 'anonymous_demo',
                     };
                     
@@ -672,7 +718,7 @@ const handleSaveObra = async () => {
                     hours: hours ? Number(hours) : null,
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
-                    filters: imageFilters,
+                    filters: null,
                     createdBy: (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                     createdAt: serverTimestamp()
                 });
@@ -688,7 +734,7 @@ const handleSaveObra = async () => {
                     hours: hours ? Number(hours) : null,
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
-                    filters: imageFilters,
+                    filters: null,
                     createdBy: (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                 };
                 
