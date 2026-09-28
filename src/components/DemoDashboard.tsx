@@ -11,6 +11,40 @@ const defaultAvatar = 'https://lh3.googleusercontent.com/aida-public/AB6AXuByR4N
 const defaultBanner = 'https://lh3.googleusercontent.com/aida-public/AB6AXuCjcpGXPEz0beDBlZrbWo96kxL8SYcB5zMiiXz1xbrFmwvqYW5GPQex6oox-awu_xzVDV-xVHBOZb7J5FaWinZxyv-p_dVvx7nyqWDm8DE96ZCcZjiGx9i8SoPVlU1tgx7piOQQuHe-KPGo797xTz3-Hah3jLnvIr5MmnaWY0vzOsFmANOtV305mcB8ioZWPXCwwEkhO3pFM2gsdfbO2cw8vwlVJxKBOTpjtD1hKf22NaaGM7lT4hpZ-5-bVKccq_JRci5J0v0uXR0';
 
 export default function DemoDashboard() {
+
+const resizeImage = (file: File, maxDim: number = 1024): Promise<File> => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxDim || height > maxDim) {
+                if (width > height) {
+                    height = Math.round((height * maxDim) / width);
+                    width = maxDim;
+                } else {
+                    width = Math.round((width * maxDim) / height);
+                    height = maxDim;
+                }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    resolve(new File([blob], file.name || 'image.jpg', { type: 'image/jpeg' }));
+                } else {
+                    resolve(file);
+                }
+            }, 'image/jpeg', 0.85);
+        };
+        img.onerror = () => resolve(file);
+        img.src = URL.createObjectURL(file);
+    });
+};
+
     const navigate = useNavigate();
 
 const defaultFaqs = [
@@ -474,10 +508,7 @@ const defaultFaqs = [
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setUrl: React.Dispatch<React.SetStateAction<string>>, type: 'avatar' | 'banner') => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 10 * 1024 * 1024) {
-                alert('El archivo excede el tamaño máximo de 10MB.');
-                return;
-            }
+            
             setIsUploading(true);
             try {
                 const imgbbRes = await uploadToImgBB(file);
