@@ -484,7 +484,7 @@ const defaultFaqs = [
                 setUrl(imgbbRes.url);
             } catch (err: any) {
                 console.error('Error al subir la imagen:', err);
-                alert('Error al subir la imagen a ImgBB.');
+                alert('Error de conexión al subir la imagen (Failed to fetch).\n\nSi usas un bloqueador de anuncios (AdBlock, uBlock, Brave Shields), por favor desactívalo temporalmente para esta página, ya que suelen bloquear las subidas de imágenes.');
             } finally {
                 setIsUploading(false);
             }
@@ -948,7 +948,7 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
                 </div>
             </div>
         
-        {hasUnsavedChanges && (
+        {(hasUnsavedChanges || isUploading) && (
             <button 
                 onClick={handleSaveAll}
                 disabled={isUploading}

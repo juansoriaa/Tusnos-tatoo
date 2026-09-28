@@ -608,7 +608,13 @@ const handleSaveObra = async () => {
                       } catch (err: any) {
                           console.error('Error uploading to ImgBB:', err);
                           if (isRealUser) {
-                              setErrorModalMsg(err.message || 'Error al subir la imagen. Por favor intenta nuevamente.');
+                              
+let msg = err.message || 'Error al subir la imagen. Por favor intenta nuevamente.';
+if (msg.includes('Failed to fetch')) {
+    msg = 'Error de conexión (Failed to fetch).\n\nSi usas un bloqueador de anuncios (AdBlock, uBlock, Brave Shields), por favor desactívalo temporalmente, ya que suelen bloquear el servidor de imágenes.';
+}
+setErrorModalMsg(msg);
+
                               setIsSaving(false);
                               return;
                           }
@@ -675,7 +681,13 @@ const handleSaveObra = async () => {
                   } catch (err: any) {
                       console.error('Error uploading to ImgBB:', err);
                       if (isRealUser) {
-                          setErrorModalMsg(err.message || 'Error al subir la imagen. Por favor intenta nuevamente.');
+                          
+let msg = err.message || 'Error al subir la imagen. Por favor intenta nuevamente.';
+if (msg.includes('Failed to fetch')) {
+    msg = 'Error de conexión (Failed to fetch).\n\nSi usas un bloqueador de anuncios (AdBlock, uBlock, Brave Shields), por favor desactívalo temporalmente, ya que suelen bloquear el servidor de imágenes.';
+}
+setErrorModalMsg(msg);
+
                           setIsSaving(false);
                           return;
                       }
