@@ -303,6 +303,8 @@ const defaultFaqs = [
 
     
     const [initialDataStr, setInitialDataStr] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
+    const [hasNewUploads, setHasNewUploads] = useState(false);
 
     
     const [pendingNav, setPendingNav] = useState<string | null>(null);
@@ -504,8 +506,7 @@ const defaultFaqs = [
     };
 
 
-    const [isUploading, setIsUploading] = useState(false);
-    const [hasNewUploads, setHasNewUploads] = useState(false);
+    
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setUrl: React.Dispatch<React.SetStateAction<string>>, type: 'avatar' | 'banner') => {
         const file = e.target.files?.[0];
