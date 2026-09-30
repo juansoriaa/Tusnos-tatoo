@@ -513,6 +513,8 @@ const defaultFaqs = [
                 const resizedFile = await resizeImage(file, type === 'banner' ? 1920 : 800);
                 const imgbbRes = await uploadToImgBB(resizedFile);
                 setUrl(imgbbRes.url);
+                setToastMessage("¡Imagen subida! No olvides guardar los cambios.");
+                setTimeout(() => setToastMessage(null), 3000);
             } catch (err: any) {
                 console.error('Error al subir la imagen:', err);
                 alert('Error de conexión al subir la imagen (Failed to fetch).\n\nSi usas un bloqueador de anuncios (AdBlock, uBlock, Brave Shields), por favor desactívalo temporalmente para esta página, ya que suelen bloquear las subidas de imágenes.');
@@ -745,7 +747,7 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
                             <div className="space-y-8">
                                 {/* Banner Upload */}
                                 <label className="group relative h-32 bg-surface-container-lowest border border-dashed border-outline-variant/40 flex items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-primary block">
-                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setBannerUrl, 'banner')} />
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setBannerUrl, 'banner')} onClick={(e) => { (e.target as any).value = ''; }} />
                                     <div className="absolute inset-0 opacity-20 grayscale">
                                         <div className="w-full h-full bg-cover bg-center" style={{backgroundImage: `url('${bannerUrl}')`}}></div>
                                     </div>
@@ -760,7 +762,7 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
                                     {/* Profile Pic */}
                                     <div className="shrink-0 mx-auto flex flex-col items-center text-center">
                                         <label className="w-24 h-24 bg-surface-container-highest border border-outline-variant/20 flex items-center justify-center relative group cursor-pointer overflow-hidden block">
-                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setAvatarUrl, 'avatar')} />
+                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, setAvatarUrl, 'avatar')} onClick={(e) => { (e.target as any).value = ''; }} />
                                             <img className="w-full h-full object-cover" src={avatarUrl || undefined} />
                                             <div className="absolute inset-0 bg-surface/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <span className="material-symbols-outlined" data-icon="upload">upload</span>
