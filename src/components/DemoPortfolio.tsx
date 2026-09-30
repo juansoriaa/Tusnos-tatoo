@@ -610,10 +610,13 @@ const handleSaveObra = async () => {
                     photoDataUrl = await createThumbnail(selectedFile, 1920, 1920);
                     previewDataUrl = await createThumbnail(selectedFile, 800, 800);
                     thumbDataUrl = await createThumbnail(selectedFile, 400, 400);
-                    const demoUserId = localStorage.getItem('demoUserId');
-                    const isRealUser = demoUserId && demoUserId !== 'demo';
                     
-                                          try {
+let photoDataUrl = '';
+let previewDataUrl = '';
+let thumbDataUrl = '';
+const demoUserId = localStorage.getItem('demoUserId');
+const isRealUser = demoUserId && demoUserId !== 'demo';
+try {
                           const finalFile = await applyFiltersToFile(selectedFile, imageFilters);
                         const result = await uploadToImgBB(finalFile);
                           photoDataUrl = result.url;
@@ -683,10 +686,13 @@ setErrorModalMsg(msg);
             } else {
                 
 
-                const demoUserId = localStorage.getItem('demoUserId');
-                const isRealUser = demoUserId && demoUserId !== 'demo';
-
-                                  try {
+                
+let photoDataUrl = '';
+let previewDataUrl = '';
+let thumbDataUrl = '';
+const demoUserId = localStorage.getItem('demoUserId');
+const isRealUser = demoUserId && demoUserId !== 'demo';
+try {
                       const finalFile = await applyFiltersToFile(selectedFile, imageFilters);
                         const result = await uploadToImgBB(finalFile);
                       photoDataUrl = result.url;

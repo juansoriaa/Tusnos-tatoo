@@ -508,10 +508,10 @@ const defaultFaqs = [
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setUrl: React.Dispatch<React.SetStateAction<string>>, type: 'avatar' | 'banner') => {
         const file = e.target.files?.[0];
         if (file) {
-            
             setIsUploading(true);
             try {
-                const imgbbRes = await uploadToImgBB(file);
+                const resizedFile = await resizeImage(file, type === 'banner' ? 1920 : 800);
+                const imgbbRes = await uploadToImgBB(resizedFile);
                 setUrl(imgbbRes.url);
             } catch (err: any) {
                 console.error('Error al subir la imagen:', err);
