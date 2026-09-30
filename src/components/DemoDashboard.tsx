@@ -73,6 +73,7 @@ const defaultFaqs = [
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     const unsubRef = useRef<(() => void) | null>(null);
+    const hasUnsavedChangesRef = useRef(false);
 
     useEffect(() => {
         let authUnsubscribe = () => {};
