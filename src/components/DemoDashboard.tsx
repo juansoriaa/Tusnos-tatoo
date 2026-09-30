@@ -168,7 +168,9 @@ const defaultFaqs = [
                             if (docSnap.exists()) {
                                 const dbData = docSnap.data();
                                 localStorage.setItem('demoArtistData_' + demoUserId, JSON.stringify(dbData));
-                                applyData(dbData);
+                                if (!hasUnsavedChangesRef.current) {
+                                    applyData(dbData);
+                                }
                             }
                         });
                     });
@@ -193,7 +195,7 @@ const defaultFaqs = [
                 const initData = {
                     displayName: '',
                     bio: "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.",
-                    specialtyTags: ['', ''],
+                    specialtyTags: ['Realismo', 'Black & Grey'],
                     isAvailable: true,
                     whatsapp: '',
                     email: '',
@@ -226,6 +228,7 @@ const defaultFaqs = [
     // Sincronización entre pestañas y descongelación del navegador
     useEffect(() => {
         const syncFromStorage = () => {
+            if (hasUnsavedChangesRef.current) return;
             const uid = localStorage.getItem('demoUserId');
             if (uid) {
                 const dataStr = localStorage.getItem('demoArtistData_' + uid);
@@ -345,15 +348,35 @@ const defaultFaqs = [
     let hasUnsavedChanges = false;
     if (initialDataStr !== '') {
         try {
-            const initialData = JSON.parse(initialDataStr);
-            for (const key in currentData) {
-                if (JSON.stringify(currentData[key]) !== JSON.stringify(initialData[key])) {
-                    hasUnsavedChanges = true;
-                    break;
-                }
-            }
-        } catch(e) {}
+            const initial = JSON.parse(initialDataStr);
+            if (name !== initial.name) hasUnsavedChanges = true;
+            if (bio !== initial.bio) hasUnsavedChanges = true;
+            if (specialty1 !== initial.specialty1) hasUnsavedChanges = true;
+            if (specialty2 !== initial.specialty2) hasUnsavedChanges = true;
+            if (specialty3 !== initial.specialty3) hasUnsavedChanges = true;
+            if (isAvailable !== initial.isAvailable) hasUnsavedChanges = true;
+            if (whatsapp !== initial.whatsapp) hasUnsavedChanges = true;
+            if (loginEmail !== initial.loginEmail) hasUnsavedChanges = true;
+            if (customPassword !== initial.customPassword) hasUnsavedChanges = true;
+            if (instagram !== initial.instagram) hasUnsavedChanges = true;
+            if (facebook !== initial.facebook) hasUnsavedChanges = true;
+            if (tiktok !== initial.tiktok) hasUnsavedChanges = true;
+            if (avatarUrl !== initial.avatarUrl) hasUnsavedChanges = true;
+            if (bannerUrl !== initial.bannerUrl) hasUnsavedChanges = true;
+            if (hasPhysicalStudio !== initial.hasPhysicalStudio) hasUnsavedChanges = true;
+            if (studioName !== initial.studioName) hasUnsavedChanges = true;
+            if (studioDescription !== initial.studioDescription) hasUnsavedChanges = true;
+            if (studioAddress !== initial.studioAddress) hasUnsavedChanges = true;
+            if (studioHours !== initial.studioHours) hasUnsavedChanges = true;
+            if (mapLink !== initial.mapLink) hasUnsavedChanges = true;
+            if (JSON.stringify(faqs) !== JSON.stringify(initial.faqs)) hasUnsavedChanges = true;
+        } catch(e) {
+            console.error(e);
+        }
     }
+    hasUnsavedChangesRef.current = hasUnsavedChanges;
+    
+    
 
     const handleSaveAll = () => {
         const demoData = {
