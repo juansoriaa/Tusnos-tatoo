@@ -398,6 +398,7 @@ const defaultFaqs = [
         }
         window.dispatchEvent(new CustomEvent('profileDataChanged'));
         setInitialDataStr(JSON.stringify(currentData));
+        setHasNewUploads(false);
         setToastMessage("Cambios guardados exitosamente!");
         setTimeout(() => setToastMessage(null), 3000);
     };
@@ -411,7 +412,7 @@ const defaultFaqs = [
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [hasUnsavedChanges]);
+    }, [hasUnsavedChanges, hasNewUploads]);
 
     const [metrics, setMetrics] = useState({
         views: 0,
@@ -504,6 +505,7 @@ const defaultFaqs = [
 
 
     const [isUploading, setIsUploading] = useState(false);
+    const [hasNewUploads, setHasNewUploads] = useState(false);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, setUrl: React.Dispatch<React.SetStateAction<string>>, type: 'avatar' | 'banner') => {
         const file = e.target.files?.[0];
@@ -513,6 +515,7 @@ const defaultFaqs = [
                 const resizedFile = await resizeImage(file, type === 'banner' ? 1920 : 800);
                 const imgbbRes = await uploadToImgBB(resizedFile);
                 setUrl(imgbbRes.url);
+                setHasNewUploads(true);
                 setToastMessage("¡Imagen subida! No olvides guardar los cambios.");
                 setTimeout(() => setToastMessage(null), 3000);
             } catch (err: any) {
@@ -981,7 +984,7 @@ style={{borderColor: !isAvailable ? '#054d44' : ''}}
                 </div>
             </div>
         
-        {(hasUnsavedChanges || isUploading) && (
+        {(hasUnsavedChanges || isUploading || hasNewUploads) && (
             <button 
                 onClick={handleSaveAll}
                 disabled={isUploading}
