@@ -378,7 +378,7 @@ const defaultFaqs = [
     
     
 
-    const handleSaveAll = () => {
+    const handleSaveAll = async () => {
         const demoData = {
             displayName: name,
             bio: bio,
@@ -419,14 +419,22 @@ const defaultFaqs = [
             localStorage.setItem('demoArtistData_demo', JSON.stringify(mergedDemo));
         } catch(e) {}
 
-        if (demoUserId && demoUserId !== 'demo') {
-            updateDoc(doc(db, 'users', demoUserId), demoData).catch(e => console.error("Error saving to Firestore", e));
+        try {
+            setIsUploading(true);
+            if (demoUserId && demoUserId !== 'demo') {
+                await updateDoc(doc(db, 'users', demoUserId), demoData);
+            }
+            window.dispatchEvent(new CustomEvent('profileDataChanged'));
+            setInitialDataStr(JSON.stringify(currentData));
+            setHasNewUploads(false);
+            setToastMessage("Cambios guardados exitosamente!");
+        } catch (e) {
+            console.error("Error saving to Firestore", e);
+            alert("Error al guardar: " + (e.message || "Error desconocido"));
+        } finally {
+            setIsUploading(false);
+            setTimeout(() => setToastMessage(null), 3000);
         }
-        window.dispatchEvent(new CustomEvent('profileDataChanged'));
-        setInitialDataStr(JSON.stringify(currentData));
-        setHasNewUploads(false);
-        setToastMessage("Cambios guardados exitosamente!");
-        setTimeout(() => setToastMessage(null), 3000);
     };
 
     useEffect(() => {
