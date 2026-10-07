@@ -40,6 +40,22 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
+
+window.forceClearCache = async () => {
+    if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (let reg of regs) {
+            await reg.unregister();
+        }
+    }
+    localStorage.clear();
+    window.location.href = window.location.pathname + '?nocache=' + Date.now();
+};
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(error => {

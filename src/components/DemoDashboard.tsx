@@ -302,8 +302,8 @@ const defaultFaqs = [
     const [subscriptionEndsAt, setSubscriptionEndsAt] = useState<any>(initDataCache.subscriptionEndsAt || null);
 
     const subscription = useSubscription(subscriptionStatus, subscriptionEndsAt);
-    const [avatarUrl, setAvatarUrl] = useState(defaultAvatar);
-    const [bannerUrl, setBannerUrl] = useState(defaultBanner);
+    const [avatarUrl, setAvatarUrl] = useState(initDataCache.profilePhotoUrl || defaultAvatar);
+    const [bannerUrl, setBannerUrl] = useState((initDataCache.backgroundPhotos && initDataCache.backgroundPhotos.length > 0) ? initDataCache.backgroundPhotos[0] : defaultBanner);
 
     
     const [initialDataStr, setInitialDataStr] = useState('');
@@ -632,7 +632,7 @@ const defaultFaqs = [
                 const manifest = {
                     name: `${name} - Turnos Tattoo`,
                     short_name: name,
-                    start_url: window.location.pathname, // Ensure we open the exact dashboard path, not a wildcard
+                    start_url: window.location.pathname + '?v=' + Date.now(), // Ensure we open the exact dashboard path, not a wildcard
                     display: "standalone",
                     background_color: "#000000",
                     theme_color: "#054d44",
