@@ -225,61 +225,6 @@ const defaultFaqs = [
         };
     }, []);
 
-    // Sincronización entre pestañas y descongelación del navegador
-    useEffect(() => {
-        const syncFromStorage = () => {
-            if (hasUnsavedChangesRef.current) return;
-            const uid = localStorage.getItem('demoUserId');
-            if (uid) {
-                const dataStr = localStorage.getItem('demoArtistData_' + uid);
-                if (dataStr) {
-                    try {
-                        const data = JSON.parse(dataStr);
-                        setName(data.displayName || data.userTag || '');
-                        setBio(data.bio || "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.");
-                        setSpecialty1((data.specialtyTags && data.specialtyTags.length > 0) ? data.specialtyTags[0] : '');
-                        setSpecialty2((data.specialtyTags && data.specialtyTags.length > 1) ? data.specialtyTags[1] : '');
-                        setSpecialty3(data.specialtyTags?.[2] || '');
-                        setMapLink(data.mapLink || '');
-                        setHasPhysicalStudio(data.hasPhysicalStudio !== false);
-                        setStudioName(data.studioName || '');
-                        setStudioDescription(data.studioDescription || '');
-                        setStudioAddress(data.studioAddress || '');
-                        setStudioHours(data.studioHours || '');
-                        setWhatsapp(data.whatsapp || '');
-                        setLoginEmail(data.email || '');
-                        setCustomPassword(data.customPassword || '');
-                        setInstagram(data.instagram || '');
-                        setFacebook(data.facebook || '');
-                        setTiktok(data.tiktok || '');
-                        setSubscriptionStatus(data.subscriptionStatus || 'active');
-                        setSubscriptionEndsAt(data.subscriptionEndsAt || null);
-                        if (data.faqs) setFaqs(data.faqs);
-                        setIsAvailable(data.isAvailable !== false);
-                        if (data.profilePhotoUrl) setAvatarUrl(data.profilePhotoUrl);
-                        setBannerUrl((data.backgroundPhotos && data.backgroundPhotos.length > 0) ? data.backgroundPhotos[0] : defaultBanner);
-                    } catch(e) {}
-                }
-            }
-        };
-
-        const handleVisibility = () => {
-            if (document.visibilityState === 'visible') {
-                syncFromStorage();
-            }
-        };
-
-        window.addEventListener('storage', syncFromStorage);
-        document.addEventListener('visibilitychange', handleVisibility);
-
-        return () => {
-            window.removeEventListener('storage', syncFromStorage);
-            document.removeEventListener('visibilitychange', handleVisibility);
-        };
-    }, []);
-
-
-
     const [name, setName] = useState(initDataCache.displayName || initDataCache.userTag || '');
     const [bio, setBio] = useState(initDataCache.bio || "Especialista en realismo con 10 años de trayectoria. Mi enfoque se centra en crear piezas únicas que cuenten una historia a través del contraste y los detalles minuciosos del estilo black & grey. Cada tatuaje es una obra de arte diseñada específicamente para la anatomía y visión del cliente.");
     const _defaultTagsState = (initDataCache.specialtyTags && initDataCache.specialtyTags.length > 0) ? initDataCache.specialtyTags : ['Realismo', 'Black & Grey'];
