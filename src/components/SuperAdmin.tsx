@@ -284,10 +284,9 @@ export default function SuperAdmin() {
           subscriptionEndsAt: subscriptionEndsAt,
           views: user.views,
           whatsappClicks: user.whatsappClicks,
-          profilePhotoUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuBBMNHOgO0BFPGX5cKluHezzRBDPJueLyUUOSVbMZdAJNASP32jgHA4OlyC47sQI2OSfmnfWWJhsXilZEsOSBqjgJZonLj5pT-FxqVdN9wf0qc9xnw47B_mrLf_EJOGsPCFdm0ezBohArgfCnAGkL4nmXJbY4CXUXnPHC5HN5i25dYpUqlmKCy9E-GOy0FViiulx7v565DyOKMgONwgdsmF5EhQ9sYDmp7SshK7ecWSiMfVG7yXfsm_Dm9BxUhg4h5sZ-clTBdjYBLi",
+          profilePhotoUrl: "/default-avatar.png",
           backgroundPhotos: [
-              "https://lh3.googleusercontent.com/aida-public/AB6AXuD9tmfkfE7QR8rzq1DwqCv6ZHwg1BKfHtc0SAIYpyr1B7XEjYnpYKsNZSKApjn7iYxy27fajqpMp3AfHThndi8RGhtn3w52H2LW9JY4GA0dzEyeuuaEMB3bx5pLtgGtUglT-c7j11gvqaK23h9HU0Q_mXeg6Cfq4t4WCJc8UHY-KZCtl9PSTZlx_J8onCQUiIrfeReh4vWQ_Bg8nafDy7HSg7OrzmlZV5tc45WsJDVRmmwgE08OvzQWqZ3pJlc6Wd_1f6BD0ji9D7do",
-              "https://lh3.googleusercontent.com/aida-public/AB6AXuBoS2ZC0vYl1apkGcOhRvhAneP3x1HGeicgjH2XoPh354rwlUh7sNkHFhZzShywlrnEzao7AOBBZBF8woy9SPE1Rk6j8u0UgMxZxXEng7pf1BzooGR74no-wHHdK08zyp6LIy6h6yTXj3eaRDm9b8u68zOCLCPyF6vqVqlie2ZZM42jCx-L9spyBjEA6i17lZIkGra1BJVVL0T83Y7vsBHHDAMfA9XvfLsz9mrsfmOMWS655wsPllTibLD1_alt_GEZLi8m5CLyjeOo"
+              "/default-banner.jpg"
           ],
           createdAt: serverTimestamp()
         });
