@@ -77,14 +77,6 @@ const defaultFaqs = [
 
     useEffect(() => {
         let authUnsubscribe = () => {};
-        const localUid = localStorage.getItem('demoUserId');
-        if (localUid) {
-            loadData(localUid);
-        } else {
-            authUnsubscribe = onAuthStateChanged(auth, (user) => {
-                if (user) loadData(user.uid);
-            });
-        }
         const applyData = (data: any) => {
             try {
                 setName(data.displayName || data.userTag || '');
@@ -136,6 +128,15 @@ const defaultFaqs = [
                 }));
             } catch (e) { console.error('Error in applyData', e); }
         };
+        const localUid = localStorage.getItem('demoUserId');
+        if (localUid) {
+            loadData(localUid);
+        } else {
+            authUnsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) loadData(user.uid);
+            });
+        }
+        
 
         async function loadData(demoUserId: string) {
             let hasLoadedData = false;
