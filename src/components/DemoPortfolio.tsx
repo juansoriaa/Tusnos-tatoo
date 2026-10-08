@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DemoLayout from './DemoLayout';
 import PhotoUploader, { ImageFilters } from './PhotoUploader';
@@ -319,7 +319,7 @@ export default function DemoPortfolio() {
                     {
                       id: "fallback_2",
                       src: "https://lh3.googleusercontent.com/aida-public/AB6AXuA5DDAAcFYiq49hBeVBI21d-Kfzr6qKoiRfIXKP1UnRW7YF5GJFA5MFkoXHtdBxy6uEbgH9z0zVWPWxKIEtX3oXemICFI1Ssr7FZ-Hh_OVDjHQ-QLRxMXBp5c4FwHXswrbPE9ZdzVelcUFL0h0nTLuzuWpLR_QRaZBZsyq7srBJaHktN6PcAYY-NQ2d-8FRg_RJ15MYhPUfdaEk_oGzE57hWrd7ZFkT4ldOW1tTIz0PqCqzo5_ALKPhXP1byoz8eiIEM30X9HQLzho",
-                      alt: "Tatuaje minimalista de lÃ­nea fina de una rosa.",
+                      alt: "Tatuaje minimalista de línea fina de una rosa.",
                       title: "Rosa minimalista delicada",
                       tags: ["Minimalista"],
                       hours: 3,
@@ -329,7 +329,7 @@ export default function DemoPortfolio() {
                     {
                       id: "fallback_3",
                       src: "https://lh3.googleusercontent.com/aida-public/AB6AXuDE9qEOTq3DlR_Z_PI95eeZBU5YHIAzEqTN6zzltLD_41wX6e4LCHu8sREZZ4N_qV-XW271u6bCjyo14IHISQRVRhCSBJdX_ICJvg9EM-iYGcv1owFVPqatY3-0uESdozTCTcvTib8fe2Um_CI2L6mxqWeMg8IoYm0FYaTzlqISISzi52HOylwmgk_IxCrKp2vueZ90nk1bGHhgH3ybo0PI5u7VOpkB_kQTPzrRjD2-N3hC-9IB-OKvuic1rp7_8b4w562jI2tcCKA",
-                      alt: "Tatuaje de espalda completa con diseÃ±os oscuros.",
+                      alt: "Tatuaje de espalda completa con diseños oscuros.",
                       title: "Pieza completa de espalda en Blackwork",
                       tags: ["Blackwork", "Tradicional"],
                       hours: 24,
@@ -624,7 +624,7 @@ try {
                               
 let msg = err.message || 'Error al subir la imagen. Por favor intenta nuevamente.';
 if (msg.includes('Failed to fetch')) {
-    msg = 'Error de conexiÃ³n (Failed to fetch).\n\nSi usas un bloqueador de anuncios (AdBlock, uBlock, Brave Shields), por favor desactÃ­valo temporalmente, ya que suelen bloquear el servidor de imÃ¡genes.';
+    msg = 'Error de conexión (Failed to fetch).\n\nSi usas un bloqueador de anuncios (AdBlock, uBlock, Brave Shields), por favor desactívalo temporalmente, ya que suelen bloquear el servidor de imágenes.';
 }
 setErrorModalMsg(msg);
 
@@ -646,7 +646,7 @@ setErrorModalMsg(msg);
                     hours: hours ? Number(hours) : null,
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
-                    filters: null,
+                    filters: imageFilters || null,
                 };
                 
                 if (editingPhoto.id.startsWith('fallback_')) {
@@ -704,7 +704,7 @@ try {
                           
 let msg = err.message || 'Error al subir la imagen. Por favor intenta nuevamente.';
 if (msg.includes('Failed to fetch')) {
-    msg = 'Error de conexiÃ³n (Failed to fetch).\n\nSi usas un bloqueador de anuncios (AdBlock, uBlock, Brave Shields), por favor desactÃ­valo temporalmente, ya que suelen bloquear el servidor de imÃ¡genes.';
+    msg = 'Error de conexión (Failed to fetch).\n\nSi usas un bloqueador de anuncios (AdBlock, uBlock, Brave Shields), por favor desactívalo temporalmente, ya que suelen bloquear el servidor de imágenes.';
 }
 setErrorModalMsg(msg);
 
@@ -716,7 +716,7 @@ setErrorModalMsg(msg);
                     const fakeId = 'demo_temp_' + Date.now();
                     const newPhoto = {
                         id: fakeId,
-                        url: photoDataUrl, // Es Base64, pero solo vivirÃ¡ en la RAM del navegador
+                        url: photoDataUrl, // Es Base64, pero solo vivirá en la RAM del navegador
                         previewUrl: previewDataUrl,
                         thumbnailUrl: thumbDataUrl,
                         title,
@@ -725,7 +725,7 @@ setErrorModalMsg(msg);
                         hours: hours ? Number(hours) : null,
                         sessions: sessions ? Number(sessions) : null,
                         size: finalSize,
-                        filters: null,
+                        filters: imageFilters || null,
                         createdBy: 'anonymous_demo',
                     };
                     
@@ -737,7 +737,7 @@ setErrorModalMsg(msg);
                     
                     setIsSuccess(true);
                     setTimeout(() => { setIsSuccess(false); cancelEdit(); }, 2000);
-                    return; // VITAL: Sale de la funciÃ³n antes de llegar a addDoc()
+                    return; // VITAL: Sale de la función antes de llegar a addDoc()
                 }
 
                 const newPhotoRef = await addDoc(collection(db, 'photos'), {
@@ -751,7 +751,7 @@ setErrorModalMsg(msg);
                     hours: hours ? Number(hours) : null,
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
-                    filters: null,
+                    filters: imageFilters || null,
                     createdBy: (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                     createdAt: serverTimestamp()
                 });
@@ -768,7 +768,7 @@ setErrorModalMsg(msg);
                     hours: hours ? Number(hours) : null,
                     sessions: sessions ? Number(sessions) : null,
                     size: finalSize,
-                    filters: null,
+                    filters: imageFilters || null,
                     createdBy: (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || (localStorage.getItem('demoUserId') || auth.currentUser?.uid) || 'anonymous_demo',
                 };
                 
@@ -877,25 +877,25 @@ setErrorModalMsg(msg);
     return (
         <DemoLayout 
             activeTab="portfolio"
-            titlePrefix="GestiÃ³n de"
+            titlePrefix="Gestión de"
             titleAccent="Portafolio"
-            description="Gestiona tu galerÃ­a. Maneja categorÃ­as, sube nuevas obras y organiza tu portafolio pÃºblico."
+            description="Gestiona tu galería. Maneja categorías, sube nuevas obras y organiza tu portafolio público."
         >
             <div className="flex flex-col gap-6 mb-8">
             
-            {/* Section 1 - CategorÃ­as (Moved up) */}
+            {/* Section 1 - Categorías (Moved up) */}
             <section className="bg-surface-elevation p-4 md:p-5 border border-border-muted rounded-lg" style={{backgroundColor: '#141313', borderColor: '#353434'}}>
             <div className="flex items-center justify-between mb-4">
             <h2 className="font-headline-md text-silver-text flex items-center text-lg" style={{color: '#e5e2e1'}}>
             <span className="material-symbols-outlined mr-2 text-emerald-accent" style={{color: '#054d44'}}>category</span>
-                                            CategorÃ­as
+                                            Categorías
                                         </h2>
             </div>
             <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
             <div className="flex space-x-2 w-full md:max-w-sm">
             <input 
                 className="flex-1 bg-deep-black border border-border-muted rounded focus:border-emerald-accent focus:ring-0 text-silver-text font-body-md px-3 py-1.5 transition-colors placeholder:text-on-surface-variant text-sm" 
-                placeholder="Nueva categorÃ­a..." 
+                placeholder="Nueva categoría..." 
                 type="text" 
                 style={{backgroundColor: '#050505', borderColor: '#353434', color: '#e5e2e1'}}
                 value={newCategory}
@@ -962,8 +962,8 @@ setErrorModalMsg(msg);
             </div>
             <div>
             <div className="flex items-center justify-between mb-1">
-                <label className="font-label-md text-on-surface-variant block text-sm">CategorÃ­a</label>
-                <span className="font-caption text-on-surface-variant/70 text-[10px]">MÃ¡x 2</span>
+                <label className="font-label-md text-on-surface-variant block text-sm">Categoría</label>
+                <span className="font-caption text-on-surface-variant/70 text-[10px]">Máx 2</span>
             </div>
             <div className="flex flex-wrap gap-2">
             {categories.map(cat => (
@@ -984,7 +984,7 @@ setErrorModalMsg(msg);
             </div>
             </div>
             <div>
-            <label className="font-label-md text-on-surface-variant block mb-1 text-sm">Detalle / DescripciÃ³n</label>
+            <label className="font-label-md text-on-surface-variant block mb-1 text-sm">Detalle / Descripción</label>
             <textarea 
                 className="w-full bg-deep-black border border-border-muted rounded focus:border-emerald-accent focus:ring-0 text-silver-text font-body-md px-3 py-2 transition-colors resize-none h-24 text-sm" 
                 rows={3} 
@@ -995,7 +995,7 @@ setErrorModalMsg(msg);
             </div>
             {/* Technical Details Row */}
             <div className="border-t border-border-muted pt-4 mt-auto" style={{borderColor: '#353434'}}>
-            <h3 className="font-label-md text-on-surface-variant mb-3 uppercase tracking-wider text-[10px]">Especificaciones TÃ©cnicas</h3>
+            <h3 className="font-label-md text-on-surface-variant mb-3 uppercase tracking-wider text-[10px]">Especificaciones Técnicas</h3>
             <div className="grid grid-cols-3 gap-3">
             <div>
             <label className="font-label-sm text-on-surface-variant block mb-1 text-[10px]">Horas</label>
@@ -1020,7 +1020,7 @@ setErrorModalMsg(msg);
             />
             </div>
             <div>
-            <label className="font-label-sm text-on-surface-variant block mb-1 text-[10px]">TamaÃ±o</label>
+            <label className="font-label-sm text-on-surface-variant block mb-1 text-[10px]">Tamaño</label>
             <div className="relative">
             <input 
                 className="w-full bg-deep-black border border-border-muted rounded focus:border-emerald-accent focus:ring-0 text-silver-text font-body-md px-2 py-1.5 transition-colors text-center text-sm" 
@@ -1055,7 +1055,7 @@ setErrorModalMsg(msg);
                 ) : isSuccess ? (
                     <>
                         <span className="material-symbols-outlined mr-2 text-[18px]">check_circle</span>
-                        Â¡Guardado!
+                        ¡Guardado!
                     </>
                 ) : (
                     <>
@@ -1067,12 +1067,12 @@ setErrorModalMsg(msg);
             </form>
             </section>
 
-            {/* Section 3 - GalerÃ­a Existente */}
+            {/* Section 3 - Galería Existente */}
             <section className="bg-surface-elevation p-4 md:p-5 border border-border-muted rounded-lg" style={{backgroundColor: '#141313', borderColor: '#353434'}}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 border-b border-border-muted pb-3 gap-3" style={{borderColor: '#353434'}}>
             <h2 className="font-headline-md text-silver-text flex items-center text-lg" style={{color: '#e5e2e1'}}>
             <span className="material-symbols-outlined mr-2 text-emerald-accent" style={{color: '#054d44'}}>grid_view</span>
-                                            GalerÃ­a Existente
+                                            Galería Existente
                                         </h2>
             <div className="flex items-center space-x-3">
             <span className="font-label-sm uppercase text-on-surface-variant text-[10px]">Filtrar:</span>
@@ -1137,7 +1137,7 @@ setErrorModalMsg(msg);
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-deep-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         
-                        {/* Indicador de destacado en la galerÃ­a (solo visual) */}
+                        {/* Indicador de destacado en la galería (solo visual) */}
                         {photo.pinnedOrder && (
                             <div className="absolute top-2 left-2 bg-emerald-accent rounded-full w-6 h-6 flex items-center justify-center z-10 shadow-lg" style={{backgroundColor: '#054d44'}}>
                                 <span className="material-symbols-outlined text-[14px] text-white">star</span>
@@ -1162,7 +1162,7 @@ setErrorModalMsg(msg);
             </section>
             </div>
                         
-            {/* Modal de ConfiguraciÃ³n de Foto */}
+            {/* Modal de Configuración de Foto */}
             {selectedGalleryPhoto && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }} onClick={() => setSelectedGalleryPhoto(null)}>
                     <div 
@@ -1289,11 +1289,11 @@ setErrorModalMsg(msg);
             {photoToDelete && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
                     <div className="bg-surface-container border border-outline-variant w-full max-w-sm p-6 relative flex flex-col gap-4 overflow-hidden rounded-lg">
-                        <h3 className="text-white text-lg font-bold">Â¿Eliminar foto?</h3>
-                        <p className="text-on-surface-variant text-sm">Â¿EstÃ¡s seguro de que quieres eliminar la obra "{photoToDelete.title}"? Esta acciÃ³n no se puede deshacer.</p>
+                        <h3 className="text-white text-lg font-bold">¿Eliminar foto?</h3>
+                        <p className="text-on-surface-variant text-sm">¿Estás seguro de que quieres eliminar la obra "{photoToDelete.title}"? Esta acción no se puede deshacer.</p>
                         <div className="flex justify-end gap-3 mt-2">
                             <button onClick={() => setPhotoToDelete(null)} className="px-4 py-2 text-sm text-silver-text hover:text-white transition-colors">Cancelar</button>
-                            <button onClick={handleDeletePhoto} className="px-4 py-2 text-sm bg-[#b91c1c] text-white rounded hover:bg-[#991b1b] transition-colors">SÃ­, eliminar</button>
+                            <button onClick={handleDeletePhoto} className="px-4 py-2 text-sm bg-[#b91c1c] text-white rounded hover:bg-[#991b1b] transition-colors">Sí, eliminar</button>
                         </div>
                     </div>
                 </div>
@@ -1301,11 +1301,11 @@ setErrorModalMsg(msg);
             {categoryToDelete && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
                     <div className="bg-surface-container border border-outline-variant w-full max-w-sm p-6 relative flex flex-col gap-4 overflow-hidden rounded-lg">
-                        <h3 className="text-white text-lg font-bold">Â¿Eliminar categorÃ­a en uso?</h3>
-                        <p className="text-on-surface-variant text-sm">El filtro "{categoryToDelete}" estÃ¡ asignado a una o mÃ¡s fotos en tu galerÃ­a. Si lo eliminas, tambiÃ©n se removerÃ¡ de dichas fotos.</p>
+                        <h3 className="text-white text-lg font-bold">¿Eliminar categoría en uso?</h3>
+                        <p className="text-on-surface-variant text-sm">El filtro "{categoryToDelete}" está asignado a una o más fotos en tu galería. Si lo eliminas, también se removerá de dichas fotos.</p>
                         <div className="flex justify-end gap-3 mt-2">
                             <button onClick={() => setCategoryToDelete(null)} className="px-4 py-2 text-sm text-silver-text hover:text-white transition-colors">Cancelar</button>
-                            <button onClick={() => handleRemoveCategoryConfirm(categoryToDelete)} className="px-4 py-2 text-sm bg-[#b91c1c] text-white rounded hover:bg-[#991b1b] transition-colors">SÃ­, eliminar filtro</button>
+                            <button onClick={() => handleRemoveCategoryConfirm(categoryToDelete)} className="px-4 py-2 text-sm bg-[#b91c1c] text-white rounded hover:bg-[#991b1b] transition-colors">Sí, eliminar filtro</button>
                         </div>
                     </div>
                 </div>
@@ -1313,11 +1313,11 @@ setErrorModalMsg(msg);
             {showCancelConfirm && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" style={{ position: 'fixed' }}>
                     <div className="bg-surface-container border border-outline-variant w-full max-w-sm p-6 relative flex flex-col gap-4 overflow-hidden rounded-lg">
-                        <h3 className="text-white text-lg font-bold">Â¿Cancelar ediciÃ³n?</h3>
-                        <p className="text-on-surface-variant text-sm">Hiciste cambios sin guardar. Si cancelas ahora, esos cambios se perderÃ¡n.</p>
+                        <h3 className="text-white text-lg font-bold">¿Cancelar edición?</h3>
+                        <p className="text-on-surface-variant text-sm">Hiciste cambios sin guardar. Si cancelas ahora, esos cambios se perderán.</p>
                         <div className="flex justify-end gap-3 mt-2">
                             <button onClick={() => setShowCancelConfirm(false)} className="px-4 py-2 text-sm text-silver-text hover:text-white transition-colors">Volver</button>
-                            <button onClick={cancelEdit} className="px-4 py-2 text-sm bg-[#b91c1c] text-white rounded hover:bg-[#991b1b] transition-colors">SÃ­, cancelar</button>
+                            <button onClick={cancelEdit} className="px-4 py-2 text-sm bg-[#b91c1c] text-white rounded hover:bg-[#991b1b] transition-colors">Sí, cancelar</button>
                         </div>
                     </div>
                 </div>
@@ -1330,9 +1330,9 @@ setErrorModalMsg(msg);
                         <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                             <span className="material-symbols-outlined text-primary text-3xl">warning</span>
                         </div>
-                        <h3 className="text-xl font-headline-md text-silver-text mb-2">LÃ­mite Alcanzado</h3>
+                        <h3 className="text-xl font-headline-md text-silver-text mb-2">Límite Alcanzado</h3>
                         <p className="text-on-surface-variant font-body-md text-sm mb-6">
-                            Has alcanzado el lÃ­mite mÃ¡ximo de <strong>12 obras</strong> permitidas. Por favor, elimina algunas fotos antiguas antes de subir nuevas.
+                            Has alcanzado el límite máximo de <strong>12 obras</strong> permitidas. Por favor, elimina algunas fotos antiguas antes de subir nuevas.
                         </p>
                         <button 
                             onClick={() => setShowLimitModal(false)}
@@ -1351,9 +1351,9 @@ setErrorModalMsg(msg);
                         <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
                             <span className="material-symbols-outlined text-amber-500 text-3xl">push_pin</span>
                         </div>
-                        <h3 className="text-xl font-headline-md text-silver-text mb-2">LÃ­mite de Destacados</h3>
+                        <h3 className="text-xl font-headline-md text-silver-text mb-2">Límite de Destacados</h3>
                         <p className="text-on-surface-variant font-body-md text-sm mb-6">
-                            Solo puedes destacar un mÃ¡ximo de <strong>6 fotos</strong> en tu galerÃ­a. Desancla alguna otra obra primero para destacar esta.
+                            Solo puedes destacar un máximo de <strong>6 fotos</strong> en tu galería. Desancla alguna otra obra primero para destacar esta.
                         </p>
                         <button 
                             onClick={() => setShowPinLimitModal(false)}
@@ -1381,14 +1381,14 @@ setErrorModalMsg(msg);
                             <button 
                                 onClick={() => {
                                     setErrorModalMsg(null);
-                                    if (errorModalMsg.includes('sesiÃ³n') || errorModalMsg.includes('expirado')) {
+                                    if (errorModalMsg.includes('sesión') || errorModalMsg.includes('expirado')) {
                                         localStorage.removeItem('demoUserId');
                                         auth.signOut().then(() => window.location.href = '/?login=true');
                                     }
                                 }}
                                 className="w-full py-3.5 bg-primary text-white font-label-md uppercase tracking-widest text-sm rounded-lg font-bold hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
                             >
-                                {(errorModalMsg.includes('sesiÃ³n') || errorModalMsg.includes('expirado')) ? 'Cerrar SesiÃ³n y Reingresar' : 'Entendido'}
+                                {(errorModalMsg.includes('sesión') || errorModalMsg.includes('expirado')) ? 'Cerrar Sesión y Reingresar' : 'Entendido'}
                             </button>
                         </div>
                     </div>
