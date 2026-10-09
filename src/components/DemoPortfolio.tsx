@@ -607,32 +607,46 @@ const handleSaveObra = async () => {
                 
                 let previewDataUrl = editingPhoto.previewUrl || editingPhoto.url || editingPhoto.src;
                 let originalUrl = editingPhoto.originalUrl || editingPhoto.url || editingPhoto.src;
-                if (selectedFile) {
-                    const demoUserId = localStorage.getItem('demoUserId');
-const isRealUser = demoUserId && demoUserId !== 'demo';
-try {
-                          const finalFile = await applyFiltersToFile(selectedFile, imageFilters);
+                
+                let fileToProcess = selectedFile;
+                if (!fileToProcess && editingPhoto && originalUrl) {
+                    try {
+                        const response = await fetch(originalUrl);
+                        if (!response.ok) throw new Error("Failed to fetch original image");
+                        const blob = await response.blob();
+                        fileToProcess = new File([blob], "original_image.jpg", { type: blob.type || "image/jpeg" });
+                    } catch (err) {
+                        console.error("Error fetching original image for filtering:", err);
+                    }
+                }
+                
+                if (fileToProcess) {
+                    const demoUserId = localStorage.getItem("demoUserId");
+                    const isRealUser = demoUserId && demoUserId !== "demo";
+                    try {
+                        const finalFile = await applyFiltersToFile(fileToProcess, imageFilters);
                         const result = await uploadToImgBB(finalFile);
-                          photoDataUrl = result.url;
-                          previewDataUrl = result.url;
-                          thumbDataUrl = result.thumbUrl;
-                          const origResult = await uploadToImgBB(selectedFile);
-                          originalUrl = origResult.url;
-                      } catch (err: any) {
-                          console.error('Error uploading to ImgBB:', err);
-                          if (isRealUser) {
-                              
-let msg = err.message || 'Error al subir la imagen. Por favor intenta nuevamente.';
-if (msg.includes('Failed to fetch')) {
-    msg = 'Error de conexi√≥n (Failed to fetch).\n\nSi usas un bloqueador de anuncios (AdBlock, uBlock, Brave Shields), por favor desact√≠valo temporalmente, ya que suelen bloquear el servidor de im√°genes.';
-}
-setErrorModalMsg(msg);
-
-                              setIsSaving(false);
-                              return;
-                          }
-                          console.log('Falling back to base64 for demo user');
-                      }
+                        photoDataUrl = result.url;
+                        previewDataUrl = result.url;
+                        thumbDataUrl = result.thumbUrl;
+                        
+                        if (selectedFile) {
+                            const origResult = await uploadToImgBB(selectedFile);
+                            originalUrl = origResult.url;
+                        }
+                    } catch (err: any) {
+                        console.error("Error uploading to ImgBB:", err);
+                        if (isRealUser) {
+                            let msg = err.message || "Error al subir la imagen. Por favor intenta nuevamente.";
+                            if (msg.includes("Failed to fetch")) {
+                                msg = "Error de conexiÛn (Failed to fetch).\\n\\nSi usas un bloqueador de anuncios (AdBlock, uBlock, Brave Shields), por favor desactÌvalo temporalmente.";
+                            }
+                            setErrorModalMsg(msg);
+                            setIsSaving(false);
+                            return;
+                        }
+                        console.log("Falling back to base64 for demo user");
+                    }
                 }
                 
                 const updatedData = {
@@ -1398,4 +1412,5 @@ setErrorModalMsg(msg);
             </DemoLayout>
     );
 }
+
 
