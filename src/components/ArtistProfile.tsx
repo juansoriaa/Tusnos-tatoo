@@ -744,6 +744,8 @@ export default function Profile() {
   const preloadAvatar = getOptimizedGoogleUrl(defaultAvatar, 256);
   const preloadBg = getOptimizedGoogleUrl(defaultBg, 1200);
 
+  const currentModalTattoo = (filteredTattoos && filteredTattoos[activeTattooIndex]) || directTargetTattoo;
+
 
   
 
@@ -1114,9 +1116,7 @@ export default function Profile() {
         <p className="font-caption text-caption uppercase tracking-widest text-on-surface-variant opacity-60">© 2026 Turnos Tattoo. All rights reserved.</p>
       </footer>
 
-      const currentModalTattoo = currentModalTattoo || directTargetTattoo;
-
-      {/* Modal */}
+{/* Modal */}
       {modalOpen && currentModalTattoo && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center p-2 md:p-8 transition-opacity duration-300 overscroll-none modal-backdrop">
           <div className="absolute inset-0 z-0 cursor-pointer" onClick={closeModal}></div>
