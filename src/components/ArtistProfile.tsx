@@ -782,23 +782,30 @@ export default function Profile() {
           <span className="font-label-md text-label-md font-extrabold text-white/70 uppercase tracking-tighter profile-logo-text drop-shadow-md">Turnos <span className="text-primary/80 profile-logo-primary">Tattoo</span></span>
         </div>
         {/* Banner Section */}
-        {(isProfileLoading && !artistData) ? (
-          <section className="relative w-full h-64 md:h-80 overflow-hidden bg-surface-container animate-pulse"></section>
-        ) : (
-          <section className="relative w-full h-64 md:h-80 overflow-hidden bg-surface-container">
-            <OptimizedImage
-               className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105"
-               highResUrl={defaultBg}
-               alt="Banner"
-               useIntersectionObserver={false}
-               loading="eager"
-               optimizedSize={1200}
-            />
-            {/* Filtro oscuro para no perder la estética con fotos claras */}
-            <div className="absolute inset-0 bg-black/40 banner-overlay-1"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-black/50 to-transparent banner-overlay-2"></div>
-          </section>
-        )}
+        <div className="w-full max-w-4xl mx-auto md:px-16">
+          {(isProfileLoading && !artistData) ? (
+            <section className="relative w-full h-64 md:h-80 overflow-hidden bg-surface-container animate-pulse"></section>
+          ) : (
+            <section className="relative w-full h-64 md:h-80 overflow-hidden bg-surface-container">
+              <OptimizedImage
+                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105"
+                 highResUrl={defaultBg}
+                 alt="Banner"
+                 useIntersectionObserver={false}
+                 loading="eager"
+                 optimizedSize={1200}
+              />
+              {/* Filtro oscuro para no perder la estética con fotos claras */}
+              <div className="absolute inset-0 bg-black/40 banner-overlay-1"></div>
+              
+              {/* Degradés suaves en los bordes para fundirse con el fondo en PC sin bordes bruscos */}
+              <div className="hidden md:block absolute inset-y-0 left-0 w-20 lg:w-28 bg-gradient-to-r from-background via-background/80 to-transparent pointer-events-none z-10"></div>
+              <div className="hidden md:block absolute inset-y-0 right-0 w-20 lg:w-28 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none z-10"></div>
+              <div className="hidden md:block absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-background/60 to-transparent pointer-events-none z-10"></div>
+              <div className="absolute inset-x-0 bottom-0 h-24 md:h-32 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none z-10"></div>
+            </section>
+          )}
+        </div>
 
         {/* Profile Header Section */}
         <section className="relative px-gutter -mt-12 md:-mt-20 flex flex-col items-center text-center z-10">
