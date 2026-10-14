@@ -4,7 +4,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const Landing = lazy(() => import("./components/Landing"));
-const ArtistProfile = lazy(() => import("./components/ArtistProfile"));
+import ArtistProfile from "./components/ArtistProfile";
 const SuperAdmin = lazy(() => import("./components/SuperAdmin"));
 const DemoDashboard = lazy(() => import("./components/DemoDashboard"));
 const DemoPortfolio = lazy(() => import("./components/DemoPortfolio"));

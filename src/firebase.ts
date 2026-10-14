@@ -15,9 +15,26 @@ const firebaseConfig = {
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-setLogLevel('debug');
+// setLogLevel('debug');
 
-export const auth = getAuth(app);
+let _authInstance: any = null;
+export const getFirebaseAuth = () => {
+  if (!_authInstance) {
+    _authInstance = getAuth(app);
+  }
+  return _authInstance;
+};
+
+export const auth = new Proxy({} as any, {
+  get(_target, prop) {
+    const instance = getFirebaseAuth();
+    const value = instance[prop];
+    if (typeof value === 'function') {
+      return value.bind(instance);
+    }
+    return value;
+  }
+});
 
 let firestoreDb;
 try {
