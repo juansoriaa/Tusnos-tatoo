@@ -214,6 +214,7 @@ export default function Profile() {
     setVisibleCount(6);
   }, [activeCategory]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [directTargetTattoo, setDirectTargetTattoo] = useState<any>(null);
   const [activeTattooIndex, setActiveTattooIndex] = useState(0);
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
@@ -601,6 +602,45 @@ export default function Profile() {
       setActiveTattooIndex(newIndex);
     }
   };
+
+  // Fast-path: Si el usuario entra por link directo a una obra (?obra=...), la buscamos y precargamos en paralelo
+  useEffect(() => {
+    const photoId = searchParams.get('obra');
+    if (!photoId) return;
+
+    // Si ya est en cach local de fotos, podemos precargarla al instante
+    getDoc(doc(db, 'photos', photoId)).then(snap => {
+      if (snap.exists()) {
+        const pData = snap.data();
+        const item: any = {
+          id: snap.id,
+          src: pData.url || pData.imageUrl || pData.src,
+          previewUrl: pData.previewUrl,
+          thumbnailUrl: pData.thumbnailUrl,
+          description: pData.info || pData.description || pData.alt || "",
+          alt: pData.title || pData.description || "Tattoo photo",
+          title: pData.title || "Tattoo",
+          categories: pData.categories || pData.tags || ["Blackwork"],
+          hours: pData.hours || null,
+          sessions: pData.sessions || null,
+          size: pData.size || null,
+          originalFallbackId: pData.originalFallbackId || null,
+          pinnedOrder: pData.pinnedOrder,
+          filters: pData.filters || null
+        };
+
+        // Descarga de mxima prioridad en el navegador
+        if (item.src) {
+          const img = new Image();
+          img.src = item.src;
+        }
+
+        setDirectTargetTattoo(item);
+        setModalOpen(true);
+        document.body.classList.add('overflow-hidden');
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const photoId = searchParams.get('obra');
@@ -1074,8 +1114,10 @@ export default function Profile() {
         <p className="font-caption text-caption uppercase tracking-widest text-on-surface-variant opacity-60">© 2026 Turnos Tattoo. All rights reserved.</p>
       </footer>
 
+      const currentModalTattoo = currentModalTattoo || directTargetTattoo;
+
       {/* Modal */}
-      {modalOpen && filteredTattoos.length > 0 && (
+      {modalOpen && currentModalTattoo && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center p-2 md:p-8 transition-opacity duration-300 overscroll-none modal-backdrop">
           <div className="absolute inset-0 z-0 cursor-pointer" onClick={closeModal}></div>
           <div className="relative z-10 w-full max-w-6xl h-[100dvh] md:h-auto md:max-h-[95vh] md:min-h-[80vh] flex flex-col bg-surface-container border border-outline-variant/20 shadow-2xl transform transition-transform duration-300 modal-container">
@@ -1106,12 +1148,12 @@ export default function Profile() {
                 
                 {/* Main Image */}
                 <OptimizedImage 
-                  key={filteredTattoos[activeTattooIndex].id}
-                  alt={filteredTattoos[activeTattooIndex].alt} 
+                  key={currentModalTattoo.id}
+                  alt={currentModalTattoo.alt} 
                   className="max-w-full max-h-[45vh] md:max-h-[85vh] object-contain animate-fade-in relative z-10 shadow-2xl" 
-                  lowResUrl={filteredTattoos[activeTattooIndex].previewUrl || filteredTattoos[activeTattooIndex].thumbnailUrl}
-                  highResUrl={filteredTattoos[activeTattooIndex].src} 
-                  style={{ filter: getFilterStr(filteredTattoos[activeTattooIndex].filters) }}
+                  lowResUrl={currentModalTattoo.previewUrl || currentModalTattoo.thumbnailUrl}
+                  highResUrl={currentModalTattoo.src} 
+                  style={{ filter: getFilterStr(currentModalTattoo.filters) }}
                   useIntersectionObserver={false}
                   loading="eager"
                 />
@@ -1130,7 +1172,7 @@ export default function Profile() {
                         </button>
                         
                         <div className="w-full px-10 md:px-0 flex flex-wrap items-center justify-center gap-3 md:gap-4">
-                          {filteredTattoos[activeTattooIndex].categories.map((cat, idx) => (
+                          {currentModalTattoo.categories.map((cat, idx) => (
                             <div key={idx} className="flex justify-center">
                               <span className="inline-flex items-center justify-center px-4 py-1.5 min-h-[28px] text-[10px] md:text-xs font-bold bg-primary/20 text-primary border border-primary/30 rounded uppercase tracking-widest text-center whitespace-nowrap">
                                 {cat}
@@ -1147,7 +1189,7 @@ export default function Profile() {
                         </button>
                       </div>
                       
-                      <h2 className="text-lg md:text-xl font-bold uppercase tracking-tight text-on-surface mb-3">{filteredTattoos[activeTattooIndex].title}</h2>
+                      <h2 className="text-lg md:text-xl font-bold uppercase tracking-tight text-on-surface mb-3">{currentModalTattoo.title}</h2>
                       
                       <div className="w-full flex items-center justify-center mb-6 opacity-90 px-4 md:px-0">
                         <div className="h-[3px] flex-1 w-full max-w-[200px] bg-gradient-to-r from-transparent via-primary/60 to-primary rounded-full"></div>
@@ -1158,31 +1200,31 @@ export default function Profile() {
                   </div>
                     
                   <div className="mt-2 md:mt-4 flex-1 min-h-0 overflow-y-auto px-2 custom-scrollbar">
-                    <p className="text-center text-on-surface-variant text-xs md:text-sm leading-relaxed">{filteredTattoos[activeTattooIndex].description}</p>
+                    <p className="text-center text-on-surface-variant text-xs md:text-sm leading-relaxed">{currentModalTattoo.description}</p>
                   </div>
 
                   <div className="mt-auto pt-4 md:pt-10 flex flex-col gap-4 md:gap-8 shrink-0">
-                    {(filteredTattoos[activeTattooIndex].hours || filteredTattoos[activeTattooIndex].sessions || filteredTattoos[activeTattooIndex].size) && (
+                    {(currentModalTattoo.hours || currentModalTattoo.sessions || currentModalTattoo.size) && (
                       <div className="flex justify-center md:justify-center flex-wrap gap-4 md:gap-6 w-full border-t border-outline-variant/10 pt-4 md:pt-6">
-                        {filteredTattoos[activeTattooIndex].hours && (
+                        {currentModalTattoo.hours && (
                           <div className="flex flex-col items-center justify-center text-center py-2 px-3 md:px-4 border border-white/10 bg-black/40 backdrop-blur-md rounded-lg transition-colors hover:bg-black/60 min-w-[80px] md:min-w-[95px] tech-stat-card shadow-xl">
                             <span className="material-symbols-outlined text-primary mb-0.5 text-base stat-icon">schedule</span>
                             <span className="text-[9px] font-bold tracking-widest text-white/70 uppercase">Horas</span>
-                            <span className="font-bold text-white text-[11px] mt-0.5">{filteredTattoos[activeTattooIndex].hours}h</span>
+                            <span className="font-bold text-white text-[11px] mt-0.5">{currentModalTattoo.hours}h</span>
                           </div>
                         )}
-                        {filteredTattoos[activeTattooIndex].sessions && (
+                        {currentModalTattoo.sessions && (
                           <div className="flex flex-col items-center justify-center text-center py-2 px-3 md:px-4 border border-white/10 bg-black/40 backdrop-blur-md rounded-lg transition-colors hover:bg-black/60 min-w-[80px] md:min-w-[95px] tech-stat-card shadow-xl">
                             <span className="material-symbols-outlined text-primary mb-0.5 text-base stat-icon">layers</span>
                             <span className="text-[9px] font-bold tracking-widest text-white/70 uppercase">Sesiones</span>
-                            <span className="font-bold text-white text-[11px] mt-0.5">{filteredTattoos[activeTattooIndex].sessions}</span>
+                            <span className="font-bold text-white text-[11px] mt-0.5">{currentModalTattoo.sessions}</span>
                           </div>
                         )}
-                        {filteredTattoos[activeTattooIndex].size && (
+                        {currentModalTattoo.size && (
                           <div className="flex flex-col items-center justify-center text-center py-2 px-3 md:px-4 border border-white/10 bg-black/40 backdrop-blur-md rounded-lg transition-colors hover:bg-black/60 min-w-[80px] md:min-w-[95px] tech-stat-card shadow-xl">
                             <span className="material-symbols-outlined text-primary mb-0.5 text-base stat-icon">straighten</span>
                             <span className="text-[9px] font-bold tracking-widest text-white/70 uppercase">Tamaño</span>
-                            <span className="font-bold text-white text-[11px] mt-0.5">{filteredTattoos[activeTattooIndex].size}</span>
+                            <span className="font-bold text-white text-[11px] mt-0.5">{currentModalTattoo.size}</span>
                           </div>
                         )}
                       </div>
@@ -1196,10 +1238,10 @@ export default function Profile() {
                                if (artistData?.whatsapp) {
                                    const num = artistData.whatsapp.replace(/[^0-9]/g, '');
                                    trackMetric('whatsappClicks');
-                                   const photoId = filteredTattoos[activeTattooIndex].id;
-                                   const photoUrl = filteredTattoos[activeTattooIndex].src;
+                                   const photoId = currentModalTattoo.id;
+                                   const photoUrl = currentModalTattoo.src;
                                    const profileUrl = window.location.origin + window.location.pathname;
-                                   const tattooTitle = filteredTattoos[activeTattooIndex].title || filteredTattoos[activeTattooIndex].alt || 'Diseño';
+                                   const tattooTitle = currentModalTattoo.title || currentModalTattoo.alt || 'Diseño';
                                    const message = `Hola ${artistData?.displayName || 'artista'}, vengo de tu página web y me encantó este tatuaje. Me gustaría hacerme algo similar o saber más al respecto:\n\nObra: ${profileUrl}?obra=${photoId}`;
                                    window.open(`https://wa.me/549${num}?text=${encodeURIComponent(message)}`, '_blank');
                                }
@@ -1208,7 +1250,7 @@ export default function Profile() {
                                  ...waitlistForm,
                                  type: 'idea',
                                  description: '',
-                                 referenceImage: filteredTattoos[activeTattooIndex].src
+                                 referenceImage: currentModalTattoo.src
                                });
                                setWaitlistModalOpen(true);
                            }
