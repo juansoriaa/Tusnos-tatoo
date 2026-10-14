@@ -7,6 +7,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import { db, auth, onAuthStateChanged } from '../firebase';
 import { globalPreloadCache } from '../lib/cache';
 import { getOptimizedGoogleUrl } from '../lib/imageHelper';
+import { getPossibleUserTags } from '../lib/tagHelper';
 
 
 const defaultFaqs = [
@@ -301,59 +302,71 @@ export default function Profile() {
             let currentArtistDocId = null;
 
             // Resolve ID if it's a tag
+            let foundDoc: any = null;
             if (artistUid.startsWith('@') || artistUid.length < 20) {
-                const { getPossibleUserTags } = await import('../lib/tagHelper');
                 const possibleTags = getPossibleUserTags(artistUid);
 
-                let foundDoc = null;
                 // Query all possible tags using 'in'
-                let q = query(collection(db, 'users'), where('userTag', 'in', possibleTags), limit(1));
-                let snap = await getDocs(q);
+                const q = query(collection(db, 'users'), where('userTag', 'in', possibleTags), limit(1));
+                const snap = await getDocs(q);
                 if (!snap.empty) {
                     foundDoc = snap.docs[0];
-                }
-
-                if (foundDoc) {
                     artistUid = foundDoc.id;
                     currentArtistDocId = artistUid;
                     
                     // OPTIMIZACIÓN: Cargar datos inmediatamente desde la consulta del tag
-                    // para evitar esperar al onSnapshot y lograr renderizado casi instantáneo.
                     if (isMounted) {
                         const resolvedData = { ...foundDoc.data(), uid: artistUid };
                         setArtistData(resolvedData);
+                        globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], artistData: resolvedData };
+                        try {
+                            localStorage.setItem('demoArtistData_' + currentArtistDocId, JSON.stringify(resolvedData));
+                            const swrCacheKey = `swr_profile_${targetId}`;
+                            const existing = JSON.parse(localStorage.getItem(swrCacheKey) || '{}');
+                            localStorage.setItem(swrCacheKey, JSON.stringify({ ...existing, artistData: resolvedData }));
+                        } catch(e) {}
                         setIsProfileLoading(false);
+
+                        // Pre-cargar imágenes principales en memoria inmediatamente
+                        const pImg = resolvedData.profilePhotoUrl;
+                        const bImg = (resolvedData.backgroundPhotos && resolvedData.backgroundPhotos[0]) || resolvedData.backgroundPhotoUrl;
+                        if (pImg) { const i = new Image(); i.src = pImg; }
+                        if (bImg) { const i = new Image(); i.src = bImg; }
                     }
                 }
             }
             if (!currentArtistDocId) currentArtistDocId = artistUid;
             
             if (currentArtistDocId && currentArtistDocId !== 'anonymous_demo' && currentArtistDocId !== 'demo') {
-                
-                
                 profileUnsub(); // clear previous
-                // We use getDoc instead of onSnapshot for public profile to save connections and reads
-                getDoc(doc(db, 'users', currentArtistDocId)).then((docSnap) => {
-                    if (docSnap.exists() && isMounted) {
-                        const data = { ...docSnap.data(), uid: docSnap.id };
-                        
-                        setArtistData(data);
-                        globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], artistData: data };
-                        try {
-                            localStorage.setItem('demoArtistData_' + currentArtistDocId, JSON.stringify(data));
-                            // --- SWR Cache Update ---
-                            const swrCacheKey = `swr_profile_${targetId}`;
-                            const existing = JSON.parse(localStorage.getItem(swrCacheKey) || '{}');
-                            localStorage.setItem(swrCacheKey, JSON.stringify({ ...existing, artistData: data }));
-                        } catch(e) {}
-                        setIsProfileLoading(false);
-                    } else if (isMounted) {
-                        setIsProfileLoading(false);
-                    }
-                }).catch((error) => {
-                    console.error(error);
-                    if (isMounted) setIsProfileLoading(false);
-                });
+                
+                // Si ya obtuvimos el doc con la búsqueda de tags, no hacemos petición duplicada a Firestore
+                if (!foundDoc) {
+                    getDoc(doc(db, 'users', currentArtistDocId)).then((docSnap) => {
+                        if (docSnap.exists() && isMounted) {
+                            const data = { ...docSnap.data(), uid: docSnap.id };
+                            setArtistData(data);
+                            globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], artistData: data };
+                            try {
+                                localStorage.setItem('demoArtistData_' + currentArtistDocId, JSON.stringify(data));
+                                const swrCacheKey = `swr_profile_${targetId}`;
+                                const existing = JSON.parse(localStorage.getItem(swrCacheKey) || '{}');
+                                localStorage.setItem(swrCacheKey, JSON.stringify({ ...existing, artistData: data }));
+                            } catch(e) {}
+                            setIsProfileLoading(false);
+
+                            const pImg = data.profilePhotoUrl;
+                            const bImg = (data.backgroundPhotos && data.backgroundPhotos[0]) || data.backgroundPhotoUrl;
+                            if (pImg) { const i = new Image(); i.src = pImg; }
+                            if (bImg) { const i = new Image(); i.src = bImg; }
+                        } else if (isMounted) {
+                            setIsProfileLoading(false);
+                        }
+                    }).catch((error) => {
+                        console.error(error);
+                        if (isMounted) setIsProfileLoading(false);
+                    });
+                }
 
                 tattoosUnsub();
                 const qTattoos = query(

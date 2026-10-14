@@ -1,9 +1,9 @@
 import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
-import Landing from "./components/Landing";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
+const Landing = lazy(() => import("./components/Landing"));
 const ArtistProfile = lazy(() => import("./components/ArtistProfile"));
 const SuperAdmin = lazy(() => import("./components/SuperAdmin"));
 const DemoDashboard = lazy(() => import("./components/DemoDashboard"));
