@@ -777,15 +777,15 @@ export default function Profile() {
         {preloadAvatar && <link rel="preload" href={preloadAvatar} as="image" />}
         {preloadBg && <link rel="preload" href={preloadBg} as="image" />}
       </Helmet>
-      <main className="pb-8 md:pb-16">
+      <main className="pb-8 md:pb-16 w-full max-w-3xl lg:max-w-4xl mx-auto md:px-6">
         <div className="top-0 left-0 z-40 px-3 py-1 bg-black/30 backdrop-blur-sm fixed rounded-br-lg border-b border-r border-white/5 profile-logo-container">
           <span className="font-label-md text-label-md font-extrabold text-white/70 uppercase tracking-tighter profile-logo-text drop-shadow-md">Turnos <span className="text-primary/80 profile-logo-primary">Tattoo</span></span>
         </div>
         {/* Banner Section */}
         {(isProfileLoading && !artistData) ? (
-          <section className="relative w-full h-64 md:h-96 overflow-hidden bg-surface-container animate-pulse"></section>
+          <section className="relative w-full h-64 md:h-72 md:rounded-3xl md:mt-4 overflow-hidden bg-surface-container animate-pulse"></section>
         ) : (
-          <section className="relative w-full h-64 md:h-96 overflow-hidden bg-surface-container">
+          <section className="relative w-full h-64 md:h-72 md:rounded-3xl md:mt-4 overflow-hidden bg-surface-container border border-white/5 shadow-2xl">
             <OptimizedImage
                className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105"
                highResUrl={defaultBg}
@@ -969,10 +969,10 @@ export default function Profile() {
                 <div className="aspect-square bg-surface-container border border-white/5" />
             </div>
           ) : (
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 md:gap-3">
 
             {visibleTattoos.map((tattoo, index) => (
-              <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 tattoo-card ${index === 0 ? 'interactive-cue' : ''}`}>
+              <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 md:rounded-xl tattoo-card ${index === 0 ? 'interactive-cue' : ''}`}>
                 <OptimizedImage
                   className="w-full h-full transition-all duration-700 cursor-pointer object-cover aspect-square bg-surface-container" 
                   alt={tattoo.alt} 
