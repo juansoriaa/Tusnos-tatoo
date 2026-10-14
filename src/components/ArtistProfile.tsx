@@ -777,15 +777,15 @@ export default function Profile() {
         {preloadAvatar && <link rel="preload" href={preloadAvatar} as="image" />}
         {preloadBg && <link rel="preload" href={preloadBg} as="image" />}
       </Helmet>
-      <main className="pb-8 md:pb-16 w-full max-w-3xl lg:max-w-4xl mx-auto md:px-6">
+      <main className="pb-8 md:pb-16">
         <div className="top-0 left-0 z-40 px-3 py-1 bg-black/30 backdrop-blur-sm fixed rounded-br-lg border-b border-r border-white/5 profile-logo-container">
           <span className="font-label-md text-label-md font-extrabold text-white/70 uppercase tracking-tighter profile-logo-text drop-shadow-md">Turnos <span className="text-primary/80 profile-logo-primary">Tattoo</span></span>
         </div>
         {/* Banner Section */}
         {(isProfileLoading && !artistData) ? (
-          <section className="relative w-full h-64 md:h-72 md:rounded-3xl md:mt-4 overflow-hidden bg-surface-container animate-pulse"></section>
+          <section className="relative w-full h-64 md:h-80 overflow-hidden bg-surface-container animate-pulse"></section>
         ) : (
-          <section className="relative w-full h-64 md:h-72 md:rounded-3xl md:mt-4 overflow-hidden bg-surface-container border border-white/5 shadow-2xl">
+          <section className="relative w-full h-64 md:h-80 overflow-hidden bg-surface-container">
             <OptimizedImage
                className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 hover:scale-105"
                highResUrl={defaultBg}
@@ -933,7 +933,7 @@ export default function Profile() {
           </button>
         </div>
 
-        <section className="mt-12 px-gutter max-w-container-max mx-auto ">
+        <section className="mt-12 px-gutter max-w-4xl mx-auto md:px-16">
           {/* Filter Tags */}
           <div className="relative mb-12">
             <div className="flex items-center justify-start md:justify-center gap-2 overflow-x-auto hide-scrollbar pb-4 border-b border-outline-variant/10 pr-12 md:pr-0">
@@ -972,7 +972,7 @@ export default function Profile() {
           <div className="grid grid-cols-3 gap-2 md:gap-3">
 
             {visibleTattoos.map((tattoo, index) => (
-              <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 md:rounded-xl tattoo-card ${index === 0 ? 'interactive-cue' : ''}`}>
+              <div key={tattoo.id} className={`group relative overflow-hidden border border-white/5 tattoo-card ${index === 0 ? 'interactive-cue' : ''}`}>
                 <OptimizedImage
                   className="w-full h-full transition-all duration-700 cursor-pointer object-cover aspect-square bg-surface-container" 
                   alt={tattoo.alt} 
@@ -1020,7 +1020,7 @@ export default function Profile() {
 
         {/* Studio Location Section */}
         {artistData?.hasPhysicalStudio !== false && (
-          <section className="mt-section-gap px-gutter max-w-container-max mx-auto ">
+          <section className="mt-section-gap px-gutter max-w-4xl mx-auto md:px-8">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="text-left info-section bg-surface-container p-8 border border-outline-variant/20 border-l-[3px] border-l-primary rounded-l-none rounded-r-lg">
                 <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4 font-bold uppercase tracking-tight">{artistData?.studioName || "El Estudio"}</h2>
@@ -1060,7 +1060,7 @@ export default function Profile() {
           </section>
         )}
 
-        <section className="mt-section-gap mb-section-gap px-gutter max-w-container-max mx-auto ">
+        <section className="mt-section-gap mb-section-gap px-gutter max-w-4xl mx-auto md:px-8">
           <div className="bg-surface-container p-8 border border-outline-variant/20 border-l-[3px] border-l-primary rounded-l-none rounded-r-lg flex flex-col gap-8 items-center text-center info-section">
             <OptimizedImage className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-2 border-primary shrink-0" alt={artistData?.displayName || "Artist"} highResUrl={defaultAvatar} useIntersectionObserver={true} optimizedSize={256} />
             <div>
