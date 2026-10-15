@@ -8,6 +8,7 @@ import { db, auth, onAuthStateChanged } from '../firebase';
 import { globalPreloadCache } from '../lib/cache';
 import { getOptimizedGoogleUrl } from '../lib/imageHelper';
 import { getPossibleUserTags } from '../lib/tagHelper';
+import { uploadToImgBB } from '../lib/imgbb';
 
 
 const defaultFaqs = [
