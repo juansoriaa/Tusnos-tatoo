@@ -209,8 +209,8 @@ export default function Landing() {
   }, []);
 
     const handleWhatsAppRedirect = () => {
-    const message = 'hola vengo de la página turnos tatoo quiero mi página';
-    window.open(`https://wa.me/541140679334?text=${encodeURIComponent(message)}`, '_blank');
+    const message = 'Hola, vengo de la página Turnos Tattoo y quiero mi propia página web.';
+    window.open(`https://wa.me/5491140679334?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleLogin = async () => {
@@ -667,52 +667,65 @@ export default function Landing() {
       {showLoginModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background text-on-background font-body-md overflow-hidden touch-none overscroll-none animate-in fade-in duration-300">
           <div className="fixed inset-0 z-0 pointer-events-none">
-            <div className="absolute inset-0 bg-background/80 z-10"></div>
+            <div className="absolute inset-0 bg-background/85 backdrop-blur-md z-10"></div>
             <div className="w-full h-full bg-cover bg-center animate-ambient-pan" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCNZYis0Xg4Mypa7TtdTpjDW6w39iD0dnbkmkJ7F983VVx9KQ1SEhh6zznL0ye7F8yBu073DxYShkgHWphv5my3zd38-XEiYntT2KjDDfWz0FLeQw4crnTJH_rAR4WE88E6qaFkZ72SkyYqfP_uBQISuskKtGFOHxXoTRIcAtnabUJIalG227yvO-NCYU-D3JqiRYqe2OIvxS6QVFPhB9WN2vZpDXyDqEhkgn52AHz1QaPsruTeD-ZNY-8cRCl-fafwrHojKIP62Cc')" }}>
             </div>
           </div>
           
           <button 
             onClick={() => setShowLoginModal(false)}
-            className="fixed top-6 right-6 z-30 text-on-surface-variant hover:text-primary transition-colors"
+            aria-label="Cerrar modal"
+            className="fixed top-5 right-5 md:top-8 md:right-8 z-30 w-11 h-11 rounded-full bg-black/60 border border-white/10 flex items-center justify-center text-white/70 hover:text-white hover:border-primary/50 hover:bg-black/90 transition-all cursor-pointer shadow-lg active:scale-95"
           >
-            <span className="material-symbols-outlined text-3xl">close</span>
+            <span className="material-symbols-outlined text-2xl">close</span>
           </button>
 
           <main className="relative z-20 min-h-[100dvh] flex flex-col items-center justify-center px-4 w-full md:px-gutter py-12 md:py-0">
-            <div className="w-full max-w-[440px] bg-surface/60 backdrop-blur-xl border border-outline-variant/20 p-6 md:p-12 shadow-2xl animate-in zoom-in-95 duration-500 rounded-xl my-auto">
-              <div className="flex flex-col items-center mb-8 md:mb-12">
-                <h1 className="font-headline-md text-2xl md:text-headline-md font-bold tracking-tighter uppercase text-on-surface text-center">
-                  Turnos <span className="text-primary">Tattoo</span>
+            <div className="w-full max-w-[440px] bg-[#0c0d0e]/90 backdrop-blur-2xl border border-primary/25 p-6 md:p-10 shadow-[0_0_60px_rgba(0,0,0,0.85),0_0_30px_rgba(5,77,68,0.2)] animate-in zoom-in-95 duration-300 rounded-2xl my-auto relative overflow-hidden">
+              {/* Emerald gradient glow line at top */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-80"></div>
+              
+              <div className="flex flex-col items-center mb-8">
+                <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(5,77,68,0.25)]">
+                  <span className="material-symbols-outlined text-primary text-2xl">lock</span>
+                </div>
+                <h1 className="font-headline-md text-2xl md:text-headline-md font-bold tracking-tight uppercase text-white text-center">
+                  Turnos <span className="text-primary emerald-glow">Tattoo</span>
                 </h1>
-                <div className="w-12 h-[1px] bg-primary mt-2"></div>
+                <p className="text-[11px] uppercase tracking-[0.25em] text-on-surface-variant/70 mt-1 font-semibold">
+                  Acceso exclusivo para artistas
+                </p>
+                <div className="w-12 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent mt-3"></div>
               </div>
-              <form className="space-y-6 md:space-y-8" onSubmit={handleEmailLogin}>
 
-                <div className="group">
-                  <label className="font-caption text-[10px] md:text-caption uppercase tracking-widest text-on-surface-variant block mb-2 transition-colors group-focus-within:text-primary" htmlFor="email">
+              <form className="space-y-5" onSubmit={handleEmailLogin}>
+                <div className="space-y-1.5 group">
+                  <label className="font-caption text-[11px] uppercase tracking-widest text-on-surface-variant/80 block transition-colors group-focus-within:text-primary font-semibold" htmlFor="email">
                     Email o Usuario
                   </label>
-                  <input 
-                    className="w-full bg-transparent border-0 border-b border-outline-variant/50 py-2 md:py-3 px-0 text-on-surface focus:ring-0 focus:border-primary transition-all font-body-md placeholder:text-on-surface-variant/30 text-sm md:text-base outline-none" 
-                    id="email" 
-                    name="email" 
-                    placeholder="ejemplo@tattoo.com" 
-                    required 
-                    type="text" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
+                  <div className="relative">
+                    <input 
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl py-3 px-4 text-white focus:ring-1 focus:ring-primary focus:border-primary transition-all font-body-md placeholder:text-white/20 text-sm md:text-base outline-none hover:border-white/20" 
+                      id="email" 
+                      name="email" 
+                      placeholder="tu-estudio o ejemplo@tattoo.com" 
+                      required 
+                      type="text" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div className="group">
-                  <div className="flex justify-between items-end mb-2">
-                    <label className="font-caption text-[10px] md:text-caption uppercase tracking-widest text-on-surface-variant block transition-colors group-focus-within:text-primary" htmlFor="password">
+
+                <div className="space-y-1.5 group">
+                  <div className="flex justify-between items-end">
+                    <label className="font-caption text-[11px] uppercase tracking-widest text-on-surface-variant/80 block transition-colors group-focus-within:text-primary font-semibold" htmlFor="password">
                       Contraseña
                     </label>
                   </div>
                   <div className="relative">
                     <input 
-                      className="w-full bg-transparent border-0 border-b border-outline-variant/50 py-2 md:py-3 px-0 text-on-surface focus:ring-0 focus:border-primary transition-all font-body-md placeholder:text-on-surface-variant/30 text-sm md:text-base outline-none" 
+                      className="w-full bg-white/[0.04] border border-white/10 rounded-xl py-3 pl-4 pr-12 text-white focus:ring-1 focus:ring-primary focus:border-primary transition-all font-body-md placeholder:text-white/20 text-sm md:text-base outline-none hover:border-white/20" 
                       id="password" 
                       name="password" 
                       placeholder="••••••••" 
@@ -722,45 +735,53 @@ export default function Landing() {
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <button 
-                      className="absolute right-0 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors z-10" 
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors p-1 flex items-center justify-center cursor-pointer" 
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      <span className="material-symbols-outlined text-[18px] md:text-[20px]">
+                      <span className="material-symbols-outlined text-[20px]">
                         {showPassword ? 'visibility_off' : 'visibility'}
                       </span>
                     </button>
                   </div>
                 </div>
-                <div className="pt-4">
-                  {isLoggingIn ? (
-                      <div className="flex flex-col items-center justify-center py-2 space-y-4 h-[48px] md:h-[56px]">
-                          <p className="text-primary text-xs uppercase tracking-widest font-bold animate-pulse">Verificando credenciales...</p>
-                          <div className="w-full h-1 bg-surface-variant overflow-hidden relative rounded">
-                              <div className="absolute top-0 bottom-0 left-0 bg-primary w-1/3 rounded" style={{ animation: 'slideRight 1s infinite alternate ease-in-out' }}></div>
-                          </div>
-                          <style>{`
-                              @keyframes slideRight {
-                                  from { transform: translateX(-20%); }
-                                  to { transform: translateX(220%); }
-                              }
-                          `}</style>
+
+                <div className="pt-3">
+                  <button 
+                    className="w-full bg-primary text-white py-3.5 md:py-4 px-6 md:px-8 font-label-md text-xs md:text-sm uppercase tracking-[0.2em] font-bold rounded-xl shadow-[0_0_20px_rgba(5,77,68,0.4)] hover:bg-[#065f46] hover:shadow-[0_0_30px_rgba(5,77,68,0.6)] active:scale-[0.98] active:bg-[#043d36] transition-all duration-300 disabled:opacity-80 disabled:cursor-wait border border-primary/40 flex items-center justify-center cursor-pointer" 
+                    type="submit"
+                    disabled={isLoggingIn}
+                  >
+                    {isLoggingIn ? (
+                      <div className="flex items-center justify-center gap-3 py-0.5">
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="tracking-[0.15em] text-white font-bold">Verificando credenciales...</span>
                       </div>
-                  ) : (
-                  <button className="w-full bg-primary text-on-primary py-3 md:py-4 px-6 md:px-8 font-label-md text-sm md:text-label-md uppercase tracking-[0.2em] font-bold hover:bg-on-surface transition-all duration-300 active:scale-[0.98] transform" type="submit">
-                    Iniciar Sesión
+                    ) : (
+                      <span className="tracking-[0.2em]">Iniciar Sesión</span>
+                    )}
                   </button>
-                  )}
                 </div>
               </form>
               
-              <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-outline-variant/10 text-center">
-                <p className="font-caption text-[9px] md:text-caption text-on-surface-variant uppercase tracking-widest">
-                  ¿No tienes una cuenta? 
-                  <button onClick={handleWhatsAppRedirect} type="button" className="text-on-surface font-bold hover:text-primary transition-colors ml-1 md:ml-2 underline decoration-primary underline-offset-4 block mt-2 md:inline md:mt-0" >
-                    Quiero mi página
-                  </button>
+              <div className="mt-8 pt-6 border-t border-white/10 text-center flex flex-col items-center gap-3">
+                <p className="font-caption text-[11px] md:text-xs text-on-surface-variant/80 uppercase tracking-wider font-medium">
+                  ¿Aún no tienes una cuenta?
                 </p>
+                <a 
+                  href={`https://wa.me/5491140679334?text=${encodeURIComponent('Hola, vengo de la página Turnos Tattoo y quiero mi propia página web.')}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/25 text-white transition-all duration-300 text-xs uppercase tracking-widest font-bold group hover:border-primary hover:shadow-[0_0_20px_rgba(5,77,68,0.35)] active:scale-95"
+                >
+                  <svg className="w-4 h-4 fill-[#25D366] group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                  </svg>
+                  <span>Quiero mi página</span>
+                </a>
               </div>
             </div>
           </main>
