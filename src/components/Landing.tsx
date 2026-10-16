@@ -336,8 +336,8 @@ export default function Landing() {
   const navigateToDemo = () => {
     setIsLoadingDemo(true);
     setTimeout(() => {
-      navigate('/@danii_black');
-    }, 800);
+      navigate('/@leny_red');
+    }, 200);
   };
 
   useEffect(() => {
