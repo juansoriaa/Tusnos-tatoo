@@ -1,7 +1,3 @@
-export const config = {
-  runtime: 'edge',
-};
-
 const FIRESTORE_PROJECT_ID = 'commanding-bond-v5xj8';
 const FIRESTORE_DATABASE_ID = 'ai-studio-e02f872d-9aaa-41a2-8b00-28bd5eb4d807';
 const FIRESTORE_API_KEY = 'AIzaSyDf-sottrGY7avrz9vSanPerxo1SR0CB3A';
@@ -155,7 +151,7 @@ export default async function handler(req: any, res?: any) {
     specialties = artist.specialtyTags.filter(Boolean).join(' • ');
   }
 
-  // Urgency status
+  // Urgency status (CRO)
   const isAvailable = artist?.isAvailable !== false;
   const statusBadge = isAvailable ? '🟢 Agenda Abierta' : '⚪ Turnos Llenos / Lista de Espera';
 
@@ -174,20 +170,14 @@ export default async function handler(req: any, res?: any) {
   // Canonical URL
   const canonicalUrl = `${baseUrl}/${tagFormatted}${obraId ? `?obra=${obraId}` : ''}`;
 
-  // Image URL pointing to our dynamic 1200x630 OG generator
-  const ogParams = new URLSearchParams();
-  ogParams.set('tag', target);
-  if (obraId) ogParams.set('obra', obraId);
-  const ogImageUrl = `${baseUrl}/api/og?${ogParams.toString()}`;
-
-  // Direct high-res image fallback (servida directo desde ImgBB)
-  let directHeroImage = '';
+  // High-resolution image direct from ImgBB / Cloud Storage
+  let ogImageUrl = 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?auto=format&fit=crop&w=1200&q=80';
   if (photo && (photo.url || photo.src || photo.highResUrl)) {
-    directHeroImage = photo.url || photo.src || photo.highResUrl;
+    ogImageUrl = photo.url || photo.src || photo.highResUrl;
   } else if (artist?.profilePhotoUrl && artist.profilePhotoUrl.startsWith('http')) {
-    directHeroImage = artist.profilePhotoUrl;
+    ogImageUrl = artist.profilePhotoUrl;
   } else if (Array.isArray(artist?.backgroundPhotos) && artist.backgroundPhotos.length > 0 && artist.backgroundPhotos[0].startsWith('http')) {
-    directHeroImage = artist.backgroundPhotos[0];
+    ogImageUrl = artist.backgroundPhotos[0];
   }
 
   const html = `<!DOCTYPE html>
@@ -209,13 +199,12 @@ export default async function handler(req: any, res?: any) {
   <meta property="og:description" content="${ogDescription}">
   <meta property="og:image" content="${ogImageUrl}">
   <meta property="og:image:secure_url" content="${ogImageUrl}">
-  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Perfil de ${displayName} en Turnos Tattoo">
-  ${directHeroImage ? `<meta property="og:image" content="${directHeroImage}">` : ''}
 
-  <!-- Twitter / X -->
+  <!-- Twitter / X Cards -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="${canonicalUrl}">
   <meta name="twitter:title" content="${ogTitle}">
@@ -225,18 +214,23 @@ export default async function handler(req: any, res?: any) {
   <!-- WhatsApp Specific -->
   <meta property="al:web:url" content="${canonicalUrl}">
 
-  <!-- Smooth redirect for humans who might hit this URL directly -->
+  <!-- Redirect for human visitors who might open this direct endpoint in browser -->
   <script>
     if (!navigator.userAgent.match(/bot|facebookexternalhit|facebot|whatsapp|twitterbot|telegrambot|linkedinbot|discordbot|slackbot|opengraph|crawler|spider/i)) {
       window.location.replace("${canonicalUrl}");
     }
   </script>
 </head>
-<body style="background:#050505;color:#fff;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
-  <div style="text-align:center;">
-    <h1 style="color:#2dd4bf;font-size:24px;margin-bottom:8px;">${displayName}</h1>
-    <p style="color:#aaa;font-size:14px;margin-bottom:16px;">${statusBadge}</p>
-    <a href="${canonicalUrl}" style="display:inline-block;background:#054d44;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">Ver Perfil Completo</a>
+<body style="background:#070809;color:#fff;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+  <div style="text-align:center;padding:20px;max-width:500px;">
+    <div style="width:70px;height:70px;margin:0 auto 16px;border-radius:50%;overflow:hidden;border:2px solid #2dd4bf;">
+      <img src="${ogImageUrl}" alt="${displayName}" style="width:100%;height:100%;object-fit:cover;" />
+    </div>
+    <h1 style="color:#ffffff;font-size:24px;margin:0 0 6px 0;font-weight:800;">${displayName}</h1>
+    <p style="color:#2dd4bf;font-size:15px;font-weight:600;margin:0 0 10px 0;">${tagFormatted}</p>
+    <p style="color:#a7f3d0;font-size:12px;font-weight:700;margin:0 0 16px 0;letter-spacing:1px;text-transform:uppercase;">${statusBadge}</p>
+    <p style="color:#9ca3af;font-size:13px;line-height:1.5;margin:0 0 20px 0;">${specialties}</p>
+    <a href="${canonicalUrl}" style="display:inline-block;background:#054d44;color:#fff;padding:12px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;border:1px solid #2dd4bf;">Ver Perfil y Agendar</a>
   </div>
 </body>
 </html>`;
