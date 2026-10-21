@@ -546,74 +546,71 @@ const defaultFaqs = [
     };
 
     useEffect(() => {
-        // Only generate the manifest once we have actually loaded user data (initialDataStr is set) 
-        // to avoid caching the default generic "Victor Ink" name when the component first mounts.
-        if (name && initialDataStr !== '') {
-            const generateManifest = () => {
-                let iconSrc = '/default-avatar.png';
-                try {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 512;
-                    canvas.height = 512;
-                    const ctx = canvas.getContext('2d');
-                    if (ctx) {
-                        ctx.fillStyle = '#054d44'; // primary color
-                        ctx.fillRect(0, 0, 512, 512);
-                        
-                        ctx.fillStyle = '#ffffff';
-                        ctx.font = 'bold 80px sans-serif';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText('Turnos', 256, 210);
-                        
-                        ctx.fillStyle = '#a8ffea'; // accent color
-                        ctx.fillText('Tattoo', 256, 310);
-                        
-                        iconSrc = canvas.toDataURL('image/png');
-                    }
-                } catch (e) {
-                    console.error('Error generating brand logo', e);
+        const generateManifest = () => {
+            let iconSrc = '/icon.svg';
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.fillStyle = '#054d44'; // primary color
+                    ctx.fillRect(0, 0, 512, 512);
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 80px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('Turnos', 256, 210);
+                    
+                    ctx.fillStyle = '#a8ffea'; // accent color
+                    ctx.fillText('Tattoo', 256, 310);
+                    
+                    iconSrc = canvas.toDataURL('image/png');
                 }
+            } catch (e) {
+                console.error('Error generating brand logo', e);
+            }
 
-                const manifest = {
-                    name: `${name} - Turnos Tattoo`,
-                    short_name: name,
-                    start_url: window.location.pathname + '?v=' + Date.now(), // Ensure we open the exact dashboard path, not a wildcard
-                    display: "standalone",
-                    background_color: "#000000",
-                    theme_color: "#054d44",
-                    icons: [
-                        {
-                            src: iconSrc,
-                            sizes: "512x512",
-                            type: "image/png",
-                            purpose: "any maskable"
-                        },
-                        {
-                            src: iconSrc,
-                            sizes: "192x192",
-                            type: "image/png",
-                            purpose: "any maskable"
-                        }
-                    ]
-                };
-                const stringManifest = JSON.stringify(manifest);
-                // Utilizar Data URL en lugar de Blob para evitar problemas de permisos/lectura en el proceso de instalación de Android
-                const manifestUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(stringManifest);
-                
-                let link = document.querySelector('link[rel="manifest"]');
-                if (link) {
-                    link.setAttribute('href', manifestUrl);
-                } else {
-                    link = document.createElement('link');
-                    link.setAttribute('rel', 'manifest');
-                    link.setAttribute('href', manifestUrl);
-                    document.head.appendChild(link);
-                }
+            const manifest = {
+                name: 'Turnos Tattoo',
+                short_name: 'Turnos Tattoo',
+                description: 'Software de Gestión para Artistas del Tatuaje',
+                start_url: window.location.pathname,
+                display: "standalone",
+                background_color: "#000000",
+                theme_color: "#054d44",
+                icons: [
+                    {
+                        src: iconSrc,
+                        sizes: "512x512",
+                        type: "image/png",
+                        purpose: "any maskable"
+                    },
+                    {
+                        src: iconSrc,
+                        sizes: "192x192",
+                        type: "image/png",
+                        purpose: "any maskable"
+                    }
+                ]
             };
-            generateManifest();
-        }
-    }, [name, initialDataStr]);
+            const stringManifest = JSON.stringify(manifest);
+            // Utilizar Data URL en lugar de Blob para evitar problemas de permisos/lectura en el proceso de instalación de Android
+            const manifestUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(stringManifest);
+            
+            let link = document.querySelector('link[rel="manifest"]');
+            if (link) {
+                link.setAttribute('href', manifestUrl);
+            } else {
+                link = document.createElement('link');
+                link.setAttribute('rel', 'manifest');
+                link.setAttribute('href', manifestUrl);
+                document.head.appendChild(link);
+            }
+        };
+        generateManifest();
+    }, []);
 
     return (
         <DemoLayout 
@@ -627,19 +624,19 @@ const defaultFaqs = [
                 {showPwaPrompt && (
                     <div className="bg-primary/20 border border-primary/50 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-primary/30">
-                                <img src={avatarUrl.startsWith('http') ? avatarUrl : '/default-avatar.png'} alt="PWA Icon" className="w-full h-full object-cover" />
+                            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 border-primary/40 bg-primary flex items-center justify-center shadow-lg">
+                                <span className="font-bold text-white text-[11px] text-center leading-tight">Turnos<br/><span className="text-[#a8ffea]">Tattoo</span></span>
                             </div>
                             <div>
-                                <h3 className="text-white font-bold text-sm">Instalar Aplicación</h3>
-                                <p className="text-on-surface-variant text-xs">Añade un acceso directo para tener todas tus configuraciones a mano.</p>
+                                <h3 className="text-white font-bold text-sm">Instalar Turnos Tattoo</h3>
+                                <p className="text-on-surface-variant text-xs">Añade la app a tu pantalla de inicio para gestionar tu estudio y turnos.</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
-                            <button onClick={handleDeclinePwa} className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-secondary hover:text-white transition-colors">
+                            <button onClick={handleDeclinePwa} className="flex-1 sm:flex-none px-4 py-2 text-xs font-bold text-secondary hover:text-white transition-colors cursor-pointer">
                                 Quizás luego
                             </button>
-                            <button onClick={handleInstallPwa} className="flex-1 sm:flex-none px-4 py-2 bg-primary text-on-primary rounded text-xs font-bold hover:bg-primary-fixed transition-colors">
+                            <button onClick={handleInstallPwa} className="flex-1 sm:flex-none px-4 py-2 bg-primary text-on-primary rounded text-xs font-bold hover:bg-emerald-accent/80 transition-colors cursor-pointer shadow-md shadow-primary/20">
                                 Instalar App
                             </button>
                         </div>
