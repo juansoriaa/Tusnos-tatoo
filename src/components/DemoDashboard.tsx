@@ -624,12 +624,22 @@ const defaultFaqs = [
                 {showPwaPrompt && (
                     <div className="bg-primary/20 border border-primary/50 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border-2 border-primary/40 bg-primary flex items-center justify-center shadow-lg">
-                                <span className="font-bold text-white text-[11px] text-center leading-tight">Turnos<br/><span className="text-[#a8ffea]">Tattoo</span></span>
+                            <div className="relative w-12 h-12 shrink-0">
+                                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/40 shadow-md bg-surface">
+                                    <img 
+                                        src={avatarUrl && avatarUrl.startsWith('http') ? avatarUrl : defaultAvatar} 
+                                        alt={name || "Perfil"} 
+                                        className="w-full h-full object-cover" 
+                                        onError={(e) => { e.currentTarget.src = defaultAvatar; }} 
+                                    />
+                                </div>
+                                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary border-2 border-[#121212] flex items-center justify-center shadow" title="Turnos Tattoo">
+                                    <span className="text-[8px] font-black text-white leading-none">TT</span>
+                                </div>
                             </div>
                             <div>
-                                <h3 className="text-white font-bold text-sm">Instalar Turnos Tattoo</h3>
-                                <p className="text-on-surface-variant text-xs">Añade la app a tu pantalla de inicio para gestionar tu estudio y turnos.</p>
+                                <h3 className="text-white font-bold text-sm">Instalar Aplicación</h3>
+                                <p className="text-on-surface-variant text-xs">Añade un acceso directo a tu pantalla de inicio para gestionar tu estudio y turnos.</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2 w-full sm:w-auto">
