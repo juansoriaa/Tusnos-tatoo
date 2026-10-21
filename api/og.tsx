@@ -100,6 +100,7 @@ async function fetchPhotoData(photoId: string) {
 }
 
 export default async function handler(request: Request) {
+  let fallbackImage = 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?auto=format&fit=crop&w=1000&q=80';
   try {
     const url = new URL(request.url);
     const tag = url.searchParams.get('tag') || url.searchParams.get('id') || '';
@@ -109,7 +110,7 @@ export default async function handler(request: Request) {
     const photo = obraId ? await fetchPhotoData(obraId) : null;
 
     // Pick best high impact image: specific tattoo photo > profilePhoto > background photo > default fallback
-    let heroImage = 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?auto=format&fit=crop&w=1000&q=80';
+    let heroImage = fallbackImage;
     if (photo && (photo.url || photo.src || photo.highResUrl)) {
       heroImage = photo.url || photo.src || photo.highResUrl;
     } else if (artist?.profilePhotoUrl && artist.profilePhotoUrl.startsWith('http')) {
@@ -117,6 +118,7 @@ export default async function handler(request: Request) {
     } else if (Array.isArray(artist?.backgroundPhotos) && artist.backgroundPhotos.length > 0 && artist.backgroundPhotos[0].startsWith('http')) {
       heroImage = artist.backgroundPhotos[0];
     }
+    fallbackImage = heroImage;
 
     const displayName = artist?.displayName || tag.replace(/^@/, '') || 'Artista Profesional';
     const userTag = artist?.userTag ? (artist.userTag.startsWith('@') ? artist.userTag : `@${artist.userTag}`) : (tag ? `@${tag.replace(/^@/, '')}` : '@turnostattoo');
@@ -408,7 +410,7 @@ export default async function handler(request: Request) {
     );
   } catch (error: any) {
     console.error('Error generating OG image:', error);
-    // Graceful fallback response
-    return new Response('Error generating image: ' + (error?.message || String(error)), { status: 500 });
+    // Graceful fallback redirect to hero image or brand fallback
+    return Response.redirect(fallbackImage, 302);
   }
 }

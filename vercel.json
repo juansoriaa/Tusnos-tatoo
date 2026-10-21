@@ -10,7 +10,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(whatsapp|facebookexternalhit|facebot|twitterbot|telegrambot|linkedinbot|discordbot|slackbot|applebot).*"
+          "value": "(?i).*(whatsapp|facebookexternalhit|facebot|facebook|twitterbot|twitter|telegrambot|telegram|linkedinbot|linkedin|discordbot|discord|slackbot|slack|applebot|opengraph|crawler|spider|bot|preview|postman|curl|wget).*"
         }
       ],
       "destination": "/api/meta?path=$1"

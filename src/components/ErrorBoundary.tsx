@@ -11,13 +11,18 @@ interface State {
   showDetails: boolean;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null,
-    errorInfo: null,
-    showDetails: false
-  };
+export class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+      showDetails: false
+    };
+  }
+
+  public state: State;
 
   public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error, errorInfo: null, showDetails: false };
@@ -25,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error caught by ErrorBoundary:', error, errorInfo);
-    this.setState({ errorInfo });
+    (this as any).setState({ errorInfo });
 
     // Detect if this is a transient network error, chunk load error, or dynamic import failure
     // (very common when waking the device from sleep or when a new version was deployed)
@@ -105,7 +110,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="mt-6 pt-4 border-t border-white/5 text-left">
               <button
                 type="button"
-                onClick={() => this.setState({ showDetails: !this.state.showDetails })}
+                onClick={() => (this as any).setState({ showDetails: !this.state.showDetails })}
                 className="text-[11px] text-gray-500 hover:text-gray-400 uppercase tracking-wider flex items-center gap-1 transition-colors mx-auto cursor-pointer"
               >
                 <span>{this.state.showDetails ? 'Ocultar detalles' : 'Detalles del sistema'}</span>
@@ -132,6 +137,6 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return (this as any).props.children;
   }
 }

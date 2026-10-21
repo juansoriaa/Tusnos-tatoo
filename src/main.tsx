@@ -41,7 +41,7 @@ createRoot(document.getElementById('root')!).render(
 );
 
 
-window.forceClearCache = async () => {
+(window as any).forceClearCache = async () => {
     if ('caches' in window) {
         const keys = await caches.keys();
         await Promise.all(keys.map(k => caches.delete(k)));

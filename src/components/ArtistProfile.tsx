@@ -346,7 +346,7 @@ export default function Profile() {
                 if (!foundDoc) {
                     getDoc(doc(db, 'users', currentArtistDocId)).then((docSnap) => {
                         if (docSnap.exists() && isMounted) {
-                            const data = { ...docSnap.data(), uid: docSnap.id };
+                            const data: any = { ...docSnap.data(), uid: docSnap.id };
                             setArtistData(data);
                             globalPreloadCache[targetId] = { ...globalPreloadCache[targetId], artistData: data };
                             try {

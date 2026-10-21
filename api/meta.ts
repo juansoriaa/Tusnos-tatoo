@@ -97,24 +97,57 @@ async function fetchPhotoData(photoId: string) {
   return null;
 }
 
-export default async function handler(request: Request) {
-  const url = new URL(request.url);
-  const rawPath = url.searchParams.get('path') || url.pathname;
-  const obraId = url.searchParams.get('obra') || '';
+export default async function handler(req: any, res?: any) {
+  const isNode = Boolean(res && typeof res.status === 'function');
+  
+  let host = 'turnos-tattoo-ink.vercel.app';
+  let rawPath = '';
+  let obraId = '';
+  let protocol = 'https';
+
+  if (isNode) {
+    host = req.headers?.['x-forwarded-host'] || req.headers?.['host'] || host;
+    protocol = req.headers?.['x-forwarded-proto'] || (host.includes('localhost') ? 'http' : 'https');
+    rawPath = req.query?.path || '';
+    obraId = req.query?.obra || '';
+    if (!rawPath && req.url) {
+      try {
+        const parsed = new URL(req.url, `${protocol}://${host}`);
+        rawPath = parsed.searchParams.get('path') || parsed.pathname;
+        obraId = obraId || parsed.searchParams.get('obra') || '';
+      } catch (e) {}
+    }
+  } else {
+    // Web standard Request (Edge runtime)
+    try {
+      const url = new URL(req.url);
+      host = req.headers?.get?.('x-forwarded-host') || req.headers?.get?.('host') || url.host || host;
+      protocol = req.headers?.get?.('x-forwarded-proto') || url.protocol.replace(':', '') || 'https';
+      rawPath = url.searchParams.get('path') || url.pathname;
+      obraId = url.searchParams.get('obra') || '';
+    } catch (e) {
+      rawPath = String(req.url || '');
+    }
+  }
+
+  const baseUrl = `${protocol}://${host}`;
   
   // Clean up path to get the artist tag or id
-  let target = rawPath.replace(/^\//, '').split('?')[0].split('/')[0];
-  if (target === 'artist' || target === 'profile' || target === 'api') {
-    target = rawPath.split('/')[2] || target;
+  let clean = (rawPath || '').replace(/^\//, '').split('?')[0];
+  const segments = clean.split('/').filter(Boolean);
+  let target = segments[0] || '';
+  if (target === 'artist' || target === 'profile' || target === 'u' || target === 'api') {
+    target = segments[1] || target;
   }
 
   const artist = await fetchArtistData(target);
   const photo = obraId ? await fetchPhotoData(obraId) : null;
 
   const siteName = 'Turnos Tattoo';
-  const baseUrl = `${url.protocol}//${url.host}`;
   const displayName = artist?.displayName || target.replace(/^@/, '') || 'Artista';
-  const tagFormatted = artist?.userTag ? (artist.userTag.startsWith('@') ? artist.userTag : `@${artist.userTag}`) : `@${target.replace(/^@/, '')}`;
+  const tagFormatted = artist?.userTag 
+    ? (artist.userTag.startsWith('@') ? artist.userTag : `@${artist.userTag}`) 
+    : (target ? `@${target.replace(/^@/, '')}` : '@turnostattoo');
   
   // Specialties
   let specialties = '';
@@ -147,6 +180,16 @@ export default async function handler(request: Request) {
   if (obraId) ogParams.set('obra', obraId);
   const ogImageUrl = `${baseUrl}/api/og?${ogParams.toString()}`;
 
+  // Direct high-res image fallback (servida directo desde ImgBB)
+  let directHeroImage = '';
+  if (photo && (photo.url || photo.src || photo.highResUrl)) {
+    directHeroImage = photo.url || photo.src || photo.highResUrl;
+  } else if (artist?.profilePhotoUrl && artist.profilePhotoUrl.startsWith('http')) {
+    directHeroImage = artist.profilePhotoUrl;
+  } else if (Array.isArray(artist?.backgroundPhotos) && artist.backgroundPhotos.length > 0 && artist.backgroundPhotos[0].startsWith('http')) {
+    directHeroImage = artist.backgroundPhotos[0];
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -170,6 +213,7 @@ export default async function handler(request: Request) {
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Perfil de ${displayName} en Turnos Tattoo">
+  ${directHeroImage ? `<meta property="og:image" content="${directHeroImage}">` : ''}
 
   <!-- Twitter / X -->
   <meta name="twitter:card" content="summary_large_image">
@@ -183,7 +227,7 @@ export default async function handler(request: Request) {
 
   <!-- Smooth redirect for humans who might hit this URL directly -->
   <script>
-    if (!navigator.userAgent.match(/bot|facebookexternalhit|whatsapp|twitterbot|telegrambot|linkedinbot|discordbot|slackbot/i)) {
+    if (!navigator.userAgent.match(/bot|facebookexternalhit|facebot|whatsapp|twitterbot|telegrambot|linkedinbot|discordbot|slackbot|opengraph|crawler|spider/i)) {
       window.location.replace("${canonicalUrl}");
     }
   </script>
@@ -197,11 +241,17 @@ export default async function handler(request: Request) {
 </body>
 </html>`;
 
-  return new Response(html, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
-    },
-  });
+  if (isNode) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400');
+    return res.status(200).send(html);
+  } else {
+    return new Response(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+      },
+    });
+  }
 }
