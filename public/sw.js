@@ -1,4 +1,4 @@
-const CACHE_NAME = 'turnos-tattoo-pwa-v3';
+const CACHE_NAME = 'turnos-tattoo-pwa-v4';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -8,13 +8,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map(cache => {
-          if (cache !== CACHE_NAME) {
-            return caches.delete(cache);
-          }
-        })
+        cacheNames.map(cache => caches.delete(cache))
       );
-    }).then(() => clients.claim())
+    }).then(() => self.clients.claim())
   );
 });
 
@@ -31,6 +27,4 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-  // Let other requests (JS bundles, CSS, assets) pass directly to native browser fetch
-  // to avoid artificial failures when waking the device from sleep
 });

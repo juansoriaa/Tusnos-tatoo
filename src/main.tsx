@@ -5,6 +5,14 @@ window.onerror = function(message, source, lineno, colno, error) {
 window.addEventListener('unhandledrejection', function(event) {
     console.error('UNHANDLED PROMISE:', event.reason);
 });
+window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault();
+    const lastReload = Number(sessionStorage.getItem('last_auto_error_reload') || '0');
+    if (Date.now() - lastReload > 10000 && navigator.onLine) {
+        sessionStorage.setItem('last_auto_error_reload', String(Date.now()));
+        window.location.reload();
+    }
+});
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';

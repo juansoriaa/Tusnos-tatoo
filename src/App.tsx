@@ -12,13 +12,18 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
       sessionStorage.removeItem('chunk_retry_attempted');
       return module;
     } catch (error: any) {
+      const msg = (error?.message || String(error)).toLowerCase();
       const isChunkError = 
-        error?.message?.includes('Failed to fetch dynamically imported module') ||
-        error?.message?.includes('Importing a module script failed') ||
+        msg.includes('failed to fetch') ||
+        msg.includes('dynamically imported module') ||
+        msg.includes('importing a module script failed') ||
+        msg.includes('load failed') ||
+        msg.includes('mime type') ||
+        msg.includes('unable to preload css') ||
         error?.name === 'ChunkLoadError';
 
       const alreadyAttempted = sessionStorage.getItem('chunk_retry_attempted');
-      if (isChunkError && !alreadyAttempted) {
+      if (isChunkError && !alreadyAttempted && navigator.onLine) {
         sessionStorage.setItem('chunk_retry_attempted', 'true');
         window.location.reload();
         return new Promise(() => {}); // prevent crashing while reloading

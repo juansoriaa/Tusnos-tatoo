@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   children?: ReactNode;
@@ -7,130 +7,172 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
-  errorInfo: ErrorInfo | null;
-  showDetails: boolean;
+  isReloading: boolean;
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
+  public state: State = {
+    hasError: false,
+    error: null,
+    isReloading: false
+  };
+
   constructor(props: Props) {
     super(props);
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null,
-      showDetails: false
-    };
   }
-
-  public state: State;
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error, errorInfo: null, showDetails: false };
+    return { hasError: true, error, isReloading: false };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error caught by ErrorBoundary:', error, errorInfo);
-    (this as any).setState({ errorInfo });
+  public componentDidMount() {
+    window.addEventListener('online', this.handleAutoOnlineRecovery);
+    document.addEventListener('visibilitychange', this.handleVisibilityRecovery);
+  }
 
-    // Detect if this is a transient network error, chunk load error, or dynamic import failure
-    // (very common when waking the device from sleep or when a new version was deployed)
+  public componentWillUnmount() {
+    window.removeEventListener('online', this.handleAutoOnlineRecovery);
+    document.removeEventListener('visibilitychange', this.handleVisibilityRecovery);
+  }
+
+  private handleAutoOnlineRecovery = () => {
+    if (this.state.hasError) {
+      this.handleReload();
+    }
+  };
+
+  private handleVisibilityRecovery = () => {
+    if (document.visibilityState === 'visible' && this.state.hasError && navigator.onLine) {
+      const lastReload = Number(sessionStorage.getItem('last_auto_error_reload') || '0');
+      if (Date.now() - lastReload > 10000) {
+        sessionStorage.setItem('last_auto_error_reload', String(Date.now()));
+        this.handleReload();
+      }
+    }
+  };
+
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.warn('App recovery triggered:', error, errorInfo);
+
     const errStr = (error?.message || error?.name || String(error)).toLowerCase();
-    const isChunkOrNetworkError = 
+    const isChunkOrNetworkError =
       errStr.includes('dynamically imported module') ||
       errStr.includes('loading chunk') ||
       errStr.includes('chunkloaderror') ||
       errStr.includes('failed to fetch') ||
+      errStr.includes('load failed') ||
       errStr.includes('networkerror') ||
+      errStr.includes('mime type') ||
+      errStr.includes('unable to preload css') ||
       errStr.includes('importing a module script failed');
 
-    if (isChunkOrNetworkError) {
+    if (isChunkOrNetworkError && navigator.onLine) {
       const lastReload = Number(sessionStorage.getItem('last_auto_error_reload') || '0');
       const now = Date.now();
-      // Auto-reload once if not done in the last 15 seconds to transparently update the page
-      if (now - lastReload > 15000) {
+      if (now - lastReload > 10000) {
         sessionStorage.setItem('last_auto_error_reload', String(now));
-        window.location.reload();
+        this.handleReload();
       }
     }
   }
 
-  private handleReload = () => {
+  private handleReload = async () => {
     try {
+      (this as any).setState({ isReloading: true });
       sessionStorage.removeItem('last_auto_error_reload');
+      sessionStorage.removeItem('chunk_retry_attempted');
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.update().catch(() => {})));
+      }
     } catch (e) {}
     window.location.reload();
   };
 
   private handleGoHome = () => {
+    try {
+      sessionStorage.removeItem('last_auto_error_reload');
+      sessionStorage.removeItem('chunk_retry_attempted');
+    } catch (e) {}
     window.location.href = '/';
   };
 
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white font-sans relative overflow-hidden">
-          {/* Ambient background glow */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(5,77,68,0.2)_0%,#050505_70%)] pointer-events-none"></div>
+        <div className="min-h-screen bg-[#050505] text-[#f5f5f7] flex flex-col items-center justify-center p-6 selection:bg-[#054d44] selection:text-white font-sans relative overflow-hidden">
+          {/* Ambient emerald glow matching brand aesthetic */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(5,77,68,0.22)_0%,rgba(5,5,5,0.95)_65%,#050505_100%)] pointer-events-none" />
 
-          <div className="relative z-10 w-full max-w-md bg-[#0c0d0e]/95 border border-primary/25 rounded-2xl p-6 md:p-8 shadow-[0_0_50px_rgba(0,0,0,0.85),0_0_30px_rgba(5,77,68,0.2)] text-center animate-in zoom-in-95 duration-300">
-            {/* Top emerald line */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-80"></div>
+          {/* Brand Header Pill */}
+          <div className="relative z-10 mb-6 flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/10 backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-white/80">
+              Turnos <span className="text-[#10b981]">Tattoo</span>
+            </span>
+          </div>
 
-            {/* Icon */}
-            <div className="w-14 h-14 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center mx-auto mb-5 shadow-[0_0_20px_rgba(5,77,68,0.3)]">
-              <span className="material-symbols-outlined text-primary text-3xl">refresh</span>
+          {/* Main Card */}
+          <div className="relative z-10 w-full max-w-md bg-[#0c0d0e]/95 border border-white/10 border-l-[3px] border-l-[#054d44] rounded-r-xl rounded-l-none p-7 md:p-9 shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_40px_rgba(5,77,68,0.15)] text-center backdrop-blur-xl">
+            {/* Icon container */}
+            <div className="w-16 h-16 rounded-full bg-[#054d44]/20 border border-[#054d44]/50 flex items-center justify-center mx-auto mb-6 shadow-[0_0_25px_rgba(5,77,68,0.35)]">
+              <svg
+                className={`w-7 h-7 text-[#10b981] ${this.state.isReloading ? 'animate-spin' : ''}`}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M16 16h5v5" />
+              </svg>
             </div>
 
-            <h1 className="text-xl md:text-2xl font-bold uppercase tracking-tight text-white mb-2">
-              Conexión en Pausa
+            <h1 className="text-xl md:text-2xl font-extrabold uppercase tracking-tight text-white mb-3">
+              Pantalla en Reposo
             </h1>
-            
-            <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-              La ventana estuvo en reposo o se interrumpió la conexión. Actualiza la página para sincronizar con la última versión de la plataforma.
+
+            <p className="text-sm text-[#a1a1aa] mb-8 leading-relaxed">
+              La conexión entró en pausa por inactividad o cambio de red. Actualizá la página para reconectar y seguir navegando.
             </p>
 
             <div className="flex flex-col gap-3">
               <button
+                type="button"
                 onClick={this.handleReload}
-                className="w-full bg-primary hover:bg-[#065f46] text-white font-bold py-3.5 px-6 rounded-xl shadow-[0_0_20px_rgba(5,77,68,0.4)] hover:shadow-[0_0_30px_rgba(5,77,68,0.6)] active:scale-[0.98] transition-all text-xs uppercase tracking-widest cursor-pointer flex items-center justify-center gap-2 border border-primary/40"
+                disabled={this.state.isReloading}
+                className="w-full py-3.5 px-6 bg-[#054d44] hover:bg-[#065f46] active:scale-[0.98] text-white font-extrabold uppercase tracking-[0.15em] text-xs transition-all duration-300 shadow-[0_0_25px_rgba(5,77,68,0.45)] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
               >
-                <span className="material-symbols-outlined text-lg">sync</span>
-                Actualizar Página
+                <svg
+                  className={`w-4 h-4 ${this.state.isReloading ? 'animate-spin' : ''}`}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                  <path d="M21 3v5h-5" />
+                </svg>
+                <span>{this.state.isReloading ? 'Reconectando...' : 'Actualizar Página'}</span>
               </button>
 
-              <button
-                onClick={this.handleGoHome}
-                className="w-full bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white font-medium py-3 px-6 rounded-xl border border-white/10 transition-colors text-xs uppercase tracking-wider cursor-pointer"
-              >
-                Volver al Inicio
-              </button>
-            </div>
-
-            {/* Hidden developer details toggle */}
-            <div className="mt-6 pt-4 border-t border-white/5 text-left">
               <button
                 type="button"
-                onClick={() => (this as any).setState({ showDetails: !this.state.showDetails })}
-                className="text-[11px] text-gray-500 hover:text-gray-400 uppercase tracking-wider flex items-center gap-1 transition-colors mx-auto cursor-pointer"
+                onClick={this.handleGoHome}
+                className="w-full py-3 px-6 bg-white/[0.03] hover:bg-white/[0.08] text-[#a1a1aa] hover:text-white font-bold uppercase tracking-[0.15em] text-[11px] border border-white/10 transition-colors cursor-pointer"
               >
-                <span>{this.state.showDetails ? 'Ocultar detalles' : 'Detalles del sistema'}</span>
-                <span className="material-symbols-outlined text-sm">
-                  {this.state.showDetails ? 'expand_less' : 'expand_more'}
-                </span>
+                Ir al Inicio
               </button>
-
-              {this.state.showDetails && (
-                <div className="mt-3 p-3 bg-black/60 border border-white/10 rounded-lg text-left">
-                  <p className="text-xs text-red-400 font-mono break-all mb-2">
-                    {this.state.error?.toString()}
-                  </p>
-                  {this.state.errorInfo?.componentStack && (
-                    <pre className="text-[10px] text-gray-400 font-mono overflow-x-auto max-h-36 whitespace-pre-wrap">
-                      {this.state.errorInfo.componentStack}
-                    </pre>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>
