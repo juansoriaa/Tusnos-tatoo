@@ -6,6 +6,8 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   highResUrl: string;
   useIntersectionObserver?: boolean;
   optimizedSize?: number;
+  priority?: boolean;
+  deferHighRes?: boolean;
 }
 
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({ 
@@ -16,18 +18,23 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   style, 
   useIntersectionObserver = false,
   optimizedSize,
+  priority = false,
+  deferHighRes = false,
   ...props 
 }) => {
   const optLowRes = lowResUrl ? getOptimizedGoogleUrl(lowResUrl, 256) : '';
   const optHighRes = getOptimizedGoogleUrl(highResUrl, optimizedSize || 800);
 
   const [currentSrc, setCurrentSrc] = useState(optLowRes || optHighRes);
-  const [loading, setLoading] = useState(!!optLowRes && optLowRes !== optHighRes);
-  const [isVisible, setIsVisible] = useState(!useIntersectionObserver);
+  const [loading, setLoading] = useState(!deferHighRes && !!optLowRes && optLowRes !== optHighRes);
+  const [isVisible, setIsVisible] = useState(!useIntersectionObserver || priority);
   const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
-    if (!useIntersectionObserver) return;
+    if (!useIntersectionObserver || priority) {
+      setIsVisible(true);
+      return;
+    }
     
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -36,7 +43,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
           observer.disconnect();
         }
       },
-      { rootMargin: '200px' } // Start loading 200px before it appears
+      { rootMargin: '250px' } // Start loading 250px before it appears
     );
     
     if (imgRef.current) {
@@ -44,23 +51,45 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     }
     
     return () => observer.disconnect();
-  }, [useIntersectionObserver]);
+  }, [useIntersectionObserver, priority]);
 
   useEffect(() => {
     if (!isVisible) return;
 
     if (optLowRes && optLowRes !== optHighRes) {
-      const img = new Image();
-      img.src = optHighRes;
-      img.onload = () => {
-        setCurrentSrc(optHighRes);
-        setLoading(false);
+      let cancelled = false;
+      const startUpgrade = () => {
+        if (cancelled) return;
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = optHighRes;
+        img.onload = () => {
+          if (!cancelled) {
+            setCurrentSrc(optHighRes);
+            setLoading(false);
+          }
+        };
       };
-    } else {
-        setCurrentSrc(optHighRes);
+
+      if (deferHighRes) {
+        setCurrentSrc(optLowRes);
         setLoading(false);
+        const timer = setTimeout(startUpgrade, 350);
+        return () => {
+          cancelled = true;
+          clearTimeout(timer);
+        };
+      } else {
+        startUpgrade();
+        return () => {
+          cancelled = true;
+        };
+      }
+    } else {
+      setCurrentSrc(optHighRes);
+      setLoading(false);
     }
-  }, [optHighRes, optLowRes, isVisible]);
+  }, [optHighRes, optLowRes, isVisible, deferHighRes]);
 
   return (
     <img
@@ -68,9 +97,10 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
       {...props}
       src={isVisible ? (currentSrc || undefined) : (optLowRes || undefined)}
       alt={alt}
-      loading={props.loading || "lazy"}
+      loading={priority ? "eager" : (props.loading || "lazy")}
+      fetchPriority={priority ? "high" : (useIntersectionObserver ? "low" : undefined)}
       decoding="async"
-      className={`${className} ${loading ? 'blur-sm scale-105' : 'blur-0 scale-100'} transition-all duration-700`}
+      className={`${className} ${loading ? 'blur-sm scale-105' : 'blur-0 scale-100'} transition-all duration-500`}
       style={style}
     />
   );

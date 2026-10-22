@@ -46,7 +46,20 @@ try {
 }
 
 export const db = firestoreDb;
-export const storage = getStorage(app);
+
+let _storageInstance: any = null;
+export const storage = new Proxy({} as any, {
+  get(_target, prop) {
+    if (!_storageInstance) {
+      _storageInstance = getStorage(app);
+    }
+    const value = _storageInstance[prop];
+    if (typeof value === 'function') {
+      return value.bind(_storageInstance);
+    }
+    return value;
+  }
+});
 
 export const googleProvider = new GoogleAuthProvider();
 

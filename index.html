@@ -54,9 +54,210 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://i.ibb.co" crossorigin />
+    <link rel="dns-prefetch" href="https://i.ibb.co" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Montserrat:wght@400;600;700;900&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Montserrat:wght@400;600;700;900&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Montserrat:wght@400;600;700;900&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Montserrat:wght@400;600;700;900&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+    </noscript>
+    <script>
+      // 0ms Parallel Profile & Portfolio Prefetcher (runs while JS bundle downloads)
+      (function() {
+        try {
+          var path = window.location.pathname || '/';
+          if (path === '/' || path === '/superadmin') return;
+          var parts = path.split('/').filter(Boolean);
+          if (parts.length === 0) return;
+          var lastPart = parts[parts.length - 1].toLowerCase();
+          if (lastPart === 'dashboard' || lastPart === 'portfolio' || lastPart === 'waitlist' || lastPart === 'metrics') return;
+          var targetId = parts[0] === 'artist' ? parts[1] : (parts[0] === 'demo' && parts[1] === 'profile' ? 'demo' : parts[0]);
+          if (!targetId || targetId === 'demo' || targetId === '@demo' || targetId === 'victor_ink' || targetId === '@victor_ink' || targetId === 'anonymous_demo') return;
+          targetId = decodeURIComponent(targetId);
+
+          var PROJECT_ID = 'commanding-bond-v5xj8';
+          var DB_ID = 'ai-studio-e02f872d-9aaa-41a2-8b00-28bd5eb4d807';
+          var API_KEY = 'AIzaSyDf-sottrGY7avrz9vSanPerxo1SR0CB3A';
+          var BASE_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/' + DB_ID + '/documents';
+
+          function parseVal(v) {
+            if (!v || typeof v !== 'object') return v;
+            if (v.stringValue !== undefined) return v.stringValue;
+            if (v.booleanValue !== undefined) return v.booleanValue;
+            if (v.integerValue !== undefined) return Number(v.integerValue);
+            if (v.doubleValue !== undefined) return Number(v.doubleValue);
+            if (v.nullValue !== undefined) return null;
+            if (v.timestampValue !== undefined) return v.timestampValue;
+            if (v.arrayValue !== undefined) return (v.arrayValue.values || []).map(parseVal);
+            if (v.mapValue !== undefined) return parseFields(v.mapValue.fields);
+            return v;
+          }
+          function parseFields(fields) {
+            if (!fields) return {};
+            var out = {};
+            for (var k in fields) out[k] = parseVal(fields[k]);
+            return out;
+          }
+          function getPossibleTags(input) {
+            var base = input.trim().toLowerCase().replace(/\s+/g, '');
+            if (base.indexOf('@') === 0) base = base.substring(1);
+            var u = base.replace(/-/g, '_');
+            var h = base.replace(/_/g, '-');
+            var orig = input.trim();
+            var arr = ['@' + base, '@' + u, '@' + h, base, u, h, orig];
+            if (orig.indexOf('@') !== 0) arr.push('@' + orig);
+            var unique = [];
+            for (var i = 0; i < arr.length; i++) {
+              if (unique.indexOf(arr[i]) === -1 && unique.length < 10) unique.push(arr[i]);
+            }
+            return unique;
+          }
+
+          function preloadImg(url, highPriority) {
+            if (!url || typeof url !== 'string' || url.indexOf('data:') === 0) return;
+            var img = new Image();
+            if (highPriority) img.fetchPriority = 'high';
+            img.decoding = 'async';
+            img.src = url;
+          }
+
+          function fetchTattoosByUid(uid) {
+            return fetch(BASE_URL + ':runQuery?key=' + API_KEY, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                structuredQuery: {
+                  from: [{ collectionId: 'photos' }],
+                  where: {
+                    fieldFilter: {
+                      field: { fieldPath: 'createdBy' },
+                      op: 'EQUAL',
+                      value: { stringValue: uid }
+                    }
+                  },
+                  orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
+                  limit: 15
+                }
+              })
+            }).then(function(r) { return r.ok ? r.json() : []; }).then(function(rows) {
+              if (!Array.isArray(rows)) return null;
+              var photos = [];
+              for (var i = 0; i < rows.length; i++) {
+                if (rows[i] && rows[i].document) {
+                  var doc = rows[i].document;
+                  var id = doc.name.split('/').pop();
+                  var pData = parseFields(doc.fields);
+                  photos.push({
+                    id: id,
+                    src: pData.url || pData.imageUrl || pData.src,
+                    previewUrl: pData.previewUrl,
+                    thumbnailUrl: pData.thumbnailUrl,
+                    description: pData.info || pData.description || pData.alt || '',
+                    alt: pData.title || pData.description || 'Tattoo photo',
+                    title: pData.title || 'Tattoo',
+                    categories: pData.categories || pData.tags || ['Blackwork'],
+                    hours: pData.hours || null,
+                    sessions: pData.sessions || null,
+                    size: pData.size || null,
+                    originalFallbackId: pData.originalFallbackId || null,
+                    pinnedOrder: pData.pinnedOrder,
+                    filters: pData.filters || null
+                  });
+                }
+              }
+              photos.sort(function(a, b) {
+                var aP = typeof a.pinnedOrder === 'number' && a.pinnedOrder > 0;
+                var bP = typeof b.pinnedOrder === 'number' && b.pinnedOrder > 0;
+                if (aP && bP) return a.pinnedOrder - b.pinnedOrder;
+                if (aP) return -1;
+                if (bP) return 1;
+                return 0;
+              });
+              // Pre-warm first 3 visible grid thumbnails immediately
+              for (var j = 0; j < Math.min(3, photos.length); j++) {
+                preloadImg(photos[j].thumbnailUrl || photos[j].previewUrl || photos[j].src, j === 0);
+              }
+              return photos;
+            }).catch(function() { return null; });
+          }
+
+          var isTag = targetId.indexOf('@') === 0 || targetId.length < 20;
+          var cachedUid = null;
+          try {
+            var normTag = targetId.indexOf('@') === 0 ? targetId : '@' + targetId;
+            cachedUid = localStorage.getItem('tag_uid_map_' + normTag);
+          } catch (e) {}
+
+          // If we already know the UID from localStorage, launch tattoos fetch in 100% parallel at 0ms!
+          var earlyTattoosPromise = cachedUid ? fetchTattoosByUid(cachedUid) : null;
+
+          var artistPromise = (isTag ? (function() {
+            var tags = getPossibleTags(targetId);
+            return fetch(BASE_URL + ':runQuery?key=' + API_KEY, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                structuredQuery: {
+                  from: [{ collectionId: 'users' }],
+                  where: {
+                    fieldFilter: {
+                      field: { fieldPath: 'userTag' },
+                      op: 'IN',
+                      value: { arrayValue: { values: tags.map(function(t) { return { stringValue: t }; }) } }
+                    }
+                  },
+                  limit: 1
+                }
+              })
+            }).then(function(r) { return r.ok ? r.json() : []; }).then(function(rows) {
+              if (Array.isArray(rows) && rows[0] && rows[0].document) {
+                var doc = rows[0].document;
+                var uid = doc.name.split('/').pop();
+                var data = parseFields(doc.fields);
+                data.uid = uid;
+                return data;
+              }
+              return null;
+            });
+          })() : fetch(BASE_URL + '/users/' + encodeURIComponent(targetId) + '?key=' + API_KEY)
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(doc) {
+              if (doc && doc.fields) {
+                var data = parseFields(doc.fields);
+                data.uid = targetId;
+                return data;
+              }
+              return null;
+            })
+          ).then(function(artist) {
+            if (artist) {
+              var bg = (artist.backgroundPhotos && artist.backgroundPhotos[0]) || artist.backgroundPhotoUrl;
+              preloadImg(artist.profilePhotoUrl, true);
+              preloadImg(bg, true);
+              try {
+                var normTag = targetId.indexOf('@') === 0 ? targetId : '@' + targetId;
+                localStorage.setItem('tag_uid_map_' + normTag, artist.uid);
+              } catch (e) {}
+            }
+            return artist;
+          }).catch(function() { return null; });
+
+          var tattoosPromise = earlyTattoosPromise || artistPromise.then(function(artist) {
+            if (!artist || !artist.uid) return null;
+            return fetchTattoosByUid(artist.uid);
+          });
+
+          window.__PROFILE_PREFETCH__ = {
+            targetId: targetId,
+            artistPromise: artistPromise,
+            tattoosPromise: tattoosPromise
+          };
+        } catch (err) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
