@@ -439,6 +439,7 @@ export default function Profile() {
                                 src: pData.url || pData.imageUrl || pData.src,
                                 previewUrl: pData.previewUrl,
                                 thumbnailUrl: pData.thumbnailUrl,
+                                originalUrl: pData.originalUrl,
                                 description: pData.info || pData.description || pData.alt || "",
                                 alt: pData.title || pData.description || "Tattoo photo",
                                 title: pData.title || "Tattoo",
@@ -588,6 +589,7 @@ export default function Profile() {
                         src: pData.url || pData.imageUrl || pData.src,
                         previewUrl: pData.previewUrl,
                         thumbnailUrl: pData.thumbnailUrl,
+                        originalUrl: pData.originalUrl,
                         description: pData.info || pData.description || pData.alt || "",
                         alt: pData.title || pData.description || "Tattoo photo",
                         title: pData.title || "Tattoo",
@@ -671,6 +673,7 @@ export default function Profile() {
           src: pData.url || pData.imageUrl || pData.src,
           previewUrl: pData.previewUrl,
           thumbnailUrl: pData.thumbnailUrl,
+          originalUrl: pData.originalUrl,
           description: pData.info || pData.description || pData.alt || "",
           alt: pData.title || pData.description || "Tattoo photo",
           title: pData.title || "Tattoo",
@@ -1041,6 +1044,7 @@ export default function Profile() {
                   onClick={() => openModal(index)} 
                   lowResUrl={tattoo.thumbnailUrl || tattoo.previewUrl}
                   highResUrl={tattoo.src}
+                  fallbackUrls={[tattoo.previewUrl, tattoo.src, tattoo.thumbnailUrl, (tattoo as any).originalUrl]}
                   optimizedSize={400}
                   useIntersectionObserver={index >= 3}
                   priority={index < 3}
@@ -1217,6 +1221,7 @@ export default function Profile() {
                   className="max-w-full max-h-[45vh] md:max-h-[85vh] object-contain animate-fade-in relative z-10 shadow-2xl" 
                   lowResUrl={currentModalTattoo.previewUrl || currentModalTattoo.thumbnailUrl}
                   highResUrl={currentModalTattoo.src} 
+                  fallbackUrls={[currentModalTattoo.previewUrl, currentModalTattoo.src, (currentModalTattoo as any).originalUrl, currentModalTattoo.thumbnailUrl]}
                   style={{ filter: getFilterStr(currentModalTattoo.filters) }}
                   useIntersectionObserver={false}
                   loading="eager"
